@@ -1,6 +1,7 @@
 import logging
 
 import mesa
+import numpy as np
 from mesa.space import MultiGrid
 
 from .agent import Agent
@@ -17,6 +18,12 @@ class Model(mesa.Model):
         self.grid = MultiGrid(grid_width, grid_height, torus=False)
         # self.datacollector = mesa.datacollection.DataCollector(model_reporters={},)
         self.schedule = mesa.time.RandomActivation(self)
+
+        # resource distribution
+        self.resource_distribution = np.random.uniform(0, 1, (grid_width, grid_height))
+
+        # add resource distribution to grid colors for visualization
+        self.grid_colors = self.resource_distribution
 
         # Create agents
         for _ in range(self.number_of_agents):

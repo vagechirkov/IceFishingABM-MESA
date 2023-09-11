@@ -1,13 +1,7 @@
 import mesa
-import matplotlib as mpl
 
 from .model import Model
-
-cmap = mpl.colormaps['Blues']
-norm = mpl.colors.Normalize(vmin=0, vmax=20)
-m = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
-
-m_belief = mpl.cm.ScalarMappable(cmap=mpl.colormaps['Blues'], norm=mpl.colors.Normalize(vmin=0, vmax=.05))
+from .visualization.CanvasGridVisualization import CustomCanvasGrid
 
 
 def draw_grid(agent):
@@ -29,8 +23,7 @@ def draw_grid(agent):
 grid_size = 20
 grid_canvas_size = 600
 
-grid = mesa.visualization.CanvasGrid(
-    draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size)
+grid = CustomCanvasGrid(draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size)
 
 model_params = {
     "grid_width": grid_size,
@@ -41,6 +34,4 @@ model_params = {
 
 plots = [grid]
 
-server = mesa.visualization.ModularServer(Model, plots,
-                                          "Ice Fishing Model 1", model_params
-                                          )
+server = mesa.visualization.ModularServer(Model, plots, "Ice Fishing Model 1", model_params)
