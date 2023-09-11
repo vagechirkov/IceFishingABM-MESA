@@ -29,7 +29,7 @@ class Model(mesa.Model):
         assert self.grid.width > 6 and self.grid.height > 6, "Grid is too small to place agents in the center."
 
         x, y = self.grid.width // 2, self.grid.height // 2
-        while self.grid.is_cell_empty((x, y)):
+        while not self.grid.is_cell_empty((x, y)):
             x = self.random.randrange((self.grid.width // 2) - 3, (self.grid.width // 2) + 3)
             y = self.random.randrange((self.grid.height // 2) - 3, (self.grid.height // 2) + 3)
 
