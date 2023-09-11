@@ -11,12 +11,13 @@ def draw_grid(agent):
     if agent is None:
         return
 
-    if agent.state == "fishing":
-        portrayal = {"Shape": "fisher-fishing.svg", "Layer": 1, "State": agent.state}
-    elif agent.state == "moving":
-        portrayal = {"Shape": "fisher-moving.svg", "Layer": 1, "State": agent.state}
+    if agent.is_sampling:
+        portrayal = {"Shape": "fisher-fishing.svg", "Layer": 1, "Collected resource": agent.collected_resource}
+    elif agent.is_moving:
+        portrayal = {"Shape": "fisher-moving.svg", "Layer": 1, "Collected resource": agent.collected_resource}
     else:
-        portrayal = {"Shape": "fisher-fishing.svg", "Layer": 1, "State": agent.state}
+        portrayal = {}
+
     return portrayal
 
 
