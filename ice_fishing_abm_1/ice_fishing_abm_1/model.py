@@ -1,3 +1,5 @@
+import logging
+
 import mesa
 from mesa.space import MultiGrid
 
@@ -20,20 +22,33 @@ class Model(mesa.Model):
         for _ in range(self.number_of_agents):
             self.initialize_agent()
 
-    def initialize_agent(self):
-        """Create an agent and add it to the schedule and grid at a random empty cell in the center of the grid."""
+    def initialize_agent(self, radius: int = 1) -> None:
+        """
+        Create an agent and add it to the schedule and grid at a random empty cell in the center of the grid.
+
+        :param radius: The distance from the center of the grid to place the agent.
+        """
+        assert radius > 0, "Radius must be greater than 0."
         a = Agent(self.next_id(), self)
 
         self.schedule.add(a)
+        x_center, y_center = self.grid.width // 2, self.grid.height // 2
+        n = self.grid.get_neighborhood((x_center, y_center), moore=True, include_center=True, radius=radius)
 
-        assert self.grid.width > 6 and self.grid.height > 6, "Grid is too small to place agents in the center."
+        # select empty cells
+        empty_cells = [cell for cell in n if self.grid.is_cell_empty(cell)]
 
-        x, y = self.grid.width // 2, self.grid.height // 2
-        while not self.grid.is_cell_empty((x, y)):
-            x = self.random.randrange((self.grid.width // 2) - 3, (self.grid.width // 2) + 3)
-            y = self.random.randrange((self.grid.height // 2) - 3, (self.grid.height // 2) + 3)
+        if len(empty_cells) == 0:
+            # print warning that multiple agents are being placed in the same cell
+            logging.warning("Multiple agents are being placed in the same cell for initialization.")
+            # select random cell (even if it is not empty)
+            cell = self.random.choice(n)
+        else:
+            # select random empty cell
+            cell = self.random.choice(empty_cells)
 
-        self.grid.place_agent(a, (x, y))
+        # place agent
+        self.grid.place_agent(a, cell)
 
     def step(self):
         self.schedule.step()

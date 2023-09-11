@@ -17,3 +17,9 @@ pip install -r requirements.txt
 pip install -r dev_requirements.txt
 
 ```
+
+## Images for visualization
+
+* [Fisher](https://www.svgrepo.com/svg/36567/fisher)
+* [Ice skating](https://www.svgrepo.com/svg/116117/ice-skating)
+* [Jackhammer](https://www.svgrepo.com/svg/233732/jackhammer)

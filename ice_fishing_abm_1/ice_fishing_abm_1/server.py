@@ -17,14 +17,12 @@ def draw_grid(agent):
     if agent is None:
         return
 
-    if agent.state == "fishing" and agent.fishing_time == 1:
-        portrayal = {"Shape": "jackhammer.svg", "Layer": 1, "State": agent.state, "Catch": agent.total_catch}
-    elif agent.state == "fishing":
-        portrayal = {"Shape": "fisher-fishing.svg", "Layer": 1, "State": agent.state, "Catch": agent.total_catch}
+    if agent.state == "fishing":
+        portrayal = {"Shape": "fisher-fishing.svg", "Layer": 1, "State": agent.state}
     elif agent.state == "moving":
-        portrayal = {"Shape": "fisher-moving.svg", "Layer": 1, "State": agent.state, "Catch": agent.total_catch}
+        portrayal = {"Shape": "fisher-moving.svg", "Layer": 1, "State": agent.state}
     else:
-        portrayal = {"Shape": "fisher-fishing.svg", "Layer": 1, "State": agent.state, "Catch": agent.total_catch}
+        portrayal = {"Shape": "fisher-fishing.svg", "Layer": 1, "State": agent.state}
     return portrayal
 
 
