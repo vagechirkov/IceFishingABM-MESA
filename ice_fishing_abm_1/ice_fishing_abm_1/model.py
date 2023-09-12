@@ -5,6 +5,7 @@ import numpy as np
 from mesa.space import MultiGrid
 
 from .agent import Agent
+from .resource_distribution import ResourceDistribution
 
 
 class Model(mesa.Model):
@@ -18,9 +19,10 @@ class Model(mesa.Model):
         self.grid = MultiGrid(grid_width, grid_height, torus=False)
         # self.datacollector = mesa.datacollection.DataCollector(model_reporters={},)
         self.schedule = mesa.time.RandomActivation(self)
+        self.resource = ResourceDistribution(self, n_samples=100_000, n_clusters=1)
 
         # resource distribution
-        self.resource_distribution = np.random.uniform(0, 1, (grid_width, grid_height))
+        self.resource_distribution = self.resource.resource_distribution
 
         # add resource distribution to grid colors for visualization
         self.grid_colors = self.resource_distribution
