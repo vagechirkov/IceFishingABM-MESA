@@ -12,14 +12,17 @@ class Model(mesa.Model):
     def __init__(self,
                  grid_width: int = 100,
                  grid_height: int = 100,
-                 number_of_agents: int = 5):
+                 number_of_agents: int = 5,
+                 n_resource_clusters: int = 2):
         super().__init__()
         self.number_of_agents = number_of_agents
+        self.n_resource_clusters = n_resource_clusters
         self.current_id = 0
         self.grid = MultiGrid(grid_width, grid_height, torus=False)
         # self.datacollector = mesa.datacollection.DataCollector(model_reporters={},)
         self.schedule = mesa.time.RandomActivation(self)
-        self.resource = ResourceDistribution(self, n_samples=100_000, n_clusters=1)
+        self.resource = ResourceDistribution(self, n_clusters=self.n_resource_clusters)
+        self.resource.generate_resource_map()
 
         # resource distribution
         self.resource_distribution = self.resource.resource_distribution
