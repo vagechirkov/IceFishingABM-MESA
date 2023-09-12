@@ -9,3 +9,6 @@ def test_estimate_social_vector():
 
     v = estimate_social_vector((0, 0), [(1, 1), (2, 2)])
     assert np.allclose(v, np.array([2 / np.sqrt(2), 2 / np.sqrt(2)]))
+
+    v = estimate_social_vector((0, 0), [])
+    assert np.allclose(v, np.array([0, 0]))

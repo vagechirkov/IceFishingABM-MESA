@@ -3,13 +3,16 @@ from typing import Any, Union
 import mesa
 import numpy as np
 
+from .social_information import estimate_social_vector
+
 
 class Agent(mesa.Agent):
-    def __init__(self, unique_id, model, sampling_length: int = 10):
+    def __init__(self, unique_id, model, sampling_length: int = 10, relocation_threshold: float = 0.5):
         super().__init__(unique_id, model)
 
         # set parameters
         self.sampling_length: int = sampling_length
+        self.relocation_threshold: float = relocation_threshold
 
         # movement-related states
         self.is_moving: bool = False
@@ -40,6 +43,8 @@ class Agent(mesa.Agent):
         # check if destination has been reached
         if self.pos == self.destination:
             self.is_moving = False
+            # start sampling
+            self.is_sampling = True
 
     def sample(self):
         """
@@ -72,6 +77,26 @@ class Agent(mesa.Agent):
         self.sampling_sequence = []
         self.is_sampling = False
 
+    def relocate(self):
+        # get neighboring agents
+        other_agents = self.model.grid.get_neighbors(self.pos, moore=True, include_center=False, radius=20)
+
+        # estimate social vector
+        social_vector = estimate_social_vector(self.pos, [agent.pos for agent in other_agents])
+
+        if np.linalg.norm(social_vector) >= 1:
+            # choose a destination that is correlated with social vector
+            x, y = self.pos
+            dx = x + int(np.round(social_vector[0])) * self.random.randint(1, 3)
+            dy = y + int(np.round(social_vector[1])) * self.random.randint(1, 3)
+            self.destination = (dx, dy)
+        else:
+            # choose a random destination
+            self.destination = self.random.choice(
+                self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False, radius=20))
+
+        self.is_moving = True
+
     def choose_next_action(self):
         """
         Choose the next action for the agent.
@@ -88,13 +113,8 @@ class Agent(mesa.Agent):
             x, y = self.pos
             current_observation = self.observations[x, y]
 
-            if current_observation < 0.33:
-                # select random destination
-                self.destination = self.random.choice(self.model.grid.get_neighborhood(self.pos, moore=True))
-                self.is_moving = True
-            elif current_observation < 0.66:
-                self.destination = self.random.choice(self.model.grid.get_neighborhood(self.pos, moore=True))
-                self.is_moving = True
+            if current_observation < self.relocation_threshold:
+                self.relocate()
             else:
                 self.is_sampling = True
 
