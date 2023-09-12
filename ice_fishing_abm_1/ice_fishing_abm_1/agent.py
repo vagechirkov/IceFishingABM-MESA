@@ -14,7 +14,8 @@ class Agent(mesa.Agent):
                  sampling_length: int = 10,
                  relocation_threshold: float = 0.5,
                  social_influence_threshold: float = 1,
-                 exploration_threshold: float = 0.01):
+                 exploration_threshold: float = 0.01,
+                 prior_knowledge: int = 10):
         super().__init__(unique_id, model)
 
         # set parameters
@@ -22,6 +23,7 @@ class Agent(mesa.Agent):
         self.relocation_threshold: float = relocation_threshold
         self.social_influence_threshold: float = social_influence_threshold  # magnitude of social vector
         self.exploration_threshold: float = exploration_threshold  # choose a random destination with this probability
+        self.prior_knowledge: int = prior_knowledge  # prior knowledge about the resource distribution
 
         # movement-related states
         self.is_moving: bool = False
@@ -34,6 +36,16 @@ class Agent(mesa.Agent):
         # fill observations with small value
         self.observations.fill(1e-6)
         self.collected_resource: int = 0
+
+        self.update_observations_with_prior_knowledge()
+
+    def update_observations_with_prior_knowledge(self):
+        # select n cells with the highest resource density
+        inx = np.unravel_index(
+            np.argsort(self.model.resource_distribution, axis=None)[-self.prior_knowledge:],
+            self.model.resource_distribution.shape)
+
+        self.observations[inx] = self.model.resource_distribution[inx]
 
     def move(self):
         """
@@ -96,13 +108,8 @@ class Agent(mesa.Agent):
         social_vector = estimate_social_vector(self.pos, [agent.pos for agent in other_agents])
 
         # estimate environmental vector
-        smoothed_observations = smooth_observations_with_gaussian_filter(self.observations.copy())
+        smoothed_observations = smooth_observations_with_gaussian_filter(self.observations.copy(), sigma=5)
         environmental_peak = estimate_environment_peak(self.pos, smoothed_observations)
-
-        if self.unique_id == 1:
-            # highlight the environmental peak
-            smoothed_observations[environmental_peak] *= 2
-            self.model.agent_0_observations = smoothed_observations / np.max(smoothed_observations)
 
         if np.linalg.norm(social_vector) >= self.social_influence_threshold:
             # choose a destination that is correlated with social vector
@@ -136,6 +143,10 @@ class Agent(mesa.Agent):
         """
         Choose the next action for the agent.
         """
+        if self.unique_id == 1:
+            obs_smoothed = smooth_observations_with_gaussian_filter(self.observations.copy(), sigma=2)
+
+            self.model.agent_0_observations = obs_smoothed / np.max(obs_smoothed)
 
         if self.is_moving and not self.is_sampling:
             self.move()
