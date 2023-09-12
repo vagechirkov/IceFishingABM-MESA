@@ -7,12 +7,20 @@ from .social_information import estimate_social_vector
 
 
 class Agent(mesa.Agent):
-    def __init__(self, unique_id, model, sampling_length: int = 10, relocation_threshold: float = 0.5):
+    def __init__(self,
+                 unique_id,
+                 model,
+                 sampling_length: int = 10,
+                 relocation_threshold: float = 0.5,
+                 social_influence_threshold: float = 1,
+                 exploration_threshold: float = 0.01):
         super().__init__(unique_id, model)
 
         # set parameters
         self.sampling_length: int = sampling_length
         self.relocation_threshold: float = relocation_threshold
+        self.social_influence_threshold: float = social_influence_threshold  # magnitude of social vector
+        self.exploration_threshold: float = exploration_threshold  # choose a random destination with this probability
 
         # movement-related states
         self.is_moving: bool = False
@@ -84,17 +92,23 @@ class Agent(mesa.Agent):
         # estimate social vector
         social_vector = estimate_social_vector(self.pos, [agent.pos for agent in other_agents])
 
-        if np.linalg.norm(social_vector) >= 1:
+        if np.linalg.norm(social_vector) >= self.social_influence_threshold:
             # choose a destination that is correlated with social vector
             x, y = self.pos
             dx = x + int(np.round(social_vector[0])) * self.random.randint(1, 3)
             dy = y + int(np.round(social_vector[1])) * self.random.randint(1, 3)
             self.destination = (dx, dy)
         else:
-            # choose a random destination
-            self.destination = self.random.choice(
-                self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False, radius=20))
+            self.random_relocate()
 
+        self.is_moving = True
+
+    def random_relocate(self):
+        """
+        Choose a random destination and start moving.
+        """
+        self.destination = self.random.choice(
+            self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False, radius=20))
         self.is_moving = True
 
     def choose_next_action(self):
@@ -109,14 +123,17 @@ class Agent(mesa.Agent):
             self.sample()
 
         if not self.is_moving and not self.is_sampling:
-            # choose whether and where to move or sample
-            x, y = self.pos
-            current_observation = self.observations[x, y]
-
-            if current_observation < self.relocation_threshold:
-                self.relocate()
+            if self.model.random.random() < self.exploration_threshold:
+                self.random_relocate()
             else:
-                self.is_sampling = True
+                # choose whether and where to move or sample
+                x, y = self.pos
+                current_observation = self.observations[x, y]
+
+                if current_observation < self.relocation_threshold:
+                    self.relocate()
+                else:
+                    self.is_sampling = True
 
         if self.is_moving and self.is_sampling:
             raise ValueError("Agent is both sampling and moving.")
