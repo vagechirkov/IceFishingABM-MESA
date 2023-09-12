@@ -39,6 +39,9 @@ grid_size = 50
 grid_canvas_size = 600
 
 grid = CustomCanvasGrid(draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size)
+# chart_element = mesa.visualization.ChartModule(
+#     [{"Label": "Average collected resource", "Color": "#AA0000"}], canvas_width=400, canvas_height=100
+# )
 
 model_params = {
     "grid_width": grid_size,

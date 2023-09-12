@@ -19,7 +19,9 @@ class Model(mesa.Model):
         self.n_resource_clusters = n_resource_clusters
         self.current_id = 0
         self.grid = MultiGrid(grid_width, grid_height, torus=False)
-        # self.datacollector = mesa.datacollection.DataCollector(model_reporters={},)
+        self.datacollector = mesa.datacollection.DataCollector(
+            agent_reporters={"Collected resource": lambda a: a.collected_resource}
+        )
         self.schedule = mesa.time.RandomActivation(self)
         self.resource = ResourceDistribution(self, n_clusters=self.n_resource_clusters)
         self.resource.generate_resource_map()
@@ -66,7 +68,7 @@ class Model(mesa.Model):
         self.schedule.step()
 
         # collect data
-        # self.datacollector.collect(self)
+        self.datacollector.collect(self)
 
     def run_model(self, step_count: int = 100) -> None:
         for _ in range(step_count):
