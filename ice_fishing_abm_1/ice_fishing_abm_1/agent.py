@@ -3,6 +3,7 @@ from typing import Any, Union
 import mesa
 import numpy as np
 
+from .environmental_information import estimate_environment_peak, smooth_observations_with_gaussian_filter
 from .social_information import estimate_social_vector
 
 
@@ -30,6 +31,8 @@ class Agent(mesa.Agent):
         self.is_sampling: bool = False
         self.sampling_sequence: list[int, ...] = []
         self.observations: np.ndarray = np.ndarray(shape=(model.grid.width, model.grid.height), dtype=float)
+        # fill observations with small value
+        self.observations.fill(1e-6)
         self.collected_resource: int = 0
 
     def move(self):
@@ -92,16 +95,34 @@ class Agent(mesa.Agent):
         # estimate social vector
         social_vector = estimate_social_vector(self.pos, [agent.pos for agent in other_agents])
 
+        # estimate environmental vector
+        smoothed_observations = smooth_observations_with_gaussian_filter(self.observations.copy())
+        environmental_peak = estimate_environment_peak(self.pos, smoothed_observations)
+
+        if self.unique_id == 1:
+            # highlight the environmental peak
+            smoothed_observations[environmental_peak] *= 2
+            self.model.agent_0_observations = smoothed_observations / np.max(smoothed_observations)
+
         if np.linalg.norm(social_vector) >= self.social_influence_threshold:
             # choose a destination that is correlated with social vector
             x, y = self.pos
             dx = x + int(np.round(social_vector[0])) * self.random.randint(1, 3)
             dy = y + int(np.round(social_vector[1])) * self.random.randint(1, 3)
-            self.destination = (dx, dy)
+        else:
+            # select destination based on the environmental peak
+            dx = environmental_peak[0] + self.random.randint(-3, 3)
+            dy = environmental_peak[1] + self.random.randint(-3, 3)
+
+        # find the closest empty cell to the destination
+        destination = (dx, dy)
+        neighbors = self.model.grid.get_neighborhood(destination, moore=True, include_center=True, radius=1)
+        empty_neighbors = [cell for cell in neighbors if self.model.grid.is_cell_empty(cell)]
+        if len(empty_neighbors) > 0:
+            self.destination = self.random.choice(empty_neighbors)
+            self.is_moving = True
         else:
             self.random_relocate()
-
-        self.is_moving = True
 
     def random_relocate(self):
         """

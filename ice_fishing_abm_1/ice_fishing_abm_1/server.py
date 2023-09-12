@@ -35,24 +35,26 @@ def draw_grid(agent):
     return portrayal
 
 
-grid_size = 50
+grid_size = 20
 grid_canvas_size = 600
 
-grid = CustomCanvasGrid(draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size)
+grid = CustomCanvasGrid(draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size, "grid_colors")
 # chart_element = mesa.visualization.ChartModule(
 #     [{"Label": "Average collected resource", "Color": "#AA0000"}], canvas_width=400, canvas_height=100
 # )
+agent_0_observation_element = CustomCanvasGrid(
+    draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size, "agent_0_observations")
 
 model_params = {
     "grid_width": grid_size,
     "grid_height": grid_size,
     "number_of_agents": mesa.visualization.Slider(
-        "The number of agents", value=5, min_value=1, max_value=10, step=1),
+        "The number of agents", value=1, min_value=1, max_value=10, step=1),
     "n_resource_clusters": mesa.visualization.Slider(
         "The number of resource clusters", value=3, min_value=1, max_value=5, step=1)
 
 }
 
-plots = [grid]
+plots = [grid, agent_0_observation_element]
 
 server = mesa.visualization.ModularServer(Model, plots, "Ice Fishing Model 1", model_params)
