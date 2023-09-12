@@ -12,9 +12,23 @@ def draw_grid(agent):
         return
 
     if agent.is_sampling:
-        portrayal = {"Shape": "fisher-fishing.svg", "Layer": 1, "Collected resource": agent.collected_resource}
+        portrayal = {
+            # "Shape": "fisher-fishing.svg",
+            "Shape": "circle",
+            "Filled": "true",
+            "Color": "red",
+            "r": 0.8,
+            "Layer": 1,
+            "Collected resource": agent.collected_resource}
     elif agent.is_moving:
-        portrayal = {"Shape": "fisher-moving.svg", "Layer": 1, "Collected resource": agent.collected_resource}
+        portrayal = {
+            # "Shape": "fisher-moving.svg",
+            "Shape": "circle",
+            "Filled": "true",
+            "Color": "blue",
+            "r": 0.8,
+            "Layer": 1,
+            "Collected resource": agent.collected_resource}
     else:
         portrayal = {}
 

@@ -4,7 +4,7 @@ import matplotlib as mpl
 import mesa
 import numpy as np
 
-cmap = mpl.colormaps['Blues']
+cmap = mpl.colormaps['Greys']
 
 
 class CustomCanvasGrid(mesa.visualization.CanvasGrid):
@@ -52,6 +52,5 @@ class CustomCanvasGrid(mesa.visualization.CanvasGrid):
                         grid_state[portrayal["Layer"]].append(portrayal)
 
                 if self.grid_colors is not None:
-
                     grid_state[0].append(self.draw_cell_color(x, y))
         return grid_state
