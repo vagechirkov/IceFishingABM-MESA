@@ -9,14 +9,17 @@ from .social_information import estimate_social_vector
 
 
 class Agent(mesa.Agent):
-    def __init__(self,
-                 unique_id,
-                 model,
-                 sampling_length: int = 10,
-                 relocation_threshold: float = 0.7,
-                 social_influence_threshold: float = 1,
-                 exploration_threshold: float = 0.01,
-                 prior_knowledge: float = 0.05):
+    def __init__(
+            self,
+            unique_id,
+            model,
+            sampling_length: int = 10,
+            relocation_threshold: float = 0.7,
+            social_influence_threshold: float = 1,
+            exploration_threshold: float = 0.01,
+            prior_knowledge: float = 0.05,
+            visualization: bool = False
+    ):
         super().__init__(unique_id, model)
 
         # set parameters
@@ -25,6 +28,7 @@ class Agent(mesa.Agent):
         self.social_influence_threshold: float = social_influence_threshold  # magnitude of social vector
         self.exploration_threshold: float = exploration_threshold  # choose a random destination with this probability
         self.prior_knowledge: float = prior_knowledge  # prior knowledge about the resource distribution
+        self.visualization: bool = visualization
 
         # movement-related states
         self.is_moving: bool = False
@@ -122,6 +126,11 @@ class Agent(mesa.Agent):
             x, y = self.pos
             dx = x + int(np.round(social_vector[0])) * self.random.randint(1, 3)
             dy = y + int(np.round(social_vector[1])) * self.random.randint(1, 3)
+
+            # make sure that the destination is not out of bounds
+            while self.model.grid.out_of_bounds((dx, dy)):
+                dx = x + int(np.round(social_vector[0])) * self.random.randint(1, 3)
+                dy = y + int(np.round(social_vector[1])) * self.random.randint(1, 3)
         else:
             # estimate environmental vector
             discounted_obs = discount_observations_by_distance(self.observations.copy(), self.pos, discount_factor=0.5)
@@ -173,7 +182,8 @@ class Agent(mesa.Agent):
             current_observation = self.observations[x, y]
 
             if current_observation < self.relocation_threshold:
-                self.debug_plot()
+                if self.visualization:
+                    self.debug_plot()
                 if self.model.random.random() < self.exploration_threshold:
                     if current_observation > 0.3:
                         self.random_relocate(radius=3)
