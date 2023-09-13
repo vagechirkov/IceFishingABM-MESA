@@ -3,7 +3,8 @@ from typing import Any, Union
 import mesa
 import numpy as np
 
-from .environmental_information import estimate_environment_peak, smooth_observations_with_gaussian_filter
+from .environmental_information import discount_observations_by_distance, estimate_environment_peak, \
+    smooth_observations_with_gaussian_filter
 from .social_information import estimate_social_vector
 
 
@@ -15,7 +16,7 @@ class Agent(mesa.Agent):
                  relocation_threshold: float = 0.5,
                  social_influence_threshold: float = 1,
                  exploration_threshold: float = 0.01,
-                 prior_knowledge: int = 10):
+                 prior_knowledge: float = 0.05):
         super().__init__(unique_id, model)
 
         # set parameters
@@ -23,7 +24,7 @@ class Agent(mesa.Agent):
         self.relocation_threshold: float = relocation_threshold
         self.social_influence_threshold: float = social_influence_threshold  # magnitude of social vector
         self.exploration_threshold: float = exploration_threshold  # choose a random destination with this probability
-        self.prior_knowledge: int = prior_knowledge  # prior knowledge about the resource distribution
+        self.prior_knowledge: float = prior_knowledge  # prior knowledge about the resource distribution
 
         # movement-related states
         self.is_moving: bool = False
@@ -40,12 +41,21 @@ class Agent(mesa.Agent):
         self.update_observations_with_prior_knowledge()
 
     def update_observations_with_prior_knowledge(self):
-        # select n cells with the highest resource density
-        inx = np.unravel_index(
-            np.argsort(self.model.resource_distribution, axis=None)[-self.prior_knowledge:],
-            self.model.resource_distribution.shape)
+        if self.prior_knowledge == 0:
+            return
 
-        self.observations[inx] = self.model.resource_distribution[inx]
+        # create a list of all cell indices tuples
+        inx = [(x, y) for x in range(self.model.grid.width) for y in range(self.model.grid.height)]
+
+        # select random cells to observe
+        inx = self.random.sample(inx, k=int(self.prior_knowledge * len(inx)))
+        # inx = np.unravel_index(
+        #     np.argsort(self.model.resource_distribution, axis=None)[-self.prior_knowledge:],
+        #     self.model.resource_distribution.shape)
+        # self.observations[inx] = self.model.resource_distribution[inx]
+
+        for i in inx:
+            self.observations[i] = self.model.resource_distribution[i]
 
     def move(self):
         """
@@ -144,9 +154,14 @@ class Agent(mesa.Agent):
         Choose the next action for the agent.
         """
         if self.unique_id == 1:
-            obs_smoothed = smooth_observations_with_gaussian_filter(self.observations.copy(), sigma=2)
+            self.model.agent_raw_observations = self.observations
 
-            self.model.agent_0_observations = obs_smoothed / np.max(obs_smoothed)
+            obs_discounted = discount_observations_by_distance(
+                self.observations, self.pos, discount_factor=0.5)
+            self.model.agent_discounted_observations = obs_discounted / np.max(obs_discounted)
+
+            obs_smoothed = smooth_observations_with_gaussian_filter(obs_discounted, sigma=2)
+            self.model.agent_smoothed_observations = obs_smoothed / np.max(obs_smoothed)
 
         if self.is_moving and not self.is_sampling:
             self.move()

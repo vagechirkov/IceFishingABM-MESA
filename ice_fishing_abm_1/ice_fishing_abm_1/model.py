@@ -31,7 +31,9 @@ class Model(mesa.Model):
 
         # add resource distribution to grid colors for visualization
         self.grid_colors = self.resource_distribution
-        self.agent_0_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
+        self.agent_raw_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
+        self.agent_smoothed_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
+        self.agent_discounted_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
 
         # Create agents
         for _ in range(self.number_of_agents):
