@@ -35,7 +35,7 @@ def draw_grid(agent):
     return portrayal
 
 
-grid_size = 40
+grid_size = 20
 grid_canvas_size = 600
 
 grid = CustomCanvasGrid(draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size, "grid_colors")

@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Union
 
 import mesa
 import numpy as np
@@ -13,7 +13,7 @@ class Agent(mesa.Agent):
                  unique_id,
                  model,
                  sampling_length: int = 10,
-                 relocation_threshold: float = 0.5,
+                 relocation_threshold: float = 0.7,
                  social_influence_threshold: float = 1,
                  exploration_threshold: float = 0.01,
                  prior_knowledge: float = 0.05):
@@ -117,29 +117,37 @@ class Agent(mesa.Agent):
         # estimate social vector
         social_vector = estimate_social_vector(self.pos, [agent.pos for agent in other_agents])
 
-        # estimate environmental vector
-        smoothed_observations = smooth_observations_with_gaussian_filter(self.observations.copy(), sigma=5)
-        environmental_peak = estimate_environment_peak(self.pos, smoothed_observations)
-
         if np.linalg.norm(social_vector) >= self.social_influence_threshold:
             # choose a destination that is correlated with social vector
             x, y = self.pos
             dx = x + int(np.round(social_vector[0])) * self.random.randint(1, 3)
             dy = y + int(np.round(social_vector[1])) * self.random.randint(1, 3)
         else:
+            # estimate environmental vector
+            discounted_obs = discount_observations_by_distance(self.observations.copy(), self.pos, discount_factor=0.5)
+            smoothed_obs = smooth_observations_with_gaussian_filter(discounted_obs, sigma=2)
+            environmental_peak = estimate_environment_peak(self.pos, smoothed_obs)
+
             # select destination based on the environmental peak
-            dx = environmental_peak[0] + self.random.randint(-3, 3)
-            dy = environmental_peak[1] + self.random.randint(-3, 3)
+            dx, dy = environmental_peak
 
         # find the closest empty cell to the destination
-        destination = (dx, dy)
-        neighbors = self.model.grid.get_neighborhood(destination, moore=True, include_center=True, radius=1)
-        empty_neighbors = [cell for cell in neighbors if self.model.grid.is_cell_empty(cell)]
-        if len(empty_neighbors) > 0:
-            self.destination = self.random.choice(empty_neighbors)
-            self.is_moving = True
-        else:
-            self.random_relocate()
+        self.destination = self.closest_empty_cell((dx, dy))
+        self.is_moving = True
+
+    def closest_empty_cell(self, destination: tuple[int, int]):
+        radius = 1
+        empty_cells = self.get_empty_cells(destination, radius)
+
+        # increase the radius until an empty cell is found
+        while len(empty_cells) == 0:
+            radius += 1
+            empty_cells = self.get_empty_cells(destination, radius=radius)
+        return self.random.choice(empty_cells)
+
+    def get_empty_cells(self, destination, radius=1):
+        neighbors = self.model.grid.get_neighborhood(destination, moore=True, include_center=True, radius=radius)
+        return [cell for cell in neighbors if self.model.grid.is_cell_empty(cell)]
 
     def random_relocate(self):
         """
@@ -153,16 +161,6 @@ class Agent(mesa.Agent):
         """
         Choose the next action for the agent.
         """
-        if self.unique_id == 1:
-            self.model.agent_raw_observations = self.observations
-
-            obs_discounted = discount_observations_by_distance(
-                self.observations, self.pos, discount_factor=0.5)
-            self.model.agent_discounted_observations = obs_discounted / np.max(obs_discounted)
-
-            obs_smoothed = smooth_observations_with_gaussian_filter(obs_discounted, sigma=2)
-            self.model.agent_smoothed_observations = obs_smoothed / np.max(obs_smoothed)
-
         if self.is_moving and not self.is_sampling:
             self.move()
 
@@ -178,12 +176,21 @@ class Agent(mesa.Agent):
                 current_observation = self.observations[x, y]
 
                 if current_observation < self.relocation_threshold:
+                    self.debug_plot()
                     self.relocate()
                 else:
                     self.is_sampling = True
 
         if self.is_moving and self.is_sampling:
             raise ValueError("Agent is both sampling and moving.")
+
+    def debug_plot(self):
+        if self.unique_id == 1:
+            self.model.agent_raw_observations = self.observations
+            discounted_obs = discount_observations_by_distance(self.observations.copy(), self.pos, discount_factor=0.5)
+            self.model.agent_discounted_observations = discounted_obs / np.max(discounted_obs)
+            smoothed_obs = smooth_observations_with_gaussian_filter(discounted_obs, sigma=2)
+            self.model.agent_smoothed_observations = smoothed_obs / np.max(smoothed_obs)
 
     def step(self):
         self.choose_next_action()
