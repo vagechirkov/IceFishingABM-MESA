@@ -70,7 +70,12 @@ class Model(mesa.Model):
         a = Agent(
             self.next_id(),
             self,
-            visualization=self.visualization
+            visualization=self.visualization,
+            sampling_length=self.sampling_length,
+            relocation_threshold=self.relocation_threshold,
+            social_influence_threshold=self.social_influence_threshold,
+            exploration_threshold=self.exploration_threshold,
+            prior_knowledge=self.prior_knowledge
         )
 
         self.schedule.add(a)
