@@ -9,31 +9,52 @@ from .resource_distribution import ResourceDistribution
 
 
 class Model(mesa.Model):
-    def __init__(self,
-                 grid_width: int = 100,
-                 grid_height: int = 100,
-                 number_of_agents: int = 5,
-                 n_resource_clusters: int = 2):
+    def __init__(
+            self,
+            grid_width: int = 100,
+            grid_height: int = 100,
+            number_of_agents: int = 5,
+            n_resource_clusters: int = 2,
+            visualization: bool = False,
+            sampling_length: int = 10,
+            relocation_threshold: float = 0.7,
+            social_influence_threshold: float = 1,
+            exploration_threshold: float = 0.01,
+            prior_knowledge: float = 0.05
+    ):
         super().__init__()
-        self.number_of_agents = number_of_agents
+        # parameters general
+        self.number_of_agents: int = number_of_agents
         self.n_resource_clusters = n_resource_clusters
+        self.visualization = visualization
         self.current_id = 0
+
+        # agent parameters
+        self.sampling_length: int = sampling_length
+        self.relocation_threshold: float = relocation_threshold
+        self.social_influence_threshold: float = social_influence_threshold
+        self.exploration_threshold: float = exploration_threshold
+        self.prior_knowledge: float = prior_knowledge
+
+        # initialize grid, datacollector, schedule
         self.grid = MultiGrid(grid_width, grid_height, torus=False)
         self.datacollector = mesa.datacollection.DataCollector(
-            agent_reporters={"Collected resource": lambda a: a.collected_resource}
+            # agent_reporters={"Collected resource": lambda a: a.collected_resource}
+            model_reporters={"Collected resource": lambda m: np.mean([a.collected_resource for a in m.schedule.agents])}
         )
         self.schedule = mesa.time.RandomActivation(self)
+
+        # initialize resource distribution
         self.resource = ResourceDistribution(self, n_clusters=self.n_resource_clusters)
         self.resource.generate_resource_map()
-
-        # resource distribution
         self.resource_distribution = self.resource.resource_distribution
 
         # add resource distribution to grid colors for visualization
-        self.grid_colors = self.resource_distribution
-        self.agent_raw_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
-        self.agent_smoothed_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
-        self.agent_discounted_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
+        if self.visualization:
+            self.grid_colors = self.resource_distribution
+            self.agent_raw_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
+            self.agent_smoothed_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
+            self.agent_discounted_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
 
         # Create agents
         for _ in range(self.number_of_agents):
@@ -46,7 +67,11 @@ class Model(mesa.Model):
         :param radius: The distance from the center of the grid to place the agent.
         """
         assert radius > 0, "Radius must be greater than 0."
-        a = Agent(self.next_id(), self)
+        a = Agent(
+            self.next_id(),
+            self,
+            visualization=self.visualization
+        )
 
         self.schedule.add(a)
         x_center, y_center = self.grid.width // 2, self.grid.height // 2

@@ -54,6 +54,7 @@ agent_discounted_observation_element = CustomCanvasGrid(
 model_params = {
     "grid_width": grid_size,
     "grid_height": grid_size,
+    "visualization": True,
     "number_of_agents": mesa.visualization.Slider(
         "The number of agents", value=1, min_value=1, max_value=10, step=1),
     "n_resource_clusters": mesa.visualization.Slider(
