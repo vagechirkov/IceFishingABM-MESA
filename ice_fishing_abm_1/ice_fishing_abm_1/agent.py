@@ -149,12 +149,12 @@ class Agent(mesa.Agent):
         neighbors = self.model.grid.get_neighborhood(destination, moore=True, include_center=True, radius=radius)
         return [cell for cell in neighbors if self.model.grid.is_cell_empty(cell)]
 
-    def random_relocate(self):
+    def random_relocate(self, radius: int = 20):
         """
         Choose a random destination and start moving.
         """
         self.destination = self.random.choice(
-            self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False, radius=20))
+            self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False, radius=radius))
         self.is_moving = True
 
     def choose_next_action(self):
@@ -168,18 +168,21 @@ class Agent(mesa.Agent):
             self.sample()
 
         if not self.is_moving and not self.is_sampling:
-            if self.model.random.random() < self.exploration_threshold:
-                self.random_relocate()
-            else:
-                # choose whether and where to move or sample
-                x, y = self.pos
-                current_observation = self.observations[x, y]
+            # choose whether and where to move or sample
+            x, y = self.pos
+            current_observation = self.observations[x, y]
 
-                if current_observation < self.relocation_threshold:
-                    self.debug_plot()
-                    self.relocate()
+            if current_observation < self.relocation_threshold:
+                self.debug_plot()
+                if self.model.random.random() < self.exploration_threshold:
+                    if current_observation > 0.3:
+                        self.random_relocate(radius=3)
+                    else:
+                        self.random_relocate(radius=20)
                 else:
-                    self.is_sampling = True
+                    self.relocate()
+            else:
+                self.is_sampling = True
 
         if self.is_moving and self.is_sampling:
             raise ValueError("Agent is both sampling and moving.")
