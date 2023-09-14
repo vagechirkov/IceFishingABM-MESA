@@ -12,3 +12,6 @@ def test_estimate_social_vector():
 
     v = estimate_social_vector((0, 0), [])
     assert np.allclose(v, np.array([0, 0]))
+
+    v = estimate_social_vector((1, 1), [])
+    assert np.allclose(v, np.array([0, 0]))
