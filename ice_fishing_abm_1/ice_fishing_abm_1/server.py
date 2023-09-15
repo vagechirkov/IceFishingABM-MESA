@@ -3,6 +3,8 @@ import mesa
 from .model import Model
 from .visualization.CanvasGridVisualization import CustomCanvasGrid
 
+SHOW_ICONS = True
+
 
 def draw_grid(agent):
     """
@@ -14,7 +16,7 @@ def draw_grid(agent):
     if agent.is_sampling:
         portrayal = {
             # "Shape": "fisher-fishing.svg",
-            "Shape": "circle",
+            "Shape": "fisher-fishing.svg" if SHOW_ICONS else "circle",
             "Filled": "true",
             "Color": "red",
             "r": 0.8,
@@ -23,7 +25,7 @@ def draw_grid(agent):
     elif agent.is_moving:
         portrayal = {
             # "Shape": "fisher-moving.svg",
-            "Shape": "circle",
+            "Shape": "fisher-moving.svg" if SHOW_ICONS else "circle",
             "Filled": "true",
             "Color": "blue",
             "r": 0.8,
