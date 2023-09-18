@@ -57,8 +57,8 @@ if __name__ == "__main__":
 
     def agent_portrayal(agent):
         return {
-            "color": "tab:blue",
-            "size": 50,
+            "color": "tab:blue" if agent.is_moving else "tab:red",
+            "size": 30,
         }
 
 
@@ -83,6 +83,6 @@ if __name__ == "__main__":
     # start timer
     import time
     start = time.time()
-    plot_n_steps(viz_container=container, n_steps=1000)
+    plot_n_steps(viz_container=container, n_steps=200)
     end = time.time()
     print(f"Time elapsed: {end - start} seconds")
