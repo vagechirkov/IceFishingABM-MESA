@@ -84,9 +84,9 @@ if __name__ == "__main__":
 
 
     model_params = {
-        "grid_width": 40,
-        "grid_height": 40,
-        "number_of_agents": 5,
+        "grid_width": 100,
+        "grid_height": 100,
+        "number_of_agents": 1,
         "n_resource_clusters": 5,
         "exploration_threshold": 0.1,
         "prior_knowledge": 0.05,

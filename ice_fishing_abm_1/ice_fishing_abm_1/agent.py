@@ -3,8 +3,8 @@ from typing import Union
 import mesa
 import numpy as np
 
-from .environmental_information import discount_observations_by_distance, estimate_environment_peak, \
-    smooth_observations_with_gaussian_filter
+from .environmental_information import estimate_environment_peak
+from .utils import discount_by_distance, smooth_with_gaussian_filter
 from .social_information import estimate_social_vector
 
 
@@ -133,8 +133,8 @@ class Agent(mesa.Agent):
                 dy = y + int(np.round(social_vector[1])) * self.random.randint(1, 3)
         else:
             # estimate environmental vector
-            discounted_obs = discount_observations_by_distance(self.observations.copy(), self.pos, discount_factor=0.5)
-            smoothed_obs = smooth_observations_with_gaussian_filter(discounted_obs, sigma=2)
+            discounted_obs = discount_by_distance(self.observations.copy(), self.pos, discount_factor=0.5)
+            smoothed_obs = smooth_with_gaussian_filter(discounted_obs, sigma=2)
             environmental_peak = estimate_environment_peak(self.pos, smoothed_obs)
 
             # select destination based on the environmental peak
@@ -200,9 +200,9 @@ class Agent(mesa.Agent):
     def debug_plot(self):
         if self.unique_id == 1:
             self.model.agent_raw_observations = self.observations
-            discounted_obs = discount_observations_by_distance(self.observations.copy(), self.pos, discount_factor=0.5)
+            discounted_obs = discount_by_distance(self.observations.copy(), self.pos, discount_factor=0.5)
             self.model.agent_discounted_observations = discounted_obs / np.max(discounted_obs)
-            smoothed_obs = smooth_observations_with_gaussian_filter(discounted_obs, sigma=2)
+            smoothed_obs = smooth_with_gaussian_filter(discounted_obs, sigma=2)
             self.model.agent_smoothed_observations = smoothed_obs / np.max(smoothed_obs)
 
     def step(self):

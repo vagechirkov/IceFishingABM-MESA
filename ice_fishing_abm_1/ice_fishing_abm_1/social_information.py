@@ -8,3 +8,5 @@ def estimate_social_vector(agent_location: tuple[int, int], others_locations: li
         v = np.array(other_location) - np.array(agent_location)
         social_vector += v / np.linalg.norm(v)
     return social_vector
+
+
