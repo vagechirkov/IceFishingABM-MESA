@@ -33,6 +33,8 @@ class Agent(mesa.Agent):
         # how much does social information influence the agent relocation compared to environmental information?
         self.soc_influence_ratio: float = soc_influence_ratio
         self.soc_observations: np.ndarray = np.ndarray(shape=(model.grid.width, model.grid.height), dtype=float)
+        # fill observations with small value
+        self.soc_observations.fill(1e-6)
 
         # movement-related states
         self.is_moving: bool = False
@@ -102,6 +104,7 @@ class Agent(mesa.Agent):
         # finish sampling and update observations
         if len(self.sampling_sequence) == self.sampling_length:
             self.update_observations()
+            self.update_social_observations()
             self.is_sampling = False
 
     def update_observations(self):
@@ -133,10 +136,12 @@ class Agent(mesa.Agent):
         # get discounted smoothed personal observations
         discounted_obs = discount_by_distance(self.observations, self.pos, discount_factor=0.5)
         smoothed_obs = smooth_with_gaussian_filter(discounted_obs, sigma=2)
+        smoothed_obs /= np.max(smoothed_obs)
 
         # get discounted smoothed social observations
         discounted_soc_obs = discount_by_distance(self.soc_observations, self.pos, discount_factor=0.5)
         smoothed_soc_obs = smooth_with_gaussian_filter(discounted_soc_obs, sigma=2)
+        smoothed_soc_obs /= np.max(smoothed_soc_obs)
 
         # combine personal observations and social information
         relocation_map = smoothed_obs * (1 - self.soc_influence_ratio) + smoothed_soc_obs * self.soc_influence_ratio
@@ -201,11 +206,25 @@ class Agent(mesa.Agent):
 
     def debug_plot(self):
         if self.unique_id == 1:
+            # get discounted smoothed personal observations
             self.model.agent_raw_observations = self.observations
-            discounted_obs = discount_by_distance(self.observations.copy(), self.pos, discount_factor=0.5)
+            discounted_obs = discount_by_distance(self.observations, self.pos, discount_factor=0.5)
             self.model.agent_discounted_observations = discounted_obs / np.max(discounted_obs)
             smoothed_obs = smooth_with_gaussian_filter(discounted_obs, sigma=2)
-            self.model.agent_smoothed_observations = smoothed_obs / np.max(smoothed_obs)
+            smoothed_obs /= np.max(smoothed_obs)
+            self.model.agent_smoothed_observations = smoothed_obs
+
+            # get discounted smoothed social observations
+            self.model.agent_raw_soc_observations = self.soc_observations
+            discounted_soc_obs = discount_by_distance(self.soc_observations, self.pos, discount_factor=0.5)
+            self.model.agent_discounted_soc_observations = discounted_soc_obs / np.max(discounted_soc_obs)
+            smoothed_soc_obs = smooth_with_gaussian_filter(discounted_soc_obs, sigma=2)
+            smoothed_soc_obs /= np.max(smoothed_soc_obs)
+            self.model.agent_smoothed_soc_observations = smoothed_soc_obs
+
+            # combine personal observations and social information
+            relocation_map = smoothed_obs * (1 - self.soc_influence_ratio) + smoothed_soc_obs * self.soc_influence_ratio
+            self.model.relocation_map = relocation_map
 
     def step(self):
         self.choose_next_action()

@@ -55,6 +55,10 @@ class Model(mesa.Model):
             self.agent_raw_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
             self.agent_smoothed_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
             self.agent_discounted_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
+            self.agent_raw_soc_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
+            self.agent_discounted_soc_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
+            self.agent_smoothed_soc_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
+            self.relocation_map = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
 
         # Create agents
         for _ in range(self.number_of_agents):

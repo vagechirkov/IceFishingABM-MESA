@@ -53,20 +53,37 @@ agent_smoothed_observation_element = CustomCanvasGrid(
 agent_discounted_observation_element = CustomCanvasGrid(
     draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size, "agent_discounted_observations")
 
+agent_raw_soc_observation_element = CustomCanvasGrid(
+    draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size, "agent_raw_soc_observations")
+
+agent_smoothed_soc_observation_element = CustomCanvasGrid(
+    draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size, "agent_smoothed_soc_observations")
+
+agent_discounted_soc_observation_element = CustomCanvasGrid(
+    draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size, "agent_discounted_soc_observations")
+
+relocation_map = CustomCanvasGrid(
+    draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size, "relocation_map")
+
 model_params = {
     "grid_width": grid_size,
     "grid_height": grid_size,
     "visualization": True,
     "number_of_agents": mesa.visualization.Slider(
-        "The number of agents", value=1, min_value=1, max_value=10, step=1),
+        "The number of agents", value=5, min_value=1, max_value=10, step=1),
     "n_resource_clusters": mesa.visualization.Slider(
         "The number of resource clusters", value=3, min_value=1, max_value=5, step=1)
 
 }
 
-plots = [grid, agent_raw_observation_element,
+plots = [grid,
+         relocation_map,
+         agent_raw_observation_element,
          agent_discounted_observation_element,
          agent_smoothed_observation_element,
+         agent_raw_soc_observation_element,
+         agent_discounted_soc_observation_element,
+         agent_smoothed_soc_observation_element
          ]
 
 server = mesa.visualization.ModularServer(Model, plots, "Ice Fishing Model 1", model_params)
