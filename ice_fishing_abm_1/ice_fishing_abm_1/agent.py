@@ -44,6 +44,9 @@ class Agent(mesa.Agent):
         self.is_sampling: bool = False
         self.sampling_sequence: list[int, ...] = []
         self.observations: np.ndarray = np.ndarray(shape=(model.grid.width, model.grid.height), dtype=float)
+        # TODO: use a 3D array to store observations over time for each cell of the grid
+        # self.observations_full: np.ndarray = np.ndarray(
+        #     shape=(model.grid.width, model.grid.height, self.sampling_length), dtype=float)
         # fill observations with small value
         self.observations.fill(1e-6)
         self.collected_resource: int = 0
@@ -114,8 +117,8 @@ class Agent(mesa.Agent):
         x, y = self.pos
 
         # replace previous observation with the new observation
-        # NOTE: here we are assuming that agent completely forgets previous observations in the cell
-        self.observations[x, y] = np.mean(self.sampling_sequence)
+        # TODO: implement a proper running average
+        self.observations[x, y] = np.mean([np.mean(self.sampling_sequence), self.observations[x, y]])
 
         # reset sampling sequence
         self.sampling_sequence = []
