@@ -3,9 +3,7 @@ from typing import Union
 import mesa
 import numpy as np
 
-from .environmental_information import estimate_environment_peak
-from .utils import discount_by_distance, smooth_with_gaussian_filter
-from .social_information import estimate_social_vector
+from .utils import discount_by_distance, find_peak, smooth_with_gaussian_filter
 
 
 class Agent(mesa.Agent):
@@ -18,7 +16,9 @@ class Agent(mesa.Agent):
             social_influence_threshold: float = 1,
             exploration_threshold: float = 0.01,
             prior_knowledge: float = 0.05,
-            visualization: bool = False
+            visualization: bool = False,
+            vision_range: int = 1000,
+            soc_influence_ratio: float = 0.5
     ):
         super().__init__(unique_id, model)
 
@@ -29,6 +29,10 @@ class Agent(mesa.Agent):
         self.exploration_threshold: float = exploration_threshold  # choose a random destination with this probability
         self.prior_knowledge: float = prior_knowledge  # prior knowledge about the resource distribution
         self.visualization: bool = visualization
+        self.vision_range: int = vision_range  # how far can the agent see other agents
+        # how much does social information influence the agent relocation compared to environmental information?
+        self.soc_influence_ratio: float = soc_influence_ratio
+        self.soc_observations: np.ndarray = np.ndarray(shape=(model.grid.width, model.grid.height), dtype=float)
 
         # movement-related states
         self.is_moving: bool = False
@@ -114,33 +118,31 @@ class Agent(mesa.Agent):
         self.sampling_sequence = []
         self.is_sampling = False
 
-    def relocate(self):
+    def update_social_observations(self):
         # get neighboring agents
-        other_agents = self.model.grid.get_neighbors(self.pos, moore=True, include_center=False, radius=20)
+        other_agents = self.model.grid.get_neighbors(self.pos, moore=True, include_center=False,
+                                                     radius=self.vision_range)
+        # get discounted smoothed locations map of other agents
+        # TODO: use the observation history with the discount factor to incorporate the temporal aspect
+        self.soc_observations.fill(0)
+        for agent in other_agents:
+            if agent.is_sampling:
+                self.soc_observations[agent.pos] = 1
 
-        # estimate social vector
-        social_vector = estimate_social_vector(self.pos, [agent.pos for agent in other_agents])
+    def relocate(self):
+        # get discounted smoothed personal observations
+        discounted_obs = discount_by_distance(self.observations, self.pos, discount_factor=0.5)
+        smoothed_obs = smooth_with_gaussian_filter(discounted_obs, sigma=2)
 
-        if np.linalg.norm(social_vector) >= self.social_influence_threshold:
-            # choose a destination that is correlated with social vector
-            x, y = self.pos
-            dx = x + int(np.round(social_vector[0])) * self.random.randint(1, 3)
-            dy = y + int(np.round(social_vector[1])) * self.random.randint(1, 3)
+        # get discounted smoothed social observations
+        discounted_soc_obs = discount_by_distance(self.soc_observations, self.pos, discount_factor=0.5)
+        smoothed_soc_obs = smooth_with_gaussian_filter(discounted_soc_obs, sigma=2)
 
-            # make sure that the destination is not out of bounds
-            while self.model.grid.out_of_bounds((dx, dy)):
-                dx = x + int(np.round(social_vector[0])) * self.random.randint(1, 3)
-                dy = y + int(np.round(social_vector[1])) * self.random.randint(1, 3)
-        else:
-            # estimate environmental vector
-            discounted_obs = discount_by_distance(self.observations.copy(), self.pos, discount_factor=0.5)
-            smoothed_obs = smooth_with_gaussian_filter(discounted_obs, sigma=2)
-            environmental_peak = estimate_environment_peak(self.pos, smoothed_obs)
+        # combine personal observations and social information
+        relocation_map = smoothed_obs * (1 - self.soc_influence_ratio) + smoothed_soc_obs * self.soc_influence_ratio
 
-            # select destination based on the environmental peak
-            dx, dy = environmental_peak
-
-        # find the closest empty cell to the destination
+        # get the peak of the relocation map and find the closest empty cell to the destination
+        dx, dy = find_peak(relocation_map)
         self.destination = self.closest_empty_cell((dx, dy))
         self.is_moving = True
 

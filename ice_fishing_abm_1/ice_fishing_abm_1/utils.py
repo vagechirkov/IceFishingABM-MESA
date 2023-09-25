@@ -21,3 +21,12 @@ def discount_by_distance(array, agent_location, discount_factor=0.5):
 
     # discount observations by distance
     return array * discount_factor ** distance
+
+
+def find_peak(array: np.ndarray) -> tuple[int, ...]:
+    """
+    Find the maximum value of an array.
+    """
+    # get the location of the maximum value
+    max_location = np.unravel_index(np.argmax(array, axis=None), array.shape)
+    return max_location
