@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class Belief:
+class BernoulliBelief:
     def __init__(self, size: tuple[int, int]):
         self.belief_alpha = np.ones(shape=tuple(size), dtype=float)
         self.belief_beta = np.ones(shape=tuple(size), dtype=float)
@@ -29,10 +29,18 @@ class Belief:
         self.belief_alpha[location] = alpha + x
         self.belief_beta[location] = beta + 1 - x
 
-    def get_catch_mean(self):
+    def get_mean(self):
+        """
+        Get the mean of the belief distribution at the given location.
+        """
         return self.belief_alpha / (self.belief_alpha + self.belief_beta)
 
-
-
+    def get_variance(self):
+        """
+        Get the variance of the belief distribution at the given location.
+        """
+        alpha = self.belief_alpha
+        beta = self.belief_beta
+        return (alpha * beta) / ((alpha + beta) ** 2 * (alpha + beta + 1))
 
 
