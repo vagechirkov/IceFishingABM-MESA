@@ -43,9 +43,11 @@ class Agent(mesa.Agent):
         self.alpha_social: float = alpha_social  # how much does social information influence the agent relocation?
         self.alpha_env: float = alpha_env  # how much does environmental information influence the agent relocation?
         # how much does random exploration influence the agent relocation?
-        self.alpha_random: float = 1 - self.alpha_social - self.alpha_env
-        assert self.alpha_social + self.alpha_env + self.alpha_random == 1, \
-            'alpha_social + alpha_env + alpha_random must be equal to 1'
+        self.alpha_random = 1 - self.alpha_social - self.alpha_env if self.alpha_social + self.alpha_env < 1 else 0
+        # normalize the sum of the parameters to 1
+        self.alpha_social /= self.alpha_social + self.alpha_env + self.alpha_random
+        self.alpha_env /= self.alpha_social + self.alpha_env + self.alpha_random
+        self.alpha_random /= self.alpha_social + self.alpha_env + self.alpha_random
 
         # ---- debug parameters ----
         self.visualization: bool = visualization
