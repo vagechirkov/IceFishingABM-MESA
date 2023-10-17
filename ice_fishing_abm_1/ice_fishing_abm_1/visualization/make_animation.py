@@ -11,7 +11,25 @@ def draw_resource_distribution(model, ax):
         return
 
     # draw a heatmap of the resource distribution
-    sns.heatmap(model.resource_distribution.T, ax=ax, cmap='Greys', cbar=False, square=True, vmin=0, vmax=1, )
+    sns.heatmap(model.resource_distribution.T, ax=ax, cmap='Greys', cbar=False, square=True, vmin=0, vmax=1)
+
+
+def draw_agent_meso_belief(model, ax):
+    # select the agent with id 1
+    _agent = [a for a in model.schedule.agents if a.unique_id == 1][0]
+    if _agent.meso_belief is None:
+        return
+
+    ax.cla()
+    # draw a heatmap of the resource distribution
+    g = sns.heatmap(_agent.meso_belief.T, ax=ax, cmap='viridis', cbar=False, square=True)
+    # g.invert_yaxis()
+    # remove ticks
+    g.set_xticks([])
+    g.set_yticks([])
+    # remove tick labels
+    g.set_xticklabels([])
+    g.set_yticklabels([])
 
 
 def estimate_catch_rate(agent, model, previous_catch_rate: float = 0):
@@ -28,8 +46,10 @@ def estimate_catch_rate(agent, model, previous_catch_rate: float = 0):
 def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10):
     model = viz_container.model_class(**viz_container.model_params_input, **viz_container.model_params_fixed)
 
-    space_fig = Figure(figsize=(10, 10))
-    space_ax = space_fig.subplots()
+    space_fig = Figure(figsize=(20, 10.2))
+    axs = space_fig.subplots(ncols=2)
+    space_ax = axs[0]
+    belief = axs[1]
     space_fig.subplots_adjust(left=0, bottom=-0.05, right=1, top=1, wspace=None, hspace=None)
     space_ax.set_axis_off()
     # set limits to grid size
@@ -39,7 +59,6 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10):
     space_ax.set_aspect('equal', adjustable='box')
 
     draw_resource_distribution(model, space_ax)
-
     scatter = space_ax.scatter(**viz_container.portray(model.grid))
 
     def update_grid(_scatter, data):
@@ -61,6 +80,7 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10):
         catch_rates = [estimate_catch_rate(a, model, c) for a, c in zip(model.schedule.agents, catch_rates)]
         space_ax.set_title(f"Step {model.schedule.steps} | "
                            f"Catch rates " + ' '.join(['%.2f'] * len(catch_rates)) % tuple(catch_rates))
+        draw_agent_meso_belief(model, belief)
         return update_grid(scatter, viz_container.portray(model.grid))
 
     ani = animation.FuncAnimation(space_fig, animate, repeat=True, frames=n_steps, interval=400)
@@ -78,7 +98,7 @@ if __name__ == "__main__":
 
     def agent_portrayal(agent):
         return {
-            "color": "tab:blue" if agent.is_moving else "tab:red",
+            "color": "tab:orange" if agent.unique_id == 1 else "tab:blue" if agent.is_moving else "tab:red",
             "size": 30,
         }
 
@@ -86,13 +106,15 @@ if __name__ == "__main__":
     model_params = {
         "grid_width": 100,
         "grid_height": 100,
-        "number_of_agents": 1,
-        "n_resource_clusters": 5,
-        "exploration_threshold": 0.1,
+        "number_of_agents": 5,
+        "n_resource_clusters": 10,
         "prior_knowledge": 0.05,
         "sampling_length": 10,
-        "social_influence_threshold": 1,
-        "relocation_threshold": 0.4
+        "resource_cluster_radius": 20,
+        "relocation_threshold": 0.1,
+        "alpha_social": 0.4,
+        "alpha_env": 0.4,
+        "meso_grid_step": 10,
     }
     container = JupyterContainer(
         Model,
@@ -105,6 +127,6 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    plot_n_steps(viz_container=container, n_steps=400)
+    plot_n_steps(viz_container=container, n_steps=300)
     end = time.time()
     print(f"Time elapsed: {end - start} seconds")
