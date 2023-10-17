@@ -223,15 +223,15 @@ class Agent(mesa.Agent):
             self.sample()
 
         if not self.is_sampling and not self.is_moving:
-            # decide between local and global search
-            if self.local_search_count < self.local_search_counter:
-                # decide between exploitation and exploration
-                if self.observations[self.pos] < self.relocation_threshold:
-                    self.local_displacement()
-                    self.is_moving = True
-                else:
-                    self.is_sampling = True
-                    self.sample()
+            counter_done = self.local_search_count >= self.local_search_counter
+            good_spot_found = self.observations[self.pos] > self.relocation_threshold
+
+            if not counter_done or good_spot_found:
+                self.is_sampling = True
+                self.sample()
+            elif not counter_done and not good_spot_found:
+                self.local_displacement()
+                self.is_moving = True
             else:
                 self.global_displacement()
                 self.is_moving = True
