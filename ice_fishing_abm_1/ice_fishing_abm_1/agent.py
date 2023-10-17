@@ -13,6 +13,7 @@ class Agent(mesa.Agent):
             model,
             sampling_length: int = 10,
             relocation_threshold: float = 0.7,
+            local_search_counter: int = 4,
             meso_grid_step: int = 10,
             prior_knowledge: float = 0.05,
             alpha_social: float = 0.4,
@@ -27,7 +28,7 @@ class Agent(mesa.Agent):
 
         # ---- local search parameters ----
         self.relocation_threshold: float = relocation_threshold
-        self.local_search_counter: int = 4
+        self.local_search_counter: int = local_search_counter
 
         # ---- belief parameters ----
         self.meso_grid_step: int = meso_grid_step  # size of the meso-scale grid cells
@@ -217,22 +218,22 @@ class Agent(mesa.Agent):
 
         if self.is_sampling and not self.is_moving:
             self.sample()
-            return
 
-        # decide between local and global search
-        if self.local_search_count < self.local_search_counter:
-            # decide between exploitation and exploration
-            if self.observations[self.pos] < self.relocation_threshold:
-                self.local_displacement()
-                self.is_moving = True
+        if not self.is_sampling and not self.is_moving:
+            # decide between local and global search
+            if self.local_search_count < self.local_search_counter:
+                # decide between exploitation and exploration
+                if self.observations[self.pos] < self.relocation_threshold:
+                    self.local_displacement()
+                    self.is_moving = True
+                else:
+                    self.is_sampling = True
+                    self.sample()
             else:
-                self.is_sampling = True
-                self.sample()
-        else:
-            self.global_displacement()
-            self.is_moving = True
-            if self.visualization:
-                self.debug_plot()
+                self.global_displacement()
+                self.is_moving = True
+                if self.visualization:
+                    self.debug_plot()
 
         if self.is_moving and self.is_sampling:
             raise ValueError("Agent is both sampling and moving.")
