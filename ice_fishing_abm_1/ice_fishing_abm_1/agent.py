@@ -212,15 +212,6 @@ class Agent(mesa.Agent):
         """
         Choose the next action for the agent.
         """
-
-        # if this is the first step
-        if self.model.schedule.steps == 0:
-            self.global_displacement()
-            self.is_moving = True
-            if self.visualization:
-                self.debug_plot()
-            return
-
         if self.is_moving and not self.is_sampling:
             self.move()
             return
@@ -228,14 +219,14 @@ class Agent(mesa.Agent):
         if self.is_sampling and not self.is_moving:
             self.sample()
 
-        if not self.is_sampling and not self.is_moving:
+        if not self.is_sampling and not self.is_moving:  # this is also the case when the agent is initialized
             counter_done = self.local_search_count >= self.local_search_counter
             good_spot_found = self.observations[self.pos] > self.relocation_threshold
 
-            if not counter_done or good_spot_found:
+            if good_spot_found:
                 self.is_sampling = True
                 self.sample()
-            elif not counter_done and not good_spot_found:
+            elif not counter_done:
                 self.local_displacement()
                 self.is_moving = True
             else:
