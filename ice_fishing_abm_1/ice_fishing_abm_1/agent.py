@@ -141,9 +141,9 @@ class Agent(mesa.Agent):
         # TODO: use the observation history with the discount factor to incorporate the temporal aspect
         self.meso_soc_density.fill(0)
         for agent in other_agents:
-            # if agent.is_sampling:
-            x, y = agent.pos
-            self.meso_soc_density[x // self.meso_grid_step, y // self.meso_grid_step] += 1
+            if agent.is_sampling:
+                x, y = agent.pos
+                self.meso_soc_density[x // self.meso_grid_step, y // self.meso_grid_step] += 1
 
         # normalize to make the sum equal to 1
         # TODO: add information about social density on the previous step
@@ -152,8 +152,14 @@ class Agent(mesa.Agent):
     def update_meso_environmental_belief(self):
         x_slice, y_slice, meso_x, meso_y = self._micro_slice_from_meso()
         max_obs = np.max(self.observations[x_slice, y_slice])
+
+        # skip if the maximum observation < 1e-6
+        if max_obs < 0.1:
+            return
+
         # TODO: add information about the previous observation with the discount factor
-        self.meso_env_belief[meso_x, meso_y] = np.mean([max_obs, self.meso_env_belief[meso_x, meso_y]])
+        # np.mean([max_obs, self.meso_env_belief[meso_x, meso_y]])
+        self.meso_env_belief[meso_x, meso_y] += max_obs / (np.sum(self.meso_env_belief) + 1e-6)
 
         # normalize
         self.meso_env_belief /= np.sum(self.meso_env_belief) + 1e-6
