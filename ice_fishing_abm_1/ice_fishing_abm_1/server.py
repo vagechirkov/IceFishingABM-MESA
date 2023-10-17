@@ -41,29 +41,23 @@ grid_size = 20
 grid_canvas_size = 600
 
 grid = CustomCanvasGrid(draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size, "grid_colors")
-# chart_element = mesa.visualization.ChartModule(
-#     [{"Label": "Average collected resource", "Color": "#AA0000"}], canvas_width=400, canvas_height=100
-# )
+
+meso_grid_canvas_size = 120
+
 agent_raw_observation_element = CustomCanvasGrid(
-    draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size, "agent_raw_observations")
-
-agent_smoothed_observation_element = CustomCanvasGrid(
-    draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size, "agent_smoothed_observations")
-
-agent_discounted_observation_element = CustomCanvasGrid(
-    draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size, "agent_discounted_observations")
+    draw_grid, grid_size, grid_size, meso_grid_canvas_size, meso_grid_canvas_size, "agent_raw_observations")
 
 agent_raw_soc_observation_element = CustomCanvasGrid(
-    draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size, "agent_raw_soc_observations")
+    draw_grid, grid_size, grid_size, meso_grid_canvas_size, meso_grid_canvas_size, "agent_raw_soc_observations")
 
-agent_smoothed_soc_observation_element = CustomCanvasGrid(
-    draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size, "agent_smoothed_soc_observations")
+agent_raw_env_belief_element = CustomCanvasGrid(
+    draw_grid, grid_size, grid_size, meso_grid_canvas_size, meso_grid_canvas_size, "agent_raw_env_belief")
 
-agent_discounted_soc_observation_element = CustomCanvasGrid(
-    draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size, "agent_discounted_soc_observations")
+agent_raw_rand_array_element = CustomCanvasGrid(
+    draw_grid, grid_size, grid_size, meso_grid_canvas_size, meso_grid_canvas_size, "agent_raw_rand_array")
 
 relocation_map = CustomCanvasGrid(
-    draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size, "relocation_map")
+    draw_grid, grid_size, grid_size, meso_grid_canvas_size, meso_grid_canvas_size, "relocation_map")
 
 model_params = {
     "grid_width": grid_size,
@@ -77,13 +71,11 @@ model_params = {
 }
 
 plots = [grid,
-         relocation_map,
          agent_raw_observation_element,
-         agent_discounted_observation_element,
-         agent_smoothed_observation_element,
+         relocation_map,
          agent_raw_soc_observation_element,
-         agent_discounted_soc_observation_element,
-         agent_smoothed_soc_observation_element
+         agent_raw_env_belief_element,
+         agent_raw_rand_array_element,
          ]
 
 server = mesa.visualization.ModularServer(Model, plots, "Ice Fishing Model 1", model_params)

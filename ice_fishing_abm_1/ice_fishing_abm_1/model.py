@@ -15,26 +15,35 @@ class Model(mesa.Model):
             grid_height: int = 100,
             number_of_agents: int = 5,
             n_resource_clusters: int = 2,
+            resource_cluster_radius: int = 5,
             visualization: bool = False,
             sampling_length: int = 10,
             relocation_threshold: float = 0.7,
-            social_influence_threshold: float = 1,
-            exploration_threshold: float = 0.01,
-            prior_knowledge: float = 0.05
+            alpha_social: float = 0.4,
+            alpha_env: float = 0.4,
+            alpha_random: float = 0.2,
+            prior_knowledge: float = 0.05,
+            meso_grid_step: int = 10,
     ):
         super().__init__()
+        # set numpy random seed
+        np.random.seed(self.random.randint(0, 1000000))
+
         # parameters general
         self.number_of_agents: int = number_of_agents
         self.n_resource_clusters = n_resource_clusters
+        self.resource_cluster_radius = resource_cluster_radius
         self.visualization = visualization
         self.current_id = 0
 
         # agent parameters
         self.sampling_length: int = sampling_length
         self.relocation_threshold: float = relocation_threshold
-        self.social_influence_threshold: float = social_influence_threshold
-        self.exploration_threshold: float = exploration_threshold
+        self.alpha_social: float = alpha_social
+        self.alpha_env: float = alpha_env
+        self.alpha_random: float = alpha_random
         self.prior_knowledge: float = prior_knowledge
+        self.meso_grid_step: int = meso_grid_step
 
         # initialize grid, datacollector, schedule
         self.grid = MultiGrid(grid_width, grid_height, torus=False)
@@ -45,20 +54,22 @@ class Model(mesa.Model):
         self.schedule = mesa.time.RandomActivation(self)
 
         # initialize resource distribution
-        self.resource = ResourceDistribution(self, n_clusters=self.n_resource_clusters)
+        self.resource = ResourceDistribution(self,
+                                             n_clusters=self.n_resource_clusters,
+                                             cluster_radius=self.resource_cluster_radius,
+                                             noize_level=0.01)
         self.resource.generate_resource_map()
         self.resource_distribution = self.resource.resource_distribution
 
         # add resource distribution to grid colors for visualization
         if self.visualization:
+            shape = (self.grid.width, self.grid.height)
             self.grid_colors = self.resource_distribution
-            self.agent_raw_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
-            self.agent_smoothed_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
-            self.agent_discounted_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
-            self.agent_raw_soc_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
-            self.agent_discounted_soc_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
-            self.agent_smoothed_soc_observations = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
-            self.relocation_map = np.zeros(shape=(self.grid.width, self.grid.height), dtype=float)
+            self.agent_raw_observations = np.zeros(shape=shape, dtype=float)
+            self.agent_raw_env_belief = np.zeros(shape=shape, dtype=float)
+            self.agent_raw_soc_observations = np.zeros(shape=shape, dtype=float)
+            self.agent_raw_rand_array = np.zeros(shape=shape, dtype=float)
+            self.relocation_map = np.zeros(shape=shape, dtype=float)
 
         # Create agents
         for _ in range(self.number_of_agents):
@@ -74,29 +85,19 @@ class Model(mesa.Model):
         a = Agent(
             self.next_id(),
             self,
-            visualization=self.visualization,
             sampling_length=self.sampling_length,
             relocation_threshold=self.relocation_threshold,
-            social_influence_threshold=self.social_influence_threshold,
-            exploration_threshold=self.exploration_threshold,
-            prior_knowledge=self.prior_knowledge
+            meso_grid_step=self.meso_grid_step,
+            prior_knowledge=self.prior_knowledge,
+            alpha_social=self.alpha_social,
+            alpha_env=self.alpha_env,
+            alpha_random=self.alpha_random,
+            visualization=self.visualization
         )
 
         self.schedule.add(a)
-        x_center, y_center = self.grid.width // 2, self.grid.height // 2
-        n = self.grid.get_neighborhood((x_center, y_center), moore=True, include_center=True, radius=radius)
-
-        # select empty cells
-        empty_cells = [cell for cell in n if self.grid.is_cell_empty(cell)]
-
-        if len(empty_cells) == 0:
-            # print warning that multiple agents are being placed in the same cell
-            logging.warning("Multiple agents are being placed in the same cell for initialization.")
-            # select random cell (even if it is not empty)
-            cell = self.random.choice(n)
-        else:
-            # select random empty cell
-            cell = self.random.choice(empty_cells)
+        # find a random location
+        cell = (self.random.randint(0, self.grid.width - 1), self.random.randint(0, self.grid.height - 1))
 
         # place agent
         self.grid.place_agent(a, cell)
