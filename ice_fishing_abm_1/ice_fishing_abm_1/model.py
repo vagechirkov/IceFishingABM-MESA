@@ -19,9 +19,9 @@ class Model(mesa.Model):
             visualization: bool = False,
             sampling_length: int = 10,
             relocation_threshold: float = 0.7,
+            local_search_counter: int = 4,
             alpha_social: float = 0.4,
             alpha_env: float = 0.4,
-            alpha_random: float = 0.2,
             prior_knowledge: float = 0.05,
             meso_grid_step: int = 10,
     ):
@@ -39,9 +39,9 @@ class Model(mesa.Model):
         # agent parameters
         self.sampling_length: int = sampling_length
         self.relocation_threshold: float = relocation_threshold
+        self.local_search_counter: int = local_search_counter
         self.alpha_social: float = alpha_social
         self.alpha_env: float = alpha_env
-        self.alpha_random: float = alpha_random
         self.prior_knowledge: float = prior_knowledge
         self.meso_grid_step: int = meso_grid_step
 
@@ -87,11 +87,11 @@ class Model(mesa.Model):
             self,
             sampling_length=self.sampling_length,
             relocation_threshold=self.relocation_threshold,
+            local_search_counter=self.local_search_counter,
             meso_grid_step=self.meso_grid_step,
             prior_knowledge=self.prior_knowledge,
             alpha_social=self.alpha_social,
             alpha_env=self.alpha_env,
-            alpha_random=self.alpha_random,
             visualization=self.visualization
         )
 

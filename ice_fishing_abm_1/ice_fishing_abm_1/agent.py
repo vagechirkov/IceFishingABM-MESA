@@ -18,7 +18,6 @@ class Agent(mesa.Agent):
             prior_knowledge: float = 0.05,
             alpha_social: float = 0.4,
             alpha_env: float = 0.4,
-            alpha_random: float = 0.2,
             visualization: bool = False,
     ):
         super().__init__(unique_id, model)
@@ -43,8 +42,10 @@ class Agent(mesa.Agent):
         # ---- global displacement parameters ----
         self.alpha_social: float = alpha_social  # how much does social information influence the agent relocation?
         self.alpha_env: float = alpha_env  # how much does environmental information influence the agent relocation?
-        self.alpha_random: float = alpha_random  # how much does random exploration influence the agent relocation?
-        assert self.alpha_social + self.alpha_env + self.alpha_random == 1
+        # how much does random exploration influence the agent relocation?
+        self.alpha_random: float = 1 - self.alpha_social - self.alpha_env
+        assert self.alpha_social + self.alpha_env + self.alpha_random == 1, \
+            'alpha_social + alpha_env + alpha_random must be equal to 1'
 
         # ---- debug parameters ----
         self.visualization: bool = visualization
