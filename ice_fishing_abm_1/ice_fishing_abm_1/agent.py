@@ -187,7 +187,7 @@ class Agent(mesa.Agent):
         self.update_meso_beliefs()
 
         # get the peak of the relocation map and find the closest empty cell to the destination
-        dx, dy = find_peak(self.meso_belief)
+        dy, dx = find_peak(self.meso_belief)
         rand_x = dx * self.meso_grid_step + self.model.random.randint(0, self.meso_grid_step - 1)
         rand_y = dy * self.meso_grid_step + self.model.random.randint(0, self.meso_grid_step - 1)
         self.destination = self._closest_empty_cell((rand_x, rand_y))
