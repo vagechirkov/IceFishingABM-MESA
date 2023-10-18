@@ -11,7 +11,7 @@ def draw_resource_distribution(model, ax):
         return
 
     # draw a heatmap of the resource distribution
-    sns.heatmap(model.resource_distribution.T, ax=ax, cmap='Greys', cbar=False, square=True, vmin=0, vmax=1)
+    sns.heatmap(model.resource_distribution.T, ax=ax, cmap='Greys', cbar=False, square=True, vmin=-0.2, vmax=1)
 
 
 def draw_agent_meso_belief(model, ax):
@@ -22,7 +22,7 @@ def draw_agent_meso_belief(model, ax):
 
     ax.cla()
     # draw a heatmap of the resource distribution
-    g = sns.heatmap(_agent.meso_belief.T, ax=ax, cmap='viridis', cbar=False, square=True)
+    g = sns.heatmap(_agent.meso_belief, ax=ax, cmap='viridis', cbar=False, square=True)
     # g.invert_yaxis()
     # remove ticks
     g.set_xticks([])
@@ -50,7 +50,7 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10):
     axs = space_fig.subplots(ncols=2)
     space_ax = axs[0]
     belief = axs[1]
-    space_fig.subplots_adjust(left=0, bottom=-0.05, right=1, top=1, wspace=None, hspace=None)
+    space_fig.subplots_adjust(left=0, bottom=-0.05, right=1, top=1, wspace=0, hspace=None)
     space_ax.set_axis_off()
     # set limits to grid size
     space_ax.set_xlim(0, model.grid.width)
@@ -60,6 +60,8 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10):
 
     draw_resource_distribution(model, space_ax)
     scatter = space_ax.scatter(**viz_container.portray(model.grid))
+
+    plt.tight_layout()
 
     def update_grid(_scatter, data):
         coords = np.array(list(zip(data["x"], data["y"])))
@@ -95,26 +97,26 @@ if __name__ == "__main__":
     from ice_fishing_abm_1.ice_fishing_abm_1.model import Model
     from mesa.experimental.jupyter_viz import JupyterContainer
 
-
     def agent_portrayal(agent):
         return {
             "color": "tab:orange" if agent.unique_id == 1 else "tab:blue" if agent.is_moving else "tab:red",
-            "size": 30,
+            "size": 200,
         }
 
 
     model_params = {
-        "grid_width": 100,
-        "grid_height": 100,
+        "grid_width": 50,
+        "grid_height": 50,
         "number_of_agents": 5,
-        "n_resource_clusters": 10,
+        "n_resource_clusters": 3,
         "prior_knowledge": 0.05,
         "sampling_length": 10,
-        "resource_cluster_radius": 20,
+        "resource_cluster_radius": 10,
         "relocation_threshold": 0.1,
-        "alpha_social": 0.4,
-        "alpha_env": 0.4,
+        "alpha_social": 0,
+        "alpha_env": 1,
         "meso_grid_step": 10,
+        "local_search_counter": 1
     }
     container = JupyterContainer(
         Model,
