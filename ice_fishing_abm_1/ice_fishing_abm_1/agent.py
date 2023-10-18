@@ -153,16 +153,8 @@ class Agent(mesa.Agent):
         x_slice, y_slice, meso_x, meso_y = self._micro_slice_from_meso()
         max_obs = np.max(self.observations[x_slice, y_slice])
 
-        # skip if the maximum observation < 1e-6
-        if max_obs < 0.1:
-            return
-
         # TODO: add information about the previous observation with the discount factor
-        # np.mean([max_obs, self.meso_env_belief[meso_x, meso_y]])
-        self.meso_env_belief[meso_x, meso_y] += max_obs / (np.sum(self.meso_env_belief) + 1e-6)
-
-        # normalize
-        self.meso_env_belief /= np.sum(self.meso_env_belief) + 1e-6
+        self.meso_env_belief[meso_x, meso_y] = np.mean([max_obs, self.meso_env_belief[meso_x, meso_y]])
 
     def update_meso_random_preference(self):
         # generate random values for the preferences
@@ -178,7 +170,7 @@ class Agent(mesa.Agent):
 
         # combine beliefs
         self.meso_belief = self.alpha_social * self.meso_soc_density + \
-                           self.alpha_env * self.meso_env_belief + \
+                           self.alpha_env * (self.meso_env_belief / (np.sum(self.meso_env_belief) + 1e-6)) + \
                            self.alpha_random * self.meso_rand_array
 
         _, _, meso_x, meso_y = self._micro_slice_from_meso()
