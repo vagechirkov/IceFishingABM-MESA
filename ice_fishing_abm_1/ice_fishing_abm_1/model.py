@@ -6,6 +6,7 @@ from mesa.space import MultiGrid
 
 from .agent import Agent
 from .resource_distribution import ResourceDistribution
+from .space import MultiMicroMesoGrid
 
 
 class Model(mesa.Model):
@@ -46,7 +47,7 @@ class Model(mesa.Model):
         self.meso_grid_step: int = meso_grid_step
 
         # initialize grid, datacollector, schedule
-        self.grid = MultiGrid(grid_width, grid_height, torus=False)
+        self.grid = MultiMicroMesoGrid(grid_width, grid_height, torus=False, meso_scale_step=self.meso_grid_step)
         self.datacollector = mesa.datacollection.DataCollector(
             # agent_reporters={"Collected resource": lambda a: a.collected_resource}
             model_reporters={"Collected resource": lambda m: np.mean([a.collected_resource for a in m.schedule.agents])}
