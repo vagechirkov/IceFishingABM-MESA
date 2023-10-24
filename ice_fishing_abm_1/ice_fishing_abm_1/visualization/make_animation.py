@@ -12,24 +12,17 @@ def draw_resource_distribution(model, ax):
         return
 
     # draw a heatmap of the resource distribution
-    sns.heatmap(model.resource_distribution.T, ax=ax, cmap='Greys', cbar=False, square=True, vmin=-0.2, vmax=1)
+    sns.heatmap(model.resource_distribution, ax=ax, cmap='Greys', cbar=False, square=True, vmin=-0.2, vmax=1)
 
 
-def draw_agent_meso_belief(model, ax, var_name):
+def draw_agent_meso_belief(model, ax, var_name, vmix=None, vmax=None, cmap='viridis'):
     # select the agent with id 1
     _agent = [a for a in model.schedule.agents if a.unique_id == 1][0]
     var = getattr(_agent, var_name)
 
     ax.cla()
     # draw a heatmap of the resource distribution
-    g = sns.heatmap(var, ax=ax, cmap='viridis', cbar=False, square=True)
-    # g.invert_yaxis()
-    # remove ticks
-    g.set_xticks([])
-    g.set_yticks([])
-    # remove tick labels
-    g.set_xticklabels([])
-    g.set_yticklabels([])
+    g = sns.heatmap(var, ax=ax, cmap=cmap, cbar=False, square=True, vmin=vmix, vmax=vmax)
 
 
 def estimate_catch_rate(agent, model, previous_catch_rate: float = 0):
@@ -50,17 +43,15 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10, interval: i
     gs = GridSpec(2, 3, figure=space_fig, wspace=0.08, hspace=0.08,
                   width_ratios=[1, 0.5, 0.5], height_ratios=[1, 1], left=0.02, right=0.98, top=0.96, bottom=0.04)
     space_ax = space_fig.add_subplot(gs[:, 0])
-    space_ax.set_axis_off()
-    space_ax.set_aspect('equal', adjustable='box')
 
     observations_ax = space_fig.add_subplot(gs[0, 1])
-    observations_ax.set_aspect('equal')
     env_belief_ax = space_fig.add_subplot(gs[0, 2])
-    env_belief_ax.set_aspect('equal')
     soc_info_ax = space_fig.add_subplot(gs[1, 1])
-    soc_info_ax.set_aspect('equal')
     combined_ax = space_fig.add_subplot(gs[1, 2])
-    combined_ax.set_aspect('equal')
+
+    # remove axis for all ax
+    # for ax in [space_ax, observations_ax, env_belief_ax, soc_info_ax, combined_ax]:
+    #     ax.set_axis_off()
 
     draw_resource_distribution(model, space_ax)
     scatter = space_ax.scatter(**viz_container.portray(model.grid))
@@ -88,9 +79,9 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10, interval: i
                            f"Catch rates " + ' '.join(['%.2f'] * len(catch_rates)) % tuple(catch_rates))
         draw_agent_meso_belief(model, soc_info_ax, "meso_soc")
         soc_info_ax.set_title("Social information")
-        draw_agent_meso_belief(model, env_belief_ax, "meso_env")
+        draw_agent_meso_belief(model, env_belief_ax, "meso_env", vmix=-0.2, vmax=0.5, cmap='Greys')
         env_belief_ax.set_title("Environmental belief")
-        draw_agent_meso_belief(model, observations_ax, "observations")
+        draw_agent_meso_belief(model, observations_ax, "observations", vmix=-0.2, vmax=0.5, cmap='Greys')
         observations_ax.set_title("Observations")
         draw_agent_meso_belief(model, combined_ax, "meso_combined")
         combined_ax.set_title("Combined")
@@ -119,13 +110,15 @@ if __name__ == "__main__":
     model_params = {
         "grid_width": 50,
         "grid_height": 50,
-        "number_of_agents": 5,
-        "n_resource_clusters": 3,
+        "number_of_agents": 1,
+        "n_resource_clusters": 1,
         "sampling_length": 10,
         "resource_cluster_radius": 10,
         "relocation_threshold": 0.1,
         "meso_grid_step": 10,
-        "local_search_counter": 1
+        "local_search_counter": 1,
+        "w_social": 0,
+        "w_personal": 1,
     }
     container = JupyterContainer(
         Model,
@@ -138,6 +131,6 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    plot_n_steps(viz_container=container, n_steps=10, interval=800)
+    plot_n_steps(viz_container=container, n_steps=200, interval=800)
     end = time.time()
     print(f"Time elapsed: {end - start} seconds")
