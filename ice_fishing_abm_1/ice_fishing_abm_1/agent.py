@@ -182,7 +182,6 @@ class Agent(mesa.Agent):
 
     def update_meso_beliefs(self):
         self.update_meso_social_density()
-        self.update_meso_environmental_belief()
         env_info = self.normalize(self._array_meso_env)
         random_preference = self.generate_random_preference()
 
@@ -196,8 +195,6 @@ class Agent(mesa.Agent):
         self._array_meso_combined = self.normalize(belief_discounted)
 
     def global_displacement(self):
-        self.update_meso_beliefs()
-
         # get the peak of the relocation map and find the closest empty cell to the destination
         di, dj = find_peak(self._array_meso_combined)
         dx, dy = self.model.grid.x_y_to_i_j(di, dj)
@@ -222,6 +219,10 @@ class Agent(mesa.Agent):
             self.sample()
 
         if not self._is_sampling and not self._is_moving:  # this is also the case when the agent is initialized
+            # if the first step
+            if self.model.schedule.steps == 0:
+                self.update_meso_beliefs()
+
             counter_done = self._local_search_count >= self.local_search_counter
             i, j = self.model.grid.x_y_to_i_j(*self.pos)
             good_spot_found = self._array_observations[i, j] > self.relocation_threshold
@@ -233,6 +234,7 @@ class Agent(mesa.Agent):
                 self.local_displacement()
                 self._is_moving = True
             else:
+                self.update_meso_beliefs()
                 self.global_displacement()
                 self._is_moving = True
 
