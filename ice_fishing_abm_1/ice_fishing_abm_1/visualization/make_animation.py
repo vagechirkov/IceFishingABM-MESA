@@ -2,6 +2,7 @@ import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
+from matplotlib.gridspec import GridSpec
 from mesa.experimental.jupyter_viz import JupyterContainer
 import seaborn as sns
 
@@ -14,15 +15,14 @@ def draw_resource_distribution(model, ax):
     sns.heatmap(model.resource_distribution.T, ax=ax, cmap='Greys', cbar=False, square=True, vmin=-0.2, vmax=1)
 
 
-def draw_agent_meso_belief(model, ax):
+def draw_agent_meso_belief(model, ax, var_name):
     # select the agent with id 1
     _agent = [a for a in model.schedule.agents if a.unique_id == 1][0]
-    if _agent.meso_belief is None:
-        return
+    var = getattr(_agent, var_name)
 
     ax.cla()
     # draw a heatmap of the resource distribution
-    g = sns.heatmap(_agent.meso_belief, ax=ax, cmap='viridis', cbar=False, square=True)
+    g = sns.heatmap(var, ax=ax, cmap='viridis', cbar=False, square=True)
     # g.invert_yaxis()
     # remove ticks
     g.set_xticks([])
@@ -33,30 +33,34 @@ def draw_agent_meso_belief(model, ax):
 
 
 def estimate_catch_rate(agent, model, previous_catch_rate: float = 0):
-    if agent.is_moving:
+    if agent._is_moving:
         return 0
 
     # estimate catch rate
-    if len(agent.sampling_sequence) >= model.sampling_length - 1:
-        return np.mean(agent.sampling_sequence)
+    if len(agent._sampling_sequence) >= model.sampling_length - 1:
+        return np.mean(agent._sampling_sequence)
     else:
         return previous_catch_rate
 
 
-def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10):
+def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10, interval: int = 400):
     model = viz_container.model_class(**viz_container.model_params_input, **viz_container.model_params_fixed)
 
-    space_fig = Figure(figsize=(20, 10.2))
-    axs = space_fig.subplots(ncols=2)
-    space_ax = axs[0]
-    belief = axs[1]
-    space_fig.subplots_adjust(left=0, bottom=-0.05, right=1, top=1, wspace=0, hspace=None)
+    space_fig = Figure(figsize=(13, 7))
+    gs = GridSpec(2, 3, figure=space_fig, wspace=0.08, hspace=0.08,
+                  width_ratios=[1, 0.5, 0.5], height_ratios=[1, 1], left=0.02, right=0.98, top=0.96, bottom=0.04)
+    space_ax = space_fig.add_subplot(gs[:, 0])
     space_ax.set_axis_off()
-    # set limits to grid size
-    space_ax.set_xlim(0, model.grid.width)
-    space_ax.set_ylim(0, model.grid.height)
-    # set equal aspect ratio
     space_ax.set_aspect('equal', adjustable='box')
+
+    observations_ax = space_fig.add_subplot(gs[0, 1])
+    observations_ax.set_aspect('equal')
+    env_belief_ax = space_fig.add_subplot(gs[0, 2])
+    env_belief_ax.set_aspect('equal')
+    soc_info_ax = space_fig.add_subplot(gs[1, 1])
+    soc_info_ax.set_aspect('equal')
+    combined_ax = space_fig.add_subplot(gs[1, 2])
+    combined_ax.set_aspect('equal')
 
     draw_resource_distribution(model, space_ax)
     scatter = space_ax.scatter(**viz_container.portray(model.grid))
@@ -82,10 +86,17 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10):
         catch_rates = [estimate_catch_rate(a, model, c) for a, c in zip(model.schedule.agents, catch_rates)]
         space_ax.set_title(f"Step {model.schedule.steps} | "
                            f"Catch rates " + ' '.join(['%.2f'] * len(catch_rates)) % tuple(catch_rates))
-        draw_agent_meso_belief(model, belief)
+        draw_agent_meso_belief(model, soc_info_ax, "meso_soc")
+        soc_info_ax.set_title("Social information")
+        draw_agent_meso_belief(model, env_belief_ax, "meso_env")
+        env_belief_ax.set_title("Environmental belief")
+        draw_agent_meso_belief(model, observations_ax, "observations")
+        observations_ax.set_title("Observations")
+        draw_agent_meso_belief(model, combined_ax, "meso_combined")
+        combined_ax.set_title("Combined")
         return update_grid(scatter, viz_container.portray(model.grid))
 
-    ani = animation.FuncAnimation(space_fig, animate, repeat=True, frames=n_steps, interval=400)
+    ani = animation.FuncAnimation(space_fig, animate, repeat=True, frames=n_steps, interval=interval)
 
     # To save the animation using Pillow as a gif
     writer = animation.PillowWriter(fps=10, metadata=dict(artist='Me'), bitrate=1800)
@@ -97,10 +108,11 @@ if __name__ == "__main__":
     from ice_fishing_abm_1.ice_fishing_abm_1.model import Model
     from mesa.experimental.jupyter_viz import JupyterContainer
 
+
     def agent_portrayal(agent):
         return {
-            "color": "tab:orange" if agent.unique_id == 1 else "tab:blue" if agent.is_moving else "tab:red",
-            "size": 200,
+            "color": "tab:orange" if agent.unique_id == 1 else "tab:blue" if agent._is_moving else "tab:red",
+            "size": 150,
         }
 
 
@@ -109,12 +121,9 @@ if __name__ == "__main__":
         "grid_height": 50,
         "number_of_agents": 5,
         "n_resource_clusters": 3,
-        "prior_knowledge": 0.05,
         "sampling_length": 10,
         "resource_cluster_radius": 10,
         "relocation_threshold": 0.1,
-        "alpha_social": 0,
-        "alpha_env": 1,
         "meso_grid_step": 10,
         "local_search_counter": 1
     }
@@ -129,6 +138,6 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    plot_n_steps(viz_container=container, n_steps=300)
+    plot_n_steps(viz_container=container, n_steps=10, interval=800)
     end = time.time()
     print(f"Time elapsed: {end - start} seconds")

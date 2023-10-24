@@ -62,15 +62,19 @@ class Agent(mesa.Agent):
 
     @property
     def meso_soc(self):
-        return np.kron(self._meso_soc, np.ones((self.model.grid.meso_step, self.model.grid.meso_step)))
+        return np.kron(self._meso_soc, np.ones((self.model.grid.meso_scale_step, self.model.grid.meso_scale_step)))
 
     @property
     def meso_env(self):
-        return np.kron(self._meso_env, np.ones((self.model.grid.meso_step, self.model.grid.meso_step)))
+        return np.kron(self._meso_env, np.ones((self.model.grid.meso_scale_step, self.model.grid.meso_scale_step)))
 
     @property
     def meso_combined(self):
-        return np.kron(self._meso_combined, np.ones((self.model.grid.meso_step, self.model.grid.meso_step)))
+        return np.kron(self._meso_combined, np.ones((self.model.grid.meso_scale_step, self.model.grid.meso_scale_step)))
+
+    @property
+    def observations(self):
+        return self._observations.copy()
 
     @property
     def is_moving(self):
@@ -159,7 +163,7 @@ class Agent(mesa.Agent):
 
     def update_meso_environmental_belief(self):
         meso_x, meso_y = self.meso_pos
-        max_obs = np.max(self._observations[*self.model.grid.micro_slice_from_meso(meso_x, meso_y)])
+        max_obs = np.max(self._observations[*self.model.grid.micro_slice_from_meso_coordinate(meso_x, meso_y)])
 
         # TODO: add information about the previous observation with the discount factor
         self._meso_env[meso_x, meso_y] = np.mean([max_obs, self._meso_env[meso_x, meso_y]])
@@ -245,7 +249,7 @@ class Agent(mesa.Agent):
         return [cell for cell in neighbors if self.model.grid.is_cell_empty(cell)]
 
     def _get_random_micro_cell_in_meso_grid(self, meso_x: int, meso_y: int):
-        slice_x, slice_y = self.model.grid.micro_slice_from_meso(meso_x, meso_y)
+        slice_x, slice_y = self.model.grid.micro_slice_from_meso_coordinate(meso_x, meso_y)
         x = self.model.random.randint(slice_x.start, slice_x.stop - 1)
         y = self.model.random.randint(slice_y.start, slice_y.stop - 1)
         return self._closest_empty_cell((x, y))
