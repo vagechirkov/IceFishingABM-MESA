@@ -243,6 +243,10 @@ class Agent(mesa.Agent):
         self.choose_next_action()
 
     def _closest_empty_cell(self, destination: tuple[int, int]):
+        # check if the destination is empty
+        if self.model.grid.is_cell_empty(destination):
+            return destination
+
         radius = 2
         empty_cells = self._get_empty_cells(destination, radius)
 
@@ -259,8 +263,8 @@ class Agent(mesa.Agent):
     def _get_random_micro_cell_in_meso_grid(self, meso_x: int, meso_y: int):
         # TODO: check if it is okay if x and y are switched
         slice_x, slice_y = self.model.grid.micro_slice_from_meso_coordinate(meso_x, meso_y)
-        x = self.model.random.randint(slice_x.start, slice_x.stop - 1)
-        y = self.model.random.randint(slice_y.start, slice_y.stop - 1)
+        x = self.model.random.randint(slice_x.start + 1, slice_x.stop - 1)
+        y = self.model.random.randint(slice_y.start + 1, slice_y.stop - 1)
         return self._closest_empty_cell((x, y))
 
     @staticmethod
