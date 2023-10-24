@@ -20,13 +20,14 @@ def draw_agent_meso_belief(model, ax, var_name, vmix=None, vmax=None, cmap='viri
     _agent = [a for a in model.schedule.agents if a.unique_id == 1][0]
     var = getattr(_agent, var_name)
 
-    ax.cla()
+    ax.clear()
     # draw a heatmap of the resource distribution
-    g = sns.heatmap(var, ax=ax, cmap=cmap, cbar=False, square=True, vmin=vmix, vmax=vmax)
+    sns.heatmap(var, ax=ax, cmap=cmap, cbar=False, square=True, vmin=vmix, vmax=vmax)
+    ax.set_axis_off()
 
 
 def estimate_catch_rate(agent, model, previous_catch_rate: float = 0):
-    if agent._is_moving:
+    if agent.is_moving:
         return 0
 
     # estimate catch rate
@@ -43,15 +44,14 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10, interval: i
     gs = GridSpec(2, 3, figure=space_fig, wspace=0.08, hspace=0.08,
                   width_ratios=[1, 0.5, 0.5], height_ratios=[1, 1], left=0.02, right=0.98, top=0.96, bottom=0.04)
     space_ax = space_fig.add_subplot(gs[:, 0])
-
     observations_ax = space_fig.add_subplot(gs[0, 1])
     env_belief_ax = space_fig.add_subplot(gs[0, 2])
     soc_info_ax = space_fig.add_subplot(gs[1, 1])
     combined_ax = space_fig.add_subplot(gs[1, 2])
 
-    # remove axis for all ax
-    # for ax in [space_ax, observations_ax, env_belief_ax, soc_info_ax, combined_ax]:
-    #     ax.set_axis_off()
+    # remove axis
+    for ax in space_fig.get_axes():
+        ax.set_axis_off()
 
     draw_resource_distribution(model, space_ax)
     scatter = space_ax.scatter(**viz_container.portray(model.grid))
@@ -111,14 +111,14 @@ if __name__ == "__main__":
         "grid_width": 50,
         "grid_height": 50,
         "number_of_agents": 1,
-        "n_resource_clusters": 1,
+        "n_resource_clusters": 5,
         "sampling_length": 10,
         "resource_cluster_radius": 10,
         "relocation_threshold": 0.1,
         "meso_grid_step": 10,
-        "local_search_counter": 1,
+        "local_search_counter": 4,
         "w_social": 0,
-        "w_personal": 1,
+        "w_personal": 0.8,
     }
     container = JupyterContainer(
         Model,
@@ -131,6 +131,6 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    plot_n_steps(viz_container=container, n_steps=200, interval=800)
+    plot_n_steps(viz_container=container, n_steps=250, interval=800)
     end = time.time()
     print(f"Time elapsed: {end - start} seconds")
