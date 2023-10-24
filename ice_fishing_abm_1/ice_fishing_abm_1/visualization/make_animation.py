@@ -25,6 +25,9 @@ def draw_agent_meso_belief(model, ax, var_name, vmix=None, vmax=None, cmap='viri
     sns.heatmap(var, ax=ax, cmap=cmap, cbar=False, square=True, vmin=vmix, vmax=vmax)
     ax.set_axis_off()
 
+    if _agent.is_moving and _agent._destination is not None and model.number_of_agents == 1:
+        ax.scatter(*_agent._destination, color='tab:red', s=150, marker='x')
+
 
 def estimate_catch_rate(agent, model, previous_catch_rate: float = 0):
     if agent.is_moving:
@@ -131,6 +134,6 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    plot_n_steps(viz_container=container, n_steps=250, interval=800)
+    plot_n_steps(viz_container=container, n_steps=200, interval=800)
     end = time.time()
     print(f"Time elapsed: {end - start} seconds")
