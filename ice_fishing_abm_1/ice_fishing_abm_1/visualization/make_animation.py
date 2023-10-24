@@ -25,8 +25,14 @@ def draw_agent_meso_belief(model, ax, var_name, vmix=None, vmax=None, cmap='viri
     sns.heatmap(var, ax=ax, cmap=cmap, cbar=False, square=True, vmin=vmix, vmax=vmax)
     ax.set_axis_off()
 
+    # draw meso grid
+    h_lines = np.arange(0, model.grid.width, model.meso_grid_step)
+    v_lines = np.arange(0, model.grid.height, model.meso_grid_step)
+    ax.hlines(h_lines, *ax.get_xlim(), color='white', linewidth=0.5)
+    ax.vlines(v_lines, *ax.get_ylim(), color='white', linewidth=0.5)
+
     if _agent.is_moving and _agent._destination is not None and model.number_of_agents == 1:
-        ax.scatter(*_agent._destination, color='tab:red', s=150, marker='x')
+        ax.scatter(*_agent._destination, color='tab:red', s=20, marker='x')
 
 
 def estimate_catch_rate(agent, model, previous_catch_rate: float = 0):
@@ -81,13 +87,13 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10, interval: i
         space_ax.set_title(f"Step {model.schedule.steps} | "
                            f"Catch rates " + ' '.join(['%.2f'] * len(catch_rates)) % tuple(catch_rates))
         draw_agent_meso_belief(model, soc_info_ax, "meso_soc")
-        soc_info_ax.set_title("Social information")
+        soc_info_ax.set_title("Social Density")
         draw_agent_meso_belief(model, env_belief_ax, "meso_env", vmix=-0.2, vmax=0.5, cmap='Greys')
-        env_belief_ax.set_title("Environmental belief")
+        env_belief_ax.set_title("Environmental Belief")
         draw_agent_meso_belief(model, observations_ax, "observations", vmix=-0.2, vmax=0.5, cmap='Greys')
         observations_ax.set_title("Observations")
         draw_agent_meso_belief(model, combined_ax, "meso_combined")
-        combined_ax.set_title("Combined")
+        combined_ax.set_title("Combined Belief")
         return update_grid(scatter, viz_container.portray(model.grid))
 
     ani = animation.FuncAnimation(space_fig, animate, repeat=True, frames=n_steps, interval=interval)
