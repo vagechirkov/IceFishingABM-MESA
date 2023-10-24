@@ -14,10 +14,10 @@ class Agent(mesa.Agent):
             sampling_length: int = 10,
             relocation_threshold: float = 0.7,
             local_search_counter: int = 4,
-            meso_grid_step: int = 10,
-            prior_knowledge: float = 0.05,
-            alpha_social: float = 0.4,
-            alpha_env: float = 0.4,
+            prior_knowledge_corr: float = 0.5,
+            prior_knowledge_noize: float = 0.3,
+            w_social: float = 0.4,
+            w_personal: float = 0.4,
             visualization: bool = False,
     ):
         super().__init__(unique_id, model)
@@ -29,25 +29,12 @@ class Agent(mesa.Agent):
         self.relocation_threshold: float = relocation_threshold
         self.local_search_counter: int = local_search_counter
 
-        # ---- belief parameters ----
-        self.meso_grid_step: int = meso_grid_step  # size of the meso-scale grid cells
-        assert self.model.grid.width % self.meso_grid_step == 0, \
-            'grid width must be divisible by meso scale grid step'
-        assert self.model.grid.height % self.meso_grid_step == 0, \
-            'grid height must be divisible by meso scale grid step'
-        self.meso_grid_width: int = self.model.grid.width // self.meso_grid_step
-        self.meso_grid_height: int = self.model.grid.height // self.meso_grid_step
-        self.prior_knowledge: float = prior_knowledge
+        # ---- prior knowledge parameters ----
+        self.prior_knowledge_corr: float = prior_knowledge_corr
+        self.prior_knowledge_noize: float = prior_knowledge_noize
 
-        # ---- global displacement parameters ----
-        self.alpha_social: float = alpha_social  # how much does social information influence the agent relocation?
-        self.alpha_env: float = alpha_env  # how much does environmental information influence the agent relocation?
-        # how much does random exploration influence the agent relocation?
-        self.alpha_random = 1 - self.alpha_social - self.alpha_env if self.alpha_social + self.alpha_env < 1 else 0
-        # normalize the sum of the parameters to 1
-        self.alpha_social /= self.alpha_social + self.alpha_env + self.alpha_random
-        self.alpha_env /= self.alpha_social + self.alpha_env + self.alpha_random
-        self.alpha_random /= self.alpha_social + self.alpha_env + self.alpha_random
+        # ---- global displacement weights ----
+        self.w_soc, self.w_env, self.w_rand = self._information_weights(w_social, w_personal)
 
         # ---- debug parameters ----
         self.visualization: bool = visualization
@@ -230,18 +217,6 @@ class Agent(mesa.Agent):
         if self.is_moving and self.is_sampling:
             raise ValueError("Agent is both sampling and moving.")
 
-    def debug_plot(self):
-        if self.unique_id == 1:
-            self.model.agent_raw_observations = self.observations
-
-            kron_shape = (self.meso_grid_step, self.meso_grid_step)
-            d_type = self.meso_belief.dtype
-
-            self.model.relocation_map = np.kron(self.meso_belief, np.ones(kron_shape, dtype=d_type))
-            self.model.agent_raw_soc_observations = np.kron(self.meso_soc_density, np.ones(kron_shape, dtype=d_type))
-            self.model.agent_raw_env_belief = np.kron(self.meso_env_belief, np.ones(kron_shape, dtype=d_type))
-            self.model.agent_raw_rand_array = np.kron(self.meso_rand_array, np.ones(kron_shape, dtype=d_type))
-
     def step(self):
         self.choose_next_action()
 
@@ -268,3 +243,33 @@ class Agent(mesa.Agent):
     def _get_empty_cells(self, destination, radius=1):
         neighbors = self.model.grid.get_neighborhood(destination, moore=True, include_center=True, radius=radius)
         return [cell for cell in neighbors if self.model.grid.is_cell_empty(cell)]
+
+    @staticmethod
+    def _information_weights(w_soc: float, w_env: float) -> tuple[float, float, float]:
+        """
+        Calculate the weights of the social and environmental information for the current step.
+
+        :param w_soc: The weight of the social information.
+        :param w_env: The weight of the environmental information.
+        :return: The weights of the social and environmental information.
+        """
+        assert -1 <= w_soc <= 1, "The weight of the social information must be between -1 and 1."
+        assert 0 <= w_env <= 1, "The weight of the environmental information must be between 0 and 1."
+
+        w_rand = 1 - w_soc - w_env if w_soc + w_env < 1 else 0
+        sum_weights = w_soc + w_env + w_rand
+        w_soc, w_env, w_rand = w_soc / sum_weights, w_env / sum_weights, w_rand / sum_weights
+
+        return w_soc, w_env, w_rand
+
+    def debug_plot(self):
+        if self.unique_id == 1:
+            self.model.agent_raw_observations = self._observations
+
+            kron_shape = (self.meso_grid_step, self.meso_grid_step)
+            d_type = self._meso_belief.dtype
+
+            self.model.relocation_map = np.kron(self._meso_belief, np.ones(kron_shape, dtype=d_type))
+            self.model.agent_raw_soc_observations = np.kron(self._meso_soc, np.ones(kron_shape, dtype=d_type))
+            self.model.agent_raw_env_belief = np.kron(self._meso_env, np.ones(kron_shape, dtype=d_type))
+            self.model.agent_raw_rand_array = np.kron(self._meso_rand_array, np.ones(kron_shape, dtype=d_type))
