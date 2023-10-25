@@ -88,7 +88,30 @@ class Agent(mesa.Agent):
         return self._is_sampling
 
     def update_observations_with_prior_knowledge(self):
-        self._array_meso_env.fill(0.1)
+        if self.prior_knowledge_corr == 0:
+            # flat prior knowledge
+            self._array_meso_env.fill(0.1)
+        else:
+            # mean-pooling resource distribution
+            # SEE:https://stackoverflow.com/questions/42463172/how-to-perform-max-mean-pooling-on-a-2d-array-using-numpy
+            # Getting shape of matrix
+            M, N = self.model.resource_distribution.shape
+
+            # Shape of kernel
+            K = self.model.grid.meso_scale_step
+            L = self.model.grid.meso_scale_step
+
+            # Dividing the image size by kernel size
+            MK = M // K
+            NL = N // L
+
+            # Creating a pool
+            meso_resource = self.model.resource_distribution[:MK*K, :NL*L].reshape(MK, K, NL, L).mean(axis=(1, 3))
+
+            # add noise
+            meso_resource += np.random.random(size=meso_resource.shape) * self.prior_knowledge_noize
+
+            self._array_meso_env = meso_resource
 
     def move(self):
         """
