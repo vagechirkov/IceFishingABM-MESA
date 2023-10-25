@@ -229,7 +229,7 @@ class Agent(mesa.Agent):
 
             if good_spot_found:
                 self._is_sampling = True
-                self.sample()
+                # self.sample()
             elif not counter_done:
                 self.local_displacement()
                 self._is_moving = True
