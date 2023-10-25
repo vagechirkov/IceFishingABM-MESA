@@ -1,8 +1,5 @@
-import logging
-
 import mesa
 import numpy as np
-from mesa.space import MultiGrid
 
 from .agent import Agent
 from .resource_distribution import ResourceDistribution
@@ -17,13 +14,13 @@ class Model(mesa.Model):
             number_of_agents: int = 5,
             n_resource_clusters: int = 2,
             resource_cluster_radius: int = 5,
-            visualization: bool = False,
             sampling_length: int = 10,
             relocation_threshold: float = 0.7,
             local_search_counter: int = 4,
-            alpha_social: float = 0.4,
-            alpha_env: float = 0.4,
-            prior_knowledge: float = 0.05,
+            prior_knowledge_corr: float = 0.0,
+            prior_knowledge_noize: float = 0.2,
+            w_social: float = 0.4,
+            w_personal: float = 0.4,
             meso_grid_step: int = 10,
     ):
         super().__init__()
@@ -34,23 +31,24 @@ class Model(mesa.Model):
         self.number_of_agents: int = number_of_agents
         self.n_resource_clusters = n_resource_clusters
         self.resource_cluster_radius = resource_cluster_radius
-        self.visualization = visualization
         self.current_id = 0
 
         # agent parameters
         self.sampling_length: int = sampling_length
         self.relocation_threshold: float = relocation_threshold
         self.local_search_counter: int = local_search_counter
-        self.alpha_social: float = alpha_social
-        self.alpha_env: float = alpha_env
-        self.prior_knowledge: float = prior_knowledge
+        self.prior_knowledge_corr: float = prior_knowledge_corr
+        self.prior_knowledge_noize: float = prior_knowledge_noize
+        self.w_social: float = w_social
+        self.w_personal: float = w_personal
         self.meso_grid_step: int = meso_grid_step
 
         # initialize grid, datacollector, schedule
         self.grid = MultiMicroMesoGrid(grid_width, grid_height, torus=False, meso_scale_step=self.meso_grid_step)
         self.datacollector = mesa.datacollection.DataCollector(
             # agent_reporters={"Collected resource": lambda a: a.collected_resource}
-            model_reporters={"Collected resource": lambda m: np.mean([a.collected_resource for a in m.schedule.agents])}
+            model_reporters={
+                "Collected resource": lambda m: np.mean([a._collected_resource for a in m.schedule.agents])}
         )
         self.schedule = mesa.time.RandomActivation(self)
 
@@ -61,17 +59,6 @@ class Model(mesa.Model):
                                              noize_level=0.01)
         self.resource.generate_resource_map()
         self.resource_distribution = self.resource.resource_distribution
-
-        # add resource distribution to grid colors for visualization
-        if self.visualization:
-            shape = (self.grid.width, self.grid.height)
-            self.grid_colors = self.resource_distribution
-            self.agent_raw_observations = np.zeros(shape=shape, dtype=float)
-            self.agent_raw_env_belief = np.zeros(shape=shape, dtype=float)
-            self.agent_raw_soc_observations = np.zeros(shape=shape, dtype=float)
-            self.agent_raw_rand_array = np.zeros(shape=shape, dtype=float)
-            self.relocation_map = np.zeros(shape=shape, dtype=float)
-
         # Create agents
         for _ in range(self.number_of_agents):
             self.initialize_agent()
@@ -89,11 +76,10 @@ class Model(mesa.Model):
             sampling_length=self.sampling_length,
             relocation_threshold=self.relocation_threshold,
             local_search_counter=self.local_search_counter,
-            meso_grid_step=self.meso_grid_step,
-            prior_knowledge=self.prior_knowledge,
-            alpha_social=self.alpha_social,
-            alpha_env=self.alpha_env,
-            visualization=self.visualization
+            prior_knowledge_corr=self.prior_knowledge_corr,
+            prior_knowledge_noize=self.prior_knowledge_noize,
+            w_social=self.w_social,
+            w_personal=self.w_personal,
         )
 
         self.schedule.add(a)
