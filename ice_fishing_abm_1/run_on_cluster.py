@@ -14,16 +14,16 @@ if __name__ == "__main__":
         "n_resource_clusters": 5,
         "resource_cluster_radius": 10,
         "relocation_threshold": 0.1,
-        "prior_knowledge_corr": [0, 1],
+        "prior_knowledge_corr": 0,
         "prior_knowledge_noize": 0.1,
         "sampling_length": 2,
-        "w_social": np.arange(0, 0.5, 0.005),
-        "w_personal": np.arange(0, 1, 0.01),
+        "w_social": np.arange(0, 0.5, 0.01),
+        "w_personal": np.arange(0, 1, 0.05),
         "meso_grid_step": 10,
         "local_search_counter": 5
     }
 
-    n_repetitions = 1000
+    n_repetitions = 500
     n_steps = 1000
 
     results = mesa.batch_run(

@@ -23,3 +23,8 @@ pip install -r dev_requirements.txt
 * [Fisher](https://www.svgrepo.com/svg/36567/fisher)
 * [Ice skating](https://www.svgrepo.com/svg/116117/ice-skating)
 * [Jackhammer](https://www.svgrepo.com/svg/233732/jackhammer)
+
+
+## Run simulation on the cluster
+
+Speed:~ 177 runs/s ~ 10k runs/min
