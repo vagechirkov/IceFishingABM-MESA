@@ -13,6 +13,11 @@ def draw_resource_distribution(model, ax):
 
     # draw a heatmap of the resource distribution
     sns.heatmap(model.resource_distribution, ax=ax, cmap='Greys', cbar=False, square=True, vmin=-0.2, vmax=1)
+    # draw meso grid
+    h_lines = np.arange(0, model.grid.width, model.meso_grid_step)
+    v_lines = np.arange(0, model.grid.height, model.meso_grid_step)
+    ax.hlines(h_lines, *ax.get_xlim(), color='white', linewidth=0.5)
+    ax.vlines(v_lines, *ax.get_ylim(), color='white', linewidth=0.5)
 
 
 def draw_agent_meso_belief(model, ax, var_name, vmix=None, vmax=None, cmap='viridis'):
@@ -121,13 +126,16 @@ if __name__ == "__main__":
         "grid_height": 50,
         "number_of_agents": 1,
         "n_resource_clusters": 5,
-        "sampling_length": 10,
-        "resource_cluster_radius": 10,
+        "resource_quality": 0.1,
+        "sampling_length": 2,
+        "resource_cluster_radius": 3,
         "relocation_threshold": 0.1,
         "meso_grid_step": 10,
-        "local_search_counter": 4,
+        "local_search_counter": 5,
         "w_social": 0,
-        "w_personal": 0.8,
+        "w_personal": 1,
+        "prior_knowledge_corr": 1,
+        "prior_knowledge_noize": 0.1,
     }
     container = JupyterContainer(
         Model,
@@ -140,6 +148,6 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    plot_n_steps(viz_container=container, n_steps=200, interval=800)
+    plot_n_steps(viz_container=container, n_steps=10, interval=800)
     end = time.time()
     print(f"Time elapsed: {end - start} seconds")

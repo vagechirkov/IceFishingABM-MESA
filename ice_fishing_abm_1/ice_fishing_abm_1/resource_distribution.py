@@ -23,21 +23,12 @@ class ResourceDistribution:
         self.cluster_radius = cluster_radius
         self.noize_level = noize_level
         self.resource_distribution = np.zeros(shape=(self.model.grid.width, self.model.grid.height), dtype=float)
-        self.cluster_radius = self.model.grid.width // self.cluster_radius
         self.centers = self.make_cluster_centers(n_clusters=self.n_clusters, cluster_radius=self.cluster_radius)
 
     def generate_resource_map(self):
 
         for center in self.centers:
-            one_cluster = make_resource_cluster(
-                width=self.cluster_radius * 2,
-                height=self.cluster_radius * 2,
-                cluster_std=self.cluster_std,
-                cov=np.array([[1, 0], [0, 1]]),
-                min_value=self.min_value,
-                max_value=self.max_value,
-                uniform=True
-            )
+            one_cluster = make_circle_cluster(radius=self.cluster_radius, max_value=self.max_value)
 
             # add the cluster to the resource distribution
             x, y = center
@@ -81,6 +72,16 @@ class ResourceDistribution:
             if np.all(np.linalg.norm(np.array(centers) - np.array((x, y)), axis=-1) > cluster_radius):
                 centers.append((x, y))
         return tuple(centers)
+
+
+def make_circle_cluster(radius: int, max_value: float = 1):
+    # generate a grid of points
+    x, y = np.meshgrid(np.linspace(-radius, radius, radius * 2), np.linspace(-radius, radius, radius * 2))
+
+    # points in the circle have max_value, points outside have 0
+    resource_map = np.zeros(x.shape)
+    resource_map[np.sqrt(x ** 2 + y ** 2) < radius - 1] = max_value
+    return resource_map
 
 
 def make_resource_cluster(width: int,
