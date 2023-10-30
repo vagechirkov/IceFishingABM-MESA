@@ -28,12 +28,14 @@ pip install -r dev_requirements.txt
 Speed:~ 177 runs/s ~ 10k runs/min
 
 ```bash
-
-cd /mesa-simulations/IceFishingABM-MESA
-
 tmux list-sessions 
 
 tmux attach # attach to the session or create a new one if it does not exist: tmux
+
+cd /mesa-simulations/IceFishingABM-MESA
+
+git fetch
+git pull
 
 bash run.sh # run the simulation
 
