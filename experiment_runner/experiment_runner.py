@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import logging
 import os
 from pathlib import Path
@@ -11,8 +11,7 @@ from visualization.plot_params import plot_two_params, prepare_heatmap
 
 
 def _make_folder_name(name: str) -> str:
-    today = datetime.date.today()
-    folder_name = today.strftime("%Y-%m-%d-%H-%M") + "_" + name.lower().replace(" ", "_")
+    folder_name = datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + "_" + name.lower().replace(" ", "_")
     return folder_name
 
 
