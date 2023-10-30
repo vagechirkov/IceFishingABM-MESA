@@ -22,11 +22,11 @@ PARAMS = {
     "relocation_threshold": 0.1,
     "prior_knowledge_corr": 0,
     "prior_knowledge_noize": 0.1,
-    "sampling_length": 2,
+    "sampling_length": np.arange(1, 10, 1),
     "w_social": 0,
     "w_personal": 1,
     "meso_grid_step": 10,
-    "local_search_counter": 5
+    "local_search_counter": np.arange(1, 10, 1)
 }
 
 META_PARAMS = {
