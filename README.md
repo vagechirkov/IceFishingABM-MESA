@@ -1,6 +1,5 @@
 # IceFishingABM-MESA
 
-
 ## Installation Instructions
 
 ```bash
@@ -24,7 +23,18 @@ pip install -r dev_requirements.txt
 * [Ice skating](https://www.svgrepo.com/svg/116117/ice-skating)
 * [Jackhammer](https://www.svgrepo.com/svg/233732/jackhammer)
 
-
 ## Run simulation on the cluster
 
 Speed:~ 177 runs/s ~ 10k runs/min
+
+```bash
+
+cd /mesa-simulations/IceFishingABM-MESA
+
+tmux list-sessions 
+
+tmux attach # attach to the session or create a new one if it does not exist: tmux
+
+bash run.sh # run the simulation
+
+```
