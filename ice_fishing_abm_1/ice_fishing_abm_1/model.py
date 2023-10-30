@@ -13,6 +13,7 @@ class Model(mesa.Model):
             grid_height: int = 100,
             number_of_agents: int = 5,
             n_resource_clusters: int = 2,
+            resource_quality: float = 0.8,
             resource_cluster_radius: int = 5,
             sampling_length: int = 10,
             relocation_threshold: float = 0.7,
@@ -29,9 +30,12 @@ class Model(mesa.Model):
 
         # parameters general
         self.number_of_agents: int = number_of_agents
+        self.current_id = 0
+
+        # resource parameters
         self.n_resource_clusters = n_resource_clusters
         self.resource_cluster_radius = resource_cluster_radius
-        self.current_id = 0
+        self.resource_quality = resource_quality
 
         # agent parameters
         self.sampling_length: int = sampling_length
@@ -56,7 +60,8 @@ class Model(mesa.Model):
         self.resource = ResourceDistribution(self,
                                              n_clusters=self.n_resource_clusters,
                                              cluster_radius=self.resource_cluster_radius,
-                                             noize_level=0.01)
+                                             noize_level=0,
+                                             max_value=self.resource_quality)
         self.resource.generate_resource_map()
         self.resource_distribution = self.resource.resource_distribution
         # Create agents

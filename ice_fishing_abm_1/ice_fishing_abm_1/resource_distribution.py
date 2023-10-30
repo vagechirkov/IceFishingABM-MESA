@@ -34,6 +34,8 @@ class ResourceDistribution:
                 height=self.cluster_radius * 2,
                 cluster_std=self.cluster_std,
                 cov=np.array([[1, 0], [0, 1]]),
+                min_value=self.min_value,
+                max_value=self.max_value,
                 uniform=True
             )
 
