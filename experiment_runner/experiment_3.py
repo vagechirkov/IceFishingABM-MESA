@@ -33,11 +33,14 @@ META_PARAMS = {
 }
 
 for sampling_length in [2, 10]:
-    for r_quality in [0.5]:
-        for prior in [0, 1]:
-            PARAMS["w_social"] = np.arange(0, 0.105, 0.005)
-            PARAMS["w_personal"] = np.arange(0, 1.05, 0.05)
-            PARAMS["prior_knowledge_corr"] = prior
-            PARAMS["resource_quality"] = r_quality
-            n = NAME + f"_{prior}_resource_quality_{r_quality}"
-            run_experiment(name=n, params=PARAMS, meta_params=META_PARAMS, model=model)
+    for local_search_counter in [2, 5, 8, 11]:
+        for r_quality in [0.3, 0.5]:
+            for prior in [0, 1]:
+                PARAMS["w_social"] = np.arange(0, 0.105, 0.005)
+                PARAMS["w_personal"] = np.arange(0, 1.05, 0.05)
+                PARAMS["prior_knowledge_corr"] = prior
+                PARAMS["resource_quality"] = r_quality
+                PARAMS["sampling_length"] = sampling_length
+                PARAMS["local_search_counter"] = local_search_counter
+                n = NAME + f"_{prior}_resource_quality_{r_quality}"
+                run_experiment(name=n, params=PARAMS, meta_params=META_PARAMS, model=model)
