@@ -1,3 +1,7 @@
+"""
+Date 30.10.2023
+"""
+
 import numpy as np
 
 from experiment_runner.experiment_runner import run_experiment
