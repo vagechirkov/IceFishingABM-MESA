@@ -32,9 +32,11 @@ META_PARAMS = {
     "n_steps": 1000,
 }
 
-for prior in [0, 1]:
-    PARAMS["w_social"] = np.arange(0, 0.11, 0.01)
-    PARAMS["w_personal"] = np.arange(0, 1.1, 0.1)
-    PARAMS["prior_knowledge_corr"] = prior
-    n = NAME + f"_{prior}"
-    run_experiment(name=n, params=PARAMS, meta_params=META_PARAMS, model=model)
+for r_quality in [0.3, 0.5, 0.8]:
+    for prior in [0, 1]:
+        PARAMS["w_social"] = np.arange(0, 0.105, 0.005)
+        PARAMS["w_personal"] = np.arange(0, 1.05, 0.05)
+        PARAMS["prior_knowledge_corr"] = prior
+        PARAMS["resource_quality"] = r_quality
+        n = NAME + f"_{prior}_resource_quality_{r_quality}"
+        run_experiment(name=n, params=PARAMS, meta_params=META_PARAMS, model=model)
