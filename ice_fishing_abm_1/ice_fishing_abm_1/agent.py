@@ -14,6 +14,8 @@ class Agent(mesa.Agent):
             sampling_length: int = 10,
             relocation_threshold: float = 0.7,
             local_search_counter: int = 4,
+            local_learning_rate: float = 0.5,
+            meso_learning_rate: float = 0.5,
             prior_knowledge_corr: float = 0.5,
             prior_knowledge_noize: float = 0.3,
             w_social: float = 0.4,
@@ -27,6 +29,10 @@ class Agent(mesa.Agent):
         # ---- local search parameters ----
         self.relocation_threshold: float = relocation_threshold
         self.local_search_counter: int = local_search_counter
+
+        # ---- learning parameters ----
+        self.local_learning_rate: float = local_learning_rate
+        self.meso_learning_rate: float = meso_learning_rate
 
         # ---- prior knowledge parameters ----
         self.prior_knowledge_corr: float = prior_knowledge_corr
@@ -106,7 +112,7 @@ class Agent(mesa.Agent):
             NL = N // L
 
             # Creating a pool
-            meso_resource = self.model.resource_distribution[:MK*K, :NL*L].reshape(MK, K, NL, L).mean(axis=(1, 3))
+            meso_resource = self.model.resource_distribution[:MK * K, :NL * L].reshape(MK, K, NL, L).mean(axis=(1, 3))
 
             # add noise
             meso_resource += np.random.random(size=meso_resource.shape) * self.prior_knowledge_noize
@@ -167,9 +173,11 @@ class Agent(mesa.Agent):
         """
         i, j = self.model.grid.x_y_to_i_j(*self.pos)
 
-        # replace previous observation with the new observation
-        # TODO: implement a proper running average
-        self._array_observations[i, j] = np.mean([np.mean(self._sampling_sequence), self._array_observations[i, j]])
+        # update observations
+        old_observation = self._array_observations[i, j]
+        new_observation = np.mean(self._sampling_sequence)
+        time_difference = new_observation - old_observation
+        self._array_observations[i, j] = old_observation + self.local_learning_rate * time_difference
 
     def update_meso_social_density(self):
         # get neighboring agents
@@ -190,11 +198,12 @@ class Agent(mesa.Agent):
     def update_meso_environmental_belief(self):
         meso_i, meso_j = self.model.grid.x_y_to_i_j(*self.meso_pos)
         i, j = self.model.grid.x_y_to_i_j(*self.pos)
-        # max_obs = np.max(self._observations[*self.model.grid.micro_slice_from_meso_coordinate(meso_x, meso_y)])
-        last_obs = self._array_observations[i, j]
 
-        # TODO: add information about the previous observation with the discount factor
-        self._array_meso_env[meso_i, meso_j] = np.mean([last_obs, self._array_meso_env[meso_i, meso_j]])
+        # update observations
+        old_observation = self._array_meso_env[meso_i, meso_j]
+        new_observation = self._array_observations[i, j]
+        time_difference = new_observation - old_observation
+        self._array_meso_env[meso_i, meso_j] = old_observation + self.meso_learning_rate * time_difference
 
     def generate_random_preference(self):
         # generate random values for the preferences

@@ -117,7 +117,7 @@ if __name__ == "__main__":
     def agent_portrayal(agent):
         return {
             "color": "tab:orange" if agent.unique_id == 1 else "tab:blue" if agent._is_moving else "tab:red",
-            "size": 150,
+            "size": 100,
         }
 
 
@@ -126,7 +126,7 @@ if __name__ == "__main__":
         "grid_height": 50,
         "number_of_agents": 1,
         "n_resource_clusters": 5,
-        "resource_quality": 0.1,
+        "resource_quality": 0.8,
         "sampling_length": 2,
         "resource_cluster_radius": 3,
         "relocation_threshold": 0.1,
@@ -136,6 +136,8 @@ if __name__ == "__main__":
         "w_personal": 1,
         "prior_knowledge_corr": 1,
         "prior_knowledge_noize": 0.1,
+        "local_learning_rate": 0.5,
+        "meso_learning_rate": 0.5,
     }
     container = JupyterContainer(
         Model,
@@ -148,6 +150,6 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    plot_n_steps(viz_container=container, n_steps=10, interval=800)
+    plot_n_steps(viz_container=container, n_steps=100, interval=800)
     end = time.time()
     print(f"Time elapsed: {end - start} seconds")
