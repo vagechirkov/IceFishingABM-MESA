@@ -30,10 +30,10 @@ META_PARAMS = {
     "n_steps": 1000,
 }
 
-for s_w in np.arange(0, 0.1, 0.01):
+for s_w in [0, 0.05, 0.1, 0.2, 0.3]:
     PARAMS["w_personal"] = 1
     PARAMS["w_social"] = s_w
-    PARAMS["sampling_length"] = np.arange(1, 10, 1)
-    PARAMS["resource_quality"] = np.arange(0.1, 0.7, 0.1)
+    PARAMS["sampling_length"] = np.arange(1, 15, 1)
+    PARAMS["resource_quality"] = np.arange(0.1, 1, 0.05)
     n = NAME + f"_{round(s_w, 3)}"
     run_experiment(name=n, params=PARAMS, meta_params=META_PARAMS, model=model)
