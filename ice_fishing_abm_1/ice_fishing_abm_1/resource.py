@@ -1,4 +1,5 @@
 import mesa
+import numpy as np
 
 
 class Resource(mesa.Agent):
@@ -29,9 +30,7 @@ class Resource(mesa.Agent):
         """Add one resource to the closest neighbor"""
         neighbours = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False,
                                                       radius=self.neighborhood_radius)
-
         resources = []
-
         for neighbour in neighbours:
             for agent in self.model.grid.get_cell_list_contents([neighbour]):
                 if isinstance(agent, Resource):
@@ -43,11 +42,21 @@ class Resource(mesa.Agent):
             closest_resource = min(resources, key=lambda x: self.model.grid.get_distance(self.pos, x.pos))
             closest_resource.current_value += 1
 
+    def place_resource(self, pos: tuple[int, int]):
+        self.model.grid.place_agent(self, pos)
+
     def step(self):
         pass
 
-    def resource_map(self):
+    def resource_map(self) -> np.ndarray:
         size_x, size_y = self.model.grid.width, self.model.grid.height
-        # NB: ij vs xy coordinates
-        x, y = self.pos
-        return NotImplementedError
+        # NB: ij = yx coordinates
+        j, i = self.pos
+        # create a meshgrid
+        x, y = np.meshgrid(np.arange(size_x), np.arange(size_y))
+
+        # draw a circle
+        circle = (x - i) ** 2 + (y - j) ** 2 <= self.radius ** 2
+
+        # return a resource map
+        return circle.astype(float) * self.catch_probability()
