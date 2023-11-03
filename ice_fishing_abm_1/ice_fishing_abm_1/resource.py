@@ -42,9 +42,6 @@ class Resource(mesa.Agent):
             closest_resource = min(resources, key=lambda x: self.model.grid.get_distance(self.pos, x.pos))
             closest_resource.current_value += 1
 
-    def place_resource(self, pos: tuple[int, int]):
-        self.model.grid.place_agent(self, pos)
-
     def step(self):
         pass
 
@@ -60,3 +57,23 @@ class Resource(mesa.Agent):
 
         # return a resource map
         return circle.astype(float) * self.catch_probability()
+
+
+def make_resource_centers(model, n_clusters: int = 1, cluster_radius: int = 5) -> tuple[tuple[int, int], ...]:
+    """make sure that the cluster centers are not too close together"""
+    centers = []
+
+    while len(centers) < n_clusters:
+        x = model.random.randint(cluster_radius, model.grid.width - cluster_radius)
+        y = model.random.randint(cluster_radius, model.grid.height - cluster_radius)
+
+        if len(centers) == 0:
+            centers.append((x, y))
+            continue
+
+        # TODO: fix this to avoid infinite loop in the case when it is not possible to add a new center far enough
+        # TODO: from the existing centers
+        # check if the new center is not too close to any of the existing centers
+        if np.all(np.linalg.norm(np.array(centers) - np.array((x, y)), axis=-1) > cluster_radius):
+            centers.append((x, y))
+    return tuple(centers)

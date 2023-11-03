@@ -2,7 +2,7 @@ import mesa
 import numpy as np
 
 from .agent import Agent
-from .resource_distribution import ResourceDistribution
+from .resource import Resource, make_resource_centers
 from .space import MultiMicroMesoGrid
 
 
@@ -61,24 +61,27 @@ class Model(mesa.Model):
         self.schedule = mesa.time.RandomActivation(self)
 
         # initialize resource distribution
-        self.resource = ResourceDistribution(self,
-                                             n_clusters=self.n_resource_clusters,
-                                             cluster_radius=self.resource_cluster_radius,
-                                             noize_level=0,
-                                             max_value=self.resource_quality)
-        self.resource.generate_resource_map()
-        self.resource_distribution = self.resource.resource_distribution
+        self.initialize_resource()
         # Create agents
         for _ in range(self.number_of_agents):
             self.initialize_agent()
 
-    def initialize_agent(self, radius: int = 1) -> None:
-        """
-        Create an agent and add it to the schedule and grid at a random empty cell in the center of the grid.
+    def initialize_resource(self):
+        centers = make_resource_centers(self, self.n_resource_clusters, self.resource_cluster_radius)
+        for center in centers:
+            r = Resource(
+                self.next_id(),
+                self,
+                radius=5,
+                max_value=self.resource_quality,
+                current_value=self.resource_quality,
+                keep_overall_abundance=True,
+                neighborhood_radius=20,
+            )
+            self.schedule.add(r)
+            self.grid.place_agent(r, center)
 
-        :param radius: The distance from the center of the grid to place the agent.
-        """
-        assert radius > 0, "Radius must be greater than 0."
+    def initialize_agent(self, radius: int = 1) -> None:
         a = Agent(
             self.next_id(),
             self,
