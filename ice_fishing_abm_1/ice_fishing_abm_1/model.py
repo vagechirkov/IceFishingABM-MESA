@@ -1,3 +1,5 @@
+from typing import Union
+
 import mesa
 import numpy as np
 
@@ -13,7 +15,7 @@ class Model(mesa.Model):
             grid_height: int = 100,
             number_of_agents: int = 5,
             n_resource_clusters: int = 2,
-            resource_quality: float = 0.8,
+            resource_quality: Union[float, list[float]] = 0.8,
             resource_cluster_radius: int = 5,
             sampling_length: int = 10,
             relocation_threshold: float = 0.7,
@@ -37,6 +39,8 @@ class Model(mesa.Model):
         # resource parameters
         self.n_resource_clusters = n_resource_clusters
         self.resource_cluster_radius = resource_cluster_radius
+        assert len(list(resource_quality)) == 1 or len(list(resource_quality)) == self.n_resource_clusters, \
+            "resource_quality must be either a single value or a list of values of length n_resource_clusters"
         self.resource_quality = resource_quality
 
         # agent parameters
@@ -77,13 +81,14 @@ class Model(mesa.Model):
 
     def initialize_resource(self):
         centers = make_resource_centers(self, self.n_resource_clusters, self.resource_cluster_radius)
-        for center in centers:
+        for n, (center) in enumerate(centers):
+            quality = self.resource_quality[n] if len(list(self.resource_quality)) > 1 else self.resource_quality
             r = Resource(
                 self.next_id(),
                 self,
                 radius=self.resource_cluster_radius,
                 max_value=100,
-                current_value=int(self.resource_quality * 100),
+                current_value=int(quality * 100),
                 keep_overall_abundance=True,
                 neighborhood_radius=20,
             )

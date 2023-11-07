@@ -3,8 +3,14 @@ import numpy as np
 
 
 class Resource(mesa.Agent):
-    def __init__(self, unique_id, model, radius=5, max_value=100, current_value=50, keep_overall_abundance=True,
-                 neighborhood_radius=20):
+    def __init__(self,
+                 unique_id,
+                 model,
+                 radius: int = 5,
+                 max_value: int = 100,
+                 current_value: int = 50,
+                 keep_overall_abundance: bool = True,
+                 neighborhood_radius: int = 20):
         super().__init__(unique_id, model)
         self.radius: int = radius
         self.model = model
