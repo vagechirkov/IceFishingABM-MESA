@@ -98,11 +98,15 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10, interval: i
         nonlocal catch_rates
         if model.running:
             model.step()
+
+        # resource distribution and the main scatter plot
+        draw_resource_distribution(model, space_ax, viz_container)
         catch_rates = [estimate_catch_rate(a, model, c) for a, c in zip(
             [a for a in model.schedule.agents if isinstance(a, Agent)], catch_rates)]
         space_ax.set_title(f"Step {model.schedule.steps} | "
                            f"Catch rates " + ' '.join(['%.2f'] * len(catch_rates)) % tuple(catch_rates))
-        draw_resource_distribution(model, space_ax, viz_container)
+
+        # meso level plots
         draw_agent_meso_belief(model, soc_info_ax, "meso_soc")
         soc_info_ax.set_title("Social Density")
         draw_agent_meso_belief(model, env_belief_ax, "meso_env", vmix=-0.2, vmax=0.5, cmap='Greys')
@@ -142,8 +146,8 @@ if __name__ == "__main__":
         "grid_width": 50,
         "grid_height": 50,
         "number_of_agents": 5,
-        "n_resource_clusters": 5,
-        "resource_quality": [0.2, 0.2, 0.5, 0.5, 0.8],
+        "n_resource_clusters": 10,
+        "resource_quality": [0.1] * 5 + [0.2] * 2 + [0.5] * 2 + [0.8] * 1,
         "resource_cluster_radius": 2,
         "sampling_length": 5,
         "relocation_threshold": 0.1,

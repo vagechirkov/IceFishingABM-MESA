@@ -77,6 +77,6 @@ def make_resource_centers(model, n_clusters: int = 1, cluster_radius: int = 5) -
         # TODO: fix this to avoid infinite loop in the case when it is not possible to add a new center far enough
         # TODO: from the existing centers
         # check if the new center is not too close to any of the existing centers
-        if np.all(np.linalg.norm(np.array(centers) - np.array((x, y)), axis=-1) > cluster_radius):
+        if np.all(np.linalg.norm(np.array(centers) - np.array((x, y)), axis=-1) > cluster_radius * 2):
             centers.append((x, y))
     return tuple(centers)
