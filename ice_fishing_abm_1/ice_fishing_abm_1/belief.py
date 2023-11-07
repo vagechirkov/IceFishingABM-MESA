@@ -20,7 +20,6 @@ class BernoulliBelief:
     def update_belief(self, location: tuple[int, int], x: float):
         """
         x ∼ Bern(θ), θ ∼ beta(α, β), θ∈[0,1]
-
         posterior = beta(α_N, β_N), where α_N = α_N-1 + x and β_N = β_N-1 + 1 - x
         """
         alpha = self.belief_alpha[location]

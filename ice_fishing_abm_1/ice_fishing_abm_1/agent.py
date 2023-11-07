@@ -3,6 +3,7 @@ from typing import Union
 import mesa
 import numpy as np
 
+from .resource import Resource
 from .utils import discount_by_distance, find_peak
 
 
@@ -12,6 +13,7 @@ class Agent(mesa.Agent):
             unique_id,
             model,
             sampling_length: int = 10,
+            resource_cluster_radius: int = 5,
             relocation_threshold: float = 0.7,
             local_search_counter: int = 4,
             local_learning_rate: float = 0.5,
@@ -25,6 +27,7 @@ class Agent(mesa.Agent):
         # parameters
         # ---- sampling parameters ----
         self.sampling_length: int = sampling_length
+        self.resource_cluster_radius: int = resource_cluster_radius
 
         # ---- local search parameters ----
         self.relocation_threshold: float = relocation_threshold
@@ -145,13 +148,18 @@ class Agent(mesa.Agent):
         """
         Sample the resource at the current location
         """
-        i, j = self.model.grid.x_y_to_i_j(*self.pos)
+        neighbors = self.model.grid.get_neighbors(self.pos, moore=True, include_center=False,
+                                                  radius=self.resource_cluster_radius)
 
-        if self.model.random.random() < self.model.resource_distribution[i, j]:
-            self._collected_resource += 1
-            self._sampling_sequence.append(1)
-        else:
-            self._sampling_sequence.append(0)
+        # check if there are any resources in the neighborhood
+        if len(neighbors) > 0:
+            for neighbour in neighbors:
+                for agent in self.model.grid.get_cell_list_contents([neighbour]):
+                    if isinstance(agent, Resource):
+                        if agent.catch():
+                            self._collected_resource += 1
+                            self._sampling_sequence.append(1)
+                            break
 
         # finish sampling and update observations
         if len(self._sampling_sequence) == self.sampling_length:
@@ -183,6 +191,9 @@ class Agent(mesa.Agent):
         # get neighboring agents
         other_agents = self.model.grid.get_neighbors(self.pos, moore=True, include_center=False,
                                                      radius=self.model.grid.width)
+        # filter out resources
+        other_agents = [agent for agent in other_agents if isinstance(agent, Agent)]
+
         # get discounted smoothed locations map of other agents
         # TODO: use the observation history with the discount factor to incorporate the temporal aspect
         self._array_meso_soc.fill(0)

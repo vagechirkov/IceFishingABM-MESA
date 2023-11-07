@@ -28,10 +28,10 @@ class Resource(mesa.Agent):
 
     def _add_resource_to_neighbour(self):
         """Add one resource to the closest neighbor"""
-        neighbours = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False,
-                                                      radius=self.neighborhood_radius)
+        neighbors = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False,
+                                                     radius=self.neighborhood_radius)
         resources = []
-        for neighbour in neighbours:
+        for neighbour in neighbors:
             for agent in self.model.grid.get_cell_list_contents([neighbour]):
                 if isinstance(agent, Resource):
                     resources.append(agent)
@@ -48,7 +48,7 @@ class Resource(mesa.Agent):
     def resource_map(self) -> np.ndarray:
         size_x, size_y = self.model.grid.width, self.model.grid.height
         # NB: ij = yx coordinates
-        j, i = self.pos
+        i, j = self.pos
         # create a meshgrid
         x, y = np.meshgrid(np.arange(size_x), np.arange(size_y))
 

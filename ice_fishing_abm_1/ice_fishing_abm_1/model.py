@@ -56,15 +56,24 @@ class Model(mesa.Model):
         self.datacollector = mesa.datacollection.DataCollector(
             # agent_reporters={"Collected resource": lambda a: a.collected_resource}
             model_reporters={
-                "Collected resource": lambda m: np.mean([a._collected_resource for a in m.schedule.agents])}
+                "Collected resource": lambda m: np.mean(
+                    [a._collected_resource for a in m.schedule.agents if isinstance(a, Agent)])}
         )
         self.schedule = mesa.time.RandomActivation(self)
 
-        # initialize resource distribution
-        self.initialize_resource()
         # Create agents
         for _ in range(self.number_of_agents):
             self.initialize_agent()
+
+        # initialize resource distribution
+        self.initialize_resource()
+
+    @property
+    def resource_distribution(self) -> np.ndarray:
+        """
+        Return a resource distribution.
+        """
+        return np.sum([a.resource_map() for a in self.schedule.agents if isinstance(a, Resource)], axis=0)
 
     def initialize_resource(self):
         centers = make_resource_centers(self, self.n_resource_clusters, self.resource_cluster_radius)
@@ -72,9 +81,9 @@ class Model(mesa.Model):
             r = Resource(
                 self.next_id(),
                 self,
-                radius=5,
-                max_value=self.resource_quality,
-                current_value=self.resource_quality,
+                radius=self.resource_cluster_radius,
+                max_value=100,
+                current_value=int(self.resource_quality * 100),
                 keep_overall_abundance=True,
                 neighborhood_radius=20,
             )

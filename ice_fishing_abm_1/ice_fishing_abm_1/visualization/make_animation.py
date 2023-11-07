@@ -6,6 +6,9 @@ from matplotlib.gridspec import GridSpec
 from mesa.experimental.jupyter_viz import JupyterContainer
 import seaborn as sns
 
+from ice_fishing_abm_1.ice_fishing_abm_1.agent import Agent
+from ice_fishing_abm_1.ice_fishing_abm_1.resource import Resource
+
 
 def draw_resource_distribution(model, ax):
     if model.resource_distribution is None:
@@ -41,6 +44,8 @@ def draw_agent_meso_belief(model, ax, var_name, vmix=None, vmax=None, cmap='viri
 
 
 def estimate_catch_rate(agent, model, previous_catch_rate: float = 0):
+    assert isinstance(agent, Agent)
+
     if agent.is_moving:
         return 0
 
@@ -82,13 +87,14 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10, interval: i
             _scatter.set_sizes(data["s"])
         return _scatter
 
-    catch_rates = [estimate_catch_rate(a, model) for a in model.schedule.agents]
+    catch_rates = [estimate_catch_rate(a, model) for a in model.schedule.agents if isinstance(a, Agent)]
 
     def animate(_):
         nonlocal catch_rates
         if model.running:
             model.step()
-        catch_rates = [estimate_catch_rate(a, model, c) for a, c in zip(model.schedule.agents, catch_rates)]
+        catch_rates = [estimate_catch_rate(a, model, c) for a, c in zip(
+            [a for a in model.schedule.agents if isinstance(a, Agent)], catch_rates)]
         space_ax.set_title(f"Step {model.schedule.steps} | "
                            f"Catch rates " + ' '.join(['%.2f'] * len(catch_rates)) % tuple(catch_rates))
         draw_agent_meso_belief(model, soc_info_ax, "meso_soc")
@@ -115,10 +121,16 @@ if __name__ == "__main__":
 
 
     def agent_portrayal(agent):
-        return {
-            "color": "tab:orange" if agent.unique_id == 1 else "tab:blue" if agent._is_moving else "tab:red",
-            "size": 100,
-        }
+        if not isinstance(agent, Resource):
+            return {
+                "color": "tab:orange" if agent.unique_id == 1 else "tab:blue" if agent._is_moving else "tab:red",
+                "size": 100,
+            }
+        else:
+            return {
+                "color": "black",
+                "size": 1,
+            }
 
 
     model_params = {
@@ -126,14 +138,14 @@ if __name__ == "__main__":
         "grid_height": 50,
         "number_of_agents": 5,
         "n_resource_clusters": 5,
-        "resource_quality": 0.8,
-        "sampling_length": 2,
+        "resource_quality": 0.1,
         "resource_cluster_radius": 3,
+        "sampling_length": 5,
         "relocation_threshold": 0.1,
         "meso_grid_step": 10,
         "local_search_counter": 5,
-        "w_social": 1,
-        "w_personal": 0,
+        "w_social": 0.03,
+        "w_personal": 0.85,
         "prior_knowledge_corr": 0,
         "prior_knowledge_noize": 0.1,
         "local_learning_rate": 0.5,
@@ -150,6 +162,6 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    plot_n_steps(viz_container=container, n_steps=100, interval=800)
+    plot_n_steps(viz_container=container, n_steps=200, interval=800)
     end = time.time()
     print(f"Time elapsed: {end - start} seconds")
