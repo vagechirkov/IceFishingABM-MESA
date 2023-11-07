@@ -40,7 +40,7 @@ class Model(mesa.Model):
         # resource parameters
         self.n_resource_clusters = n_resource_clusters
         self.resource_cluster_radius = resource_cluster_radius
-        assert len(list(resource_quality)) == 1 or len(list(resource_quality)) == self.n_resource_clusters, \
+        assert isinstance(resource_quality, float) or len(list(resource_quality)) == self.n_resource_clusters, \
             "resource_quality must be either a single value or a list of values of length n_resource_clusters"
         self.resource_quality = resource_quality
 
@@ -82,7 +82,7 @@ class Model(mesa.Model):
     def initialize_resource(self):
         centers = make_resource_centers(self, self.n_resource_clusters, self.resource_cluster_radius)
         for n, (center) in enumerate(centers):
-            quality = self.resource_quality[n] if len(list(self.resource_quality)) > 1 else self.resource_quality
+            quality = self.resource_quality if isinstance(self.resource_quality, float) else self.resource_quality[n]
             r = Resource(
                 self.next_id(),
                 self,
