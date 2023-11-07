@@ -10,17 +10,33 @@ from ice_fishing_abm_1.ice_fishing_abm_1.agent import Agent
 from ice_fishing_abm_1.ice_fishing_abm_1.resource import Resource
 
 
-def draw_resource_distribution(model, ax):
+def draw_resource_distribution(model, ax, viz_container: JupyterContainer):
     if model.resource_distribution is None:
         return
 
+    # clear axis without removing scatter
+    ax.clear()
+
     # draw a heatmap of the resource distribution
     sns.heatmap(model.resource_distribution, ax=ax, cmap='Greys', cbar=False, square=True, vmin=-0.2, vmax=1)
+    ax.set_axis_off()
+
     # draw meso grid
     h_lines = np.arange(0, model.grid.width, model.meso_grid_step)
     v_lines = np.arange(0, model.grid.height, model.meso_grid_step)
     ax.hlines(h_lines, *ax.get_xlim(), color='white', linewidth=0.5)
     ax.vlines(v_lines, *ax.get_ylim(), color='white', linewidth=0.5)
+
+    # draw agents
+    scatter = ax.scatter(**viz_container.portray(model.grid))
+    data = viz_container.portray(model.grid)
+    coords = np.array(list(zip(data["x"], data["y"])))
+    # center coordinates of the scatter points
+    scatter.set_offsets(coords + 0.5)
+    if "c" in data:
+        scatter.set_color(data["c"])
+    if "s" in data:
+        scatter.set_sizes(data["s"])
 
 
 def draw_agent_meso_belief(model, ax, var_name, vmix=None, vmax=None, cmap='viridis'):
@@ -72,20 +88,9 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10, interval: i
     for ax in space_fig.get_axes():
         ax.set_axis_off()
 
-    draw_resource_distribution(model, space_ax)
-    scatter = space_ax.scatter(**viz_container.portray(model.grid))
+    draw_resource_distribution(model, space_ax, viz_container)
 
     plt.tight_layout()
-
-    def update_grid(_scatter, data):
-        coords = np.array(list(zip(data["x"], data["y"])))
-        # center coordinates of the scatter points
-        _scatter.set_offsets(coords + 0.5)
-        if "c" in data:
-            _scatter.set_color(data["c"])
-        if "s" in data:
-            _scatter.set_sizes(data["s"])
-        return _scatter
 
     catch_rates = [estimate_catch_rate(a, model) for a in model.schedule.agents if isinstance(a, Agent)]
 
@@ -97,6 +102,7 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10, interval: i
             [a for a in model.schedule.agents if isinstance(a, Agent)], catch_rates)]
         space_ax.set_title(f"Step {model.schedule.steps} | "
                            f"Catch rates " + ' '.join(['%.2f'] * len(catch_rates)) % tuple(catch_rates))
+        draw_resource_distribution(model, space_ax, viz_container)
         draw_agent_meso_belief(model, soc_info_ax, "meso_soc")
         soc_info_ax.set_title("Social Density")
         draw_agent_meso_belief(model, env_belief_ax, "meso_env", vmix=-0.2, vmax=0.5, cmap='Greys')
@@ -105,7 +111,6 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10, interval: i
         observations_ax.set_title("Observations")
         draw_agent_meso_belief(model, combined_ax, "meso_combined")
         combined_ax.set_title("Combined Belief")
-        return update_grid(scatter, viz_container.portray(model.grid))
 
     ani = animation.FuncAnimation(space_fig, animate, repeat=True, frames=n_steps, interval=interval)
 
@@ -162,6 +167,6 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    plot_n_steps(viz_container=container, n_steps=2, interval=800)
+    plot_n_steps(viz_container=container, n_steps=200, interval=800)
     end = time.time()
     print(f"Time elapsed: {end - start} seconds")
