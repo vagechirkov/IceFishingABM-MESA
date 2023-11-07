@@ -273,8 +273,8 @@ class Agent(mesa.Agent):
                 self.update_meso_beliefs()
 
             counter_done = self._local_search_count >= self.local_search_counter
-            i, j = self.model.grid.x_y_to_i_j(*self.pos)
-            good_spot_found = self._array_observations[i, j] > self.relocation_threshold
+            meso_i, meso_j = self.model.grid.x_y_to_i_j(*self.meso_pos)
+            good_spot_found = self._array_meso_env[meso_i, meso_j] > self.relocation_threshold
 
             if good_spot_found:
                 self._is_sampling = True
