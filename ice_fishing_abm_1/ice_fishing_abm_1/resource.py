@@ -49,17 +49,17 @@ class Resource(mesa.Agent):
         pass
 
     def resource_map(self) -> np.ndarray:
-        size_x, size_y = self.model.grid.width, self.model.grid.height
-        # NB: ij = yx coordinates
-        i, j = self.pos
         # create a meshgrid
-        x, y = np.meshgrid(np.arange(size_x), np.arange(size_y))
+        _resource_map = np.zeros((self.model.grid.width, self.model.grid.height))
 
-        # draw a circle
-        circle = (x - i) ** 2 + (y - j) ** 2 <= self.radius ** 2
+        iter_neighborhood = self.model.grid.iter_neighborhood(self.pos, moore=False, include_center=True,
+                                                              radius=self.radius)
+
+        for n in iter_neighborhood:
+            _resource_map[n] = 1
 
         # return a resource map
-        return circle.astype(float) * self.catch_probability
+        return _resource_map.astype(float) * self.catch_probability
 
 
 def make_resource_centers(model, n_clusters: int = 1, cluster_radius: int = 5) -> tuple[tuple[int, int], ...]:

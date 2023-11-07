@@ -148,7 +148,7 @@ class Agent(mesa.Agent):
         """
         Sample the resource at the current location
         """
-        neighbors = self.model.grid.get_neighbors(self.pos, moore=True, include_center=False,
+        neighbors = self.model.grid.get_neighbors(self.pos, moore=False, include_center=True,
                                                   radius=self.resource_cluster_radius)
 
         resource_collected = False

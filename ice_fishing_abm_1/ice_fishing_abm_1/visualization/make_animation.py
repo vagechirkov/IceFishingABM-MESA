@@ -162,6 +162,6 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    plot_n_steps(viz_container=container, n_steps=200, interval=800)
+    plot_n_steps(viz_container=container, n_steps=2, interval=800)
     end = time.time()
     print(f"Time elapsed: {end - start} seconds")

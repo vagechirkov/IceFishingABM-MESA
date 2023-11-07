@@ -74,10 +74,8 @@ class Model(mesa.Model):
 
     @property
     def resource_distribution(self) -> np.ndarray:
-        """
-        Return a resource distribution.
-        """
-        return np.sum([a.resource_map() for a in self.schedule.agents if isinstance(a, Resource)], axis=0)
+        # NB: resource distribution is a 2D array with the same shape as the grid and in x,y coordinates system
+        return np.sum([a.resource_map() for a in self.schedule.agents if isinstance(a, Resource)], axis=0).T
 
     def initialize_resource(self):
         centers = make_resource_centers(self, self.n_resource_clusters, self.resource_cluster_radius)
