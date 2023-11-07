@@ -154,11 +154,12 @@ if __name__ == "__main__":
         "meso_grid_step": 10,
         "local_search_counter": 5,
         "w_social": 0.03,
-        "w_personal": 0.85,
+        "w_personal": 0.97,
         "prior_knowledge_corr": 0,
         "prior_knowledge_noize": 0.1,
         "local_learning_rate": 0.5,
         "meso_learning_rate": 0.5,
+        "social_learning_rate": 0.5,
     }
     container = JupyterContainer(
         Model,

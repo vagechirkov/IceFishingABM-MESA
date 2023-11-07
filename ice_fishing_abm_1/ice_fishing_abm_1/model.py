@@ -26,6 +26,7 @@ class Model(mesa.Model):
             w_personal: float = 0.4,
             local_learning_rate: float = 0.5,
             meso_learning_rate: float = 0.5,
+            social_learning_rate: float = 0.5,
             meso_grid_step: int = 10,
     ):
         super().__init__()
@@ -54,6 +55,7 @@ class Model(mesa.Model):
         self.meso_grid_step: int = meso_grid_step
         self.local_learning_rate: float = local_learning_rate
         self.meso_learning_rate: float = meso_learning_rate
+        self.social_learning_rate: float = social_learning_rate
 
         # initialize grid, datacollector, schedule
         self.grid = MultiMicroMesoGrid(grid_width, grid_height, torus=False, meso_scale_step=self.meso_grid_step)
@@ -106,6 +108,7 @@ class Model(mesa.Model):
             w_personal=self.w_personal,
             local_learning_rate=self.local_learning_rate,
             meso_learning_rate=self.meso_learning_rate,
+            social_learning_rate=self.social_learning_rate,
             resource_cluster_radius=self.resource_cluster_radius,
         )
 
