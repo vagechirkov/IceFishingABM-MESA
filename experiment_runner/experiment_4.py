@@ -35,8 +35,8 @@ META_PARAMS = {
 
 
 for prior in [0, 1]:
-    PARAMS["w_social"] = np.arange(0, 0.105, 0.005).tolist() + np.arange(0.105, 1.1, 0.1).tolist()
-    PARAMS["w_personal"] = np.arange(0, 1.0, 0.05).tolist() + np.arange(0.95, 1.01, 0.01).tolist()
+    PARAMS["w_social"] = np.arange(0, 0.1, 0.005).tolist() + np.arange(0.1, 1.1, 0.1).tolist()
+    PARAMS["w_personal"] = np.arange(0, 0.95, 0.05).tolist() + np.arange(0.95, 1.0, 0.01).tolist()
     PARAMS["prior_knowledge_corr"] = prior
     PARAMS["resource_quality"] = 0.5
     PARAMS["sampling_length"] = 5
