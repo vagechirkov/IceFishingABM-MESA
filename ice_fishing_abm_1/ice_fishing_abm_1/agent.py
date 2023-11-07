@@ -18,6 +18,7 @@ class Agent(mesa.Agent):
             local_search_counter: int = 4,
             local_learning_rate: float = 0.5,
             meso_learning_rate: float = 0.5,
+            social_learning_rate: float = 0.5,
             prior_knowledge_corr: float = 0.5,
             prior_knowledge_noize: float = 0.3,
             w_social: float = 0.4,
@@ -36,6 +37,7 @@ class Agent(mesa.Agent):
         # ---- learning parameters ----
         self.local_learning_rate: float = local_learning_rate
         self.meso_learning_rate: float = meso_learning_rate
+        self.social_learning_rate: float = social_learning_rate
 
         # ---- prior knowledge parameters ----
         self.prior_knowledge_corr: float = prior_knowledge_corr
@@ -171,6 +173,7 @@ class Agent(mesa.Agent):
         if len(self._sampling_sequence) == self.sampling_length:
             self.update_local_observations()
             self.update_meso_environmental_belief()
+            self.update_meso_social_density()
 
             # finish sampling
             self._is_sampling = False
@@ -200,16 +203,21 @@ class Agent(mesa.Agent):
         # filter out resources
         other_agents = [agent for agent in other_agents if isinstance(agent, Agent)]
 
-        # get discounted smoothed locations map of other agents
-        # TODO: use the observation history with the discount factor to incorporate the temporal aspect
-        self._array_meso_soc.fill(0)
+        new_observation = np.zeros_like(self._array_meso_soc)
+
         for agent in other_agents:
             if agent.is_sampling:
                 i, j = self.model.grid.x_y_to_i_j(*agent.meso_pos)
-                self._array_meso_soc[i, j] += 1
+                new_observation[i, j] += 1
+
+        normalized_new_observation = self.normalize(new_observation)
+
+        # update observations
+        old_observation = self._array_meso_soc
+        time_difference = normalized_new_observation - old_observation
+        self._array_meso_soc = old_observation + self.social_learning_rate * time_difference
 
         # normalize to make the sum equal to 1
-        # TODO: add information about social density on the previous step
         self._array_meso_soc = self.normalize(self._array_meso_soc)
 
     def update_meso_environmental_belief(self):
@@ -230,7 +238,6 @@ class Agent(mesa.Agent):
         return self.normalize(rand_array)
 
     def update_meso_beliefs(self):
-        self.update_meso_social_density()
         env_info = self.normalize(self._array_meso_env)
         random_preference = self.generate_random_preference()
 
