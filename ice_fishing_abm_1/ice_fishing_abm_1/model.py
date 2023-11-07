@@ -90,7 +90,7 @@ class Model(mesa.Model):
                 max_value=100,
                 current_value=int(quality * 100),
                 keep_overall_abundance=True,
-                neighborhood_radius=20,
+                neighborhood_radius=40,
             )
             self.schedule.add(r)
             self.grid.place_agent(r, center)
