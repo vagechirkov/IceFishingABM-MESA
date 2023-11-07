@@ -151,15 +151,21 @@ class Agent(mesa.Agent):
         neighbors = self.model.grid.get_neighbors(self.pos, moore=True, include_center=False,
                                                   radius=self.resource_cluster_radius)
 
+        resource_collected = False
+
         # check if there are any resources in the neighborhood
         if len(neighbors) > 0:
             for neighbour in neighbors:
-                for agent in self.model.grid.get_cell_list_contents([neighbour]):
-                    if isinstance(agent, Resource):
-                        if agent.catch():
-                            self._collected_resource += 1
-                            self._sampling_sequence.append(1)
-                            break
+                if isinstance(neighbour, Resource):
+                    if neighbour.catch():
+                        # NB: sample multiple times if resources overlap
+                        resource_collected = True
+
+        if resource_collected:
+            self._collected_resource += 1
+            self._sampling_sequence.append(1)
+        else:
+            self._sampling_sequence.append(0)
 
         # finish sampling and update observations
         if len(self._sampling_sequence) == self.sampling_length:

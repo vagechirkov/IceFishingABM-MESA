@@ -13,12 +13,13 @@ class Resource(mesa.Agent):
         self.keep_overall_abundance: bool = keep_overall_abundance
         self.neighborhood_radius: int = neighborhood_radius
 
+    @property
     def catch_probability(self):
         # this relation is linear for now but might be more realistic if it is sigmoidal
         return self.current_value / self.max_value
 
     def catch(self):
-        if self.model.random.random() < self.catch_probability():
+        if self.model.random.random() < self.catch_probability:
             self.current_value -= 1
             if self.keep_overall_abundance:
                 self._add_resource_to_neighbour()
@@ -30,11 +31,7 @@ class Resource(mesa.Agent):
         """Add one resource to the closest neighbor"""
         neighbors = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False,
                                                      radius=self.neighborhood_radius)
-        resources = []
-        for neighbour in neighbors:
-            for agent in self.model.grid.get_cell_list_contents([neighbour]):
-                if isinstance(agent, Resource):
-                    resources.append(agent)
+        resources = [n for n in neighbors if isinstance(n, Resource)]
 
         # if the current resource is not the only resource in the neighborhood
         if len(resources) > 0:
@@ -56,7 +53,7 @@ class Resource(mesa.Agent):
         circle = (x - i) ** 2 + (y - j) ** 2 <= self.radius ** 2
 
         # return a resource map
-        return circle.astype(float) * self.catch_probability()
+        return circle.astype(float) * self.catch_probability
 
 
 def make_resource_centers(model, n_clusters: int = 1, cluster_radius: int = 5) -> tuple[tuple[int, int], ...]:

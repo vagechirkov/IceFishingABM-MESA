@@ -103,6 +103,7 @@ class Model(mesa.Model):
             w_personal=self.w_personal,
             local_learning_rate=self.local_learning_rate,
             meso_learning_rate=self.meso_learning_rate,
+            resource_cluster_radius=self.resource_cluster_radius,
         )
 
         self.schedule.add(a)
