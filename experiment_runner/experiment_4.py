@@ -29,17 +29,18 @@ PARAMS = {
 }
 
 META_PARAMS = {
-    "n_repetitions": 500,
+    "n_repetitions": 200,
     "n_steps": 1000,
 }
 
 
-for prior in [0, 1]:
-    PARAMS["w_social"] = np.arange(0, 0.1, 0.005).tolist() + np.arange(0.1, 1.1, 0.1).tolist()
-    PARAMS["w_personal"] = np.arange(0, 0.95, 0.05).tolist() + np.arange(0.95, 1.0, 0.01).tolist()
+for prior in [1, 0]:
+    PARAMS["w_social"] = np.arange(0, 0.1, 0.005)
+    PARAMS["w_personal"] = np.arange(0, 1.05, 0.05)
     PARAMS["prior_knowledge_corr"] = prior
-    PARAMS["resource_quality"] = 0.5
+    PARAMS["resource_quality"] = 0.8
     PARAMS["sampling_length"] = 5
     PARAMS["local_search_counter"] = 5
+    PARAMS["social_learning_rate"] = 1
     n = NAME + f"_{prior}_resource_quality_{PARAMS['resource_quality']}"
     run_experiment(name=n, params=PARAMS, meta_params=META_PARAMS, model=model)
