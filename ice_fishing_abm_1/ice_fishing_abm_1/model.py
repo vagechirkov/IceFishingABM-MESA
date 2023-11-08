@@ -67,12 +67,12 @@ class Model(mesa.Model):
         )
         self.schedule = mesa.time.RandomActivation(self)
 
+        # initialize resource distribution
+        self.initialize_resource()
+
         # Create agents
         for _ in range(self.number_of_agents):
             self.initialize_agent()
-
-        # initialize resource distribution
-        self.initialize_resource()
 
     @property
     def resource_distribution(self) -> np.ndarray:

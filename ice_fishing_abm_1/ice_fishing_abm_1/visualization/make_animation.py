@@ -41,7 +41,7 @@ def draw_resource_distribution(model, ax, viz_container: JupyterContainer):
 
 def draw_agent_meso_belief(model, ax, var_name, vmix=None, vmax=None, cmap='viridis'):
     # select the agent with id 1
-    _agent = [a for a in model.schedule.agents if a.unique_id == 1][0]
+    _agent = [a for a in model.schedule.agents if a.unique_id == model.n_resource_clusters + 1][0]
     var = getattr(_agent, var_name)
 
     ax.clear()
@@ -131,8 +131,9 @@ if __name__ == "__main__":
 
     def agent_portrayal(agent):
         if not isinstance(agent, Resource):
+            is_focused = agent.unique_id == agent.model.n_resource_clusters + 1
             return {
-                "color": "tab:orange" if agent.unique_id == 1 else "tab:blue" if agent._is_moving else "tab:red",
+                "color": "tab:orange" if is_focused else "tab:blue" if agent._is_moving else "tab:red",
                 "size": 100,
             }
         else:
@@ -147,7 +148,7 @@ if __name__ == "__main__":
         "grid_height": 50,
         "number_of_agents": 5,
         "n_resource_clusters": 10,
-        "resource_quality": [0.1] * 5 + [0.2] * 2 + [0.5] * 2 + [0.8] * 1,
+        "resource_quality": 0.5,  # [0.1] * 5 + [0.2] * 2 + [0.5] * 2 + [0.8] * 1,
         "resource_cluster_radius": 2,
         "sampling_length": 5,
         "relocation_threshold": 0.1,
@@ -155,7 +156,7 @@ if __name__ == "__main__":
         "local_search_counter": 5,
         "w_social": 0.03,
         "w_personal": 0.97,
-        "prior_knowledge_corr": 0,
+        "prior_knowledge_corr": 1,
         "prior_knowledge_noize": 0.1,
         "local_learning_rate": 0.5,
         "meso_learning_rate": 0.5,

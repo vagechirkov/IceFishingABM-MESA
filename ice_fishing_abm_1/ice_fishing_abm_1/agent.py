@@ -106,7 +106,8 @@ class Agent(mesa.Agent):
             # mean-pooling resource distribution
             # SEE:https://stackoverflow.com/questions/42463172/how-to-perform-max-mean-pooling-on-a-2d-array-using-numpy
             # Getting shape of matrix
-            M, N = self.model.resource_distribution.shape
+            resource_distribution = self.model.resource_distribution
+            M, N = resource_distribution.shape
 
             # Shape of kernel
             K = self.model.grid.meso_scale_step
@@ -117,7 +118,7 @@ class Agent(mesa.Agent):
             NL = N // L
 
             # Creating a pool
-            meso_resource = self.model.resource_distribution[:MK * K, :NL * L].reshape(MK, K, NL, L).mean(axis=(1, 3))
+            meso_resource = resource_distribution[:MK * K, :NL * L].reshape(MK, K, NL, L).mean(axis=(1, 3))
 
             # add noise
             meso_resource += np.random.random(size=meso_resource.shape) * self.prior_knowledge_noize
