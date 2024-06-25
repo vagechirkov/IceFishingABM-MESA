@@ -125,22 +125,25 @@ class Agent(mesa.Agent):
         step_size = 20
         # social feature
         self.add_other_agent_locs()
-        Xs, ys = construct_dataset_info(self.model.grid_size, margin, self.other_agent_locs, step_size)
-        self.social_feature = generate_belief_matrix(self.model.grid_size, margin, Xs, ys, self.social_gpc, 1)
+        if self.other_agent_locs.size == 0:
+            self.social_feature = np.zeros((self.model.grid_size, self.model.grid_size))
+        else:
+            Xs, ys = construct_dataset_info(self.model.grid_size, margin, self.other_agent_locs, step_size)
+            self.social_feature = generate_belief_matrix(self.model.grid_size, margin, Xs, ys, self.social_gpc, 1).T
 
         # success feature
         if self.success_locs.size == 0:
             self.success_feature = np.zeros((self.model.grid_size, self.model.grid_size))
         else:
             Xs, ys = construct_dataset_info(self.model.grid_size, margin, self.success_locs, step_size)
-            self.success_feature = generate_belief_matrix(self.model.grid_size, margin, Xs, ys, self.success_gpc, 1)
+            self.success_feature = generate_belief_matrix(self.model.grid_size, margin, Xs, ys, self.success_gpc, 1).T
 
         # failure feature
         if self.failure_locs.size == 0:
             self.failure_feature = np.zeros((self.model.grid_size, self.model.grid_size))
         else:
             Xs, ys = construct_dataset_info(self.model.grid_size, margin, self.failure_locs, step_size)
-            self.failure_feature = generate_belief_matrix(self.model.grid_size, margin, Xs, ys, self.failure_gpc, 0)
+            self.failure_feature = generate_belief_matrix(self.model.grid_size, margin, Xs, ys, self.failure_gpc, 0).T
 
         # combine features
         self.belief = (self.model.w_social * self.social_feature +
@@ -162,4 +165,12 @@ class Agent(mesa.Agent):
     def add_other_agent_locs(self):
         other_agents = self.model.grid.get_neighbors(self.pos, moore=True, include_center=False,
                                                      radius=self.model.grid.width)
-        self.other_agent_locs = np.array([x_y_to_i_j(*agent.pos) for agent in other_agents if isinstance(agent, Agent)])
+        agents = np.array([agent for agent in other_agents if isinstance(agent, Agent)])
+
+        # sampling agents
+        agents = [np.array(x_y_to_i_j(*agent.pos))[np.newaxis, :] for agent in agents if agent.is_sampling]
+
+        if len(agents) > 0:
+            self.other_agent_locs = np.vstack(agents)
+        else:
+            self.other_agent_locs = np.empty((0, 2))
