@@ -13,6 +13,7 @@ class Model(mesa.Model):
             n_resource_clusters: int = 2,
             resource_quality: float = 0.8,
             resource_cluster_radius: int = 5,
+            keep_overall_abundance: bool = True,
     ):
         super().__init__()
         self.grid_size = grid_size
@@ -20,6 +21,7 @@ class Model(mesa.Model):
         self.n_resource_clusters = n_resource_clusters
         self.resource_quality = resource_quality
         self.resource_cluster_radius = resource_cluster_radius
+        self.keep_overall_abundance = keep_overall_abundance
 
         self.w_social = 0.4
         self.w_success = 0.3
@@ -38,7 +40,7 @@ class Model(mesa.Model):
                 radius=self.resource_cluster_radius,
                 max_value=100,
                 current_value=int(quality * 100),
-                keep_overall_abundance=True,
+                keep_overall_abundance=self.keep_overall_abundance,
                 neighborhood_radius=40,
             )
             self.schedule.add(r)

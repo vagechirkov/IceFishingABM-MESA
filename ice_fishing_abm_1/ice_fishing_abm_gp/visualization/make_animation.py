@@ -211,8 +211,11 @@ if __name__ == "__main__":
 
     model_params = {
         "grid_size": 80,
-        "number_of_agents": 5,
-        "n_resource_clusters": 10,
+        "number_of_agents": 10,
+        "n_resource_clusters": 5,
+        "resource_cluster_radius": 7,
+        "resource_quality": 0.5,
+        "keep_overall_abundance": False,
     }
     container = JupyterContainer(
         Model,
@@ -225,6 +228,6 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    plot_n_steps(viz_container=container, n_steps=20, interval=800)
+    plot_n_steps(viz_container=container, n_steps=100, interval=800)
     end = time.time()
     print(f"Time elapsed: {end - start} seconds")
