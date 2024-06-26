@@ -156,6 +156,38 @@ class Agent(mesa.Agent):
         # find the next destination as a random sample from the belief using belief as a probability distribution
         self._destination = x_y_to_i_j(*find_peak(self.belief))
 
+    def _adjust_destination_if_cell_occupied(self):
+        if self._destination is None:
+            return
+
+        if self.model.grid.is_cell_empty(self._destination):
+            return
+
+        # get cell inhabitants
+        inhabitants = self.model.grid.get_cell_list_contents(self._destination)
+
+        agents = [agent for agent in inhabitants if isinstance(agent, Agent)]
+        if any([agent.is_sampling for agent in agents]):
+            self._destination = self._closest_empty_cell(self._destination)
+
+    def _closest_empty_cell(self, destination: tuple[int, int]):
+        # check if the destination is empty
+        if self.model.grid.is_cell_empty(destination):
+            return destination
+
+        radius = 2
+        empty_cells = self._get_empty_cells(destination, radius)
+
+        # increase the radius until an empty cell is found
+        while len(empty_cells) == 0:
+            radius += 1
+            empty_cells = self._get_empty_cells(destination, radius=radius)
+        return self.random.choice(empty_cells)
+
+    def _get_empty_cells(self, destination, radius=1):
+        neighbors = self.model.grid.get_neighborhood(destination, moore=True, include_center=True, radius=radius)
+        return [cell for cell in neighbors if self.model.grid.is_cell_empty(cell)]
+
     def add_success_loc(self, loc: tuple):
         self.success_locs = np.vstack([self.success_locs, np.array(x_y_to_i_j(*loc))[np.newaxis, :]])
 
