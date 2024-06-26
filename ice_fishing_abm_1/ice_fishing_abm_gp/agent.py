@@ -54,6 +54,7 @@ class Agent(mesa.Agent):
             self.move()
             # update movement destination because social feature might have changed
             # self.movement_destination()
+
             return
 
         if self._is_sampling and not self._is_moving:
@@ -71,6 +72,9 @@ class Agent(mesa.Agent):
 
         if self._is_moving and self._is_sampling:
             raise ValueError("Agent is both sampling and moving.")
+
+        # update social information at the end of each step
+        self.add_other_agent_locs()
 
     def move(self):
         """
@@ -127,8 +131,6 @@ class Agent(mesa.Agent):
     def movement_destination(self):
         margin = 40
         step_size = 20
-        # social feature
-        self.add_other_agent_locs()
         if self.other_agent_locs.size == 0:
             self.social_feature = np.zeros((self.model.grid_size, self.model.grid_size))
         else:

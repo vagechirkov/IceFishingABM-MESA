@@ -8,10 +8,15 @@ def generate_belief_matrix(grid_size: int, margin_size: int, X: np.ndarray, y: n
     size = grid_size + margin_size
     x = np.meshgrid(range(size), range(size))
     s_prob = gpc.predict_proba(np.array(x).reshape(2, -1).T)
-    return s_prob[:, class_index].reshape(size, size)[0:-margin_size, 0:-margin_size]
+    return s_prob[:, class_index].reshape(size, size)[
+           margin_size // 2:-margin_size // 2,
+           margin_size // 2:-margin_size // 2]
 
 
 def construct_dataset_info(grid_size: int, margin_size: int, locs: np.ndarray, step_size: int = 20):
+    # make a copy of the agent locations
+    locs = locs.copy()
+
     # add margin to agent locations
     locs += margin_size // 2
 
