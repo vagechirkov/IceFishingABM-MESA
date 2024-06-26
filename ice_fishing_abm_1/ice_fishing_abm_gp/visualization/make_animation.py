@@ -210,11 +210,11 @@ if __name__ == "__main__":
 
 
     model_params = {
-        "grid_size": 80,
-        "number_of_agents": 10,
-        "n_resource_clusters": 5,
+        "grid_size": 100,
+        "number_of_agents": 6,
+        "n_resource_clusters": 8,
         "resource_cluster_radius": 7,
-        "resource_quality": 0.5,
+        "resource_quality": 0.2,
         "keep_overall_abundance": False,
     }
     container = JupyterContainer(

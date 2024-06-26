@@ -11,7 +11,7 @@ from .utils import x_y_to_i_j, find_peak
 
 
 class Agent(mesa.Agent):
-    def __init__(self, unique_id, model, resource_cluster_radius):
+    def __init__(self, unique_id, model, resource_cluster_radius, agent_type='greedy'):
         super().__init__(unique_id, model)
 
         # states
@@ -28,14 +28,15 @@ class Agent(mesa.Agent):
         self.catch_wait_time = 5
 
         # ---- belief values ----
+        self.agent_type = agent_type
         self.other_agent_locs = np.empty((0, 2))
-        self.social_gpc = GaussianProcessClassifier(kernel=RBF(10), random_state=0, optimizer=None)
+        self.social_gpc = GaussianProcessClassifier(kernel=RBF(12), random_state=0, optimizer=None)
         self.social_feature = np.zeros((self.model.grid_size, self.model.grid_size))
         self.success_locs = np.empty((0, 2))
-        self.success_gpc = GaussianProcessClassifier(kernel=RBF(10), random_state=0, optimizer=None)
+        self.success_gpc = GaussianProcessClassifier(kernel=RBF(12), random_state=0, optimizer=None)
         self.success_feature = np.zeros((self.model.grid_size, self.model.grid_size))
         self.failure_locs = np.empty((0, 2))
-        self.failure_gpc = GaussianProcessClassifier(kernel=RBF(10), random_state=0, optimizer=None)
+        self.failure_gpc = GaussianProcessClassifier(kernel=RBF(12), random_state=0, optimizer=None)
         self.failure_feature = np.zeros((self.model.grid_size, self.model.grid_size))
         self.belief = np.zeros((self.model.grid_size, self.model.grid_size))
 
@@ -49,6 +50,7 @@ class Agent(mesa.Agent):
 
     def step(self):
         if self._is_moving and not self._is_sampling:
+            self._adjust_destination_if_cell_occupied()
             self.move()
             # update movement destination because social feature might have changed
             # self.movement_destination()
