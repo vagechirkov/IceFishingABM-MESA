@@ -54,6 +54,9 @@ def portray(g, agent_type=Agent, state='fishing'):
                 s.append(500)
                 c.append("red" if is_focused else "blue")
 
+                # if is_focused:
+                #     print(agent.failure_locs)
+
     out = {"x": x, "y": y}
     if len(s) > 0:
         out["s"] = s
@@ -107,14 +110,8 @@ def draw_agent_meso_belief(model, ax, var_name, vmix=None, vmax=None, cmap='viri
     sns.heatmap(var, ax=ax, cmap=cmap, cbar=False, square=True, vmin=vmix, vmax=vmax)
     ax.set_axis_off()
 
-    # draw meso grid
-    # h_lines = np.arange(0, model.grid.width, model.meso_grid_step)
-    # v_lines = np.arange(0, model.grid.height, model.meso_grid_step)
-    # ax.hlines(h_lines, *ax.get_xlim(), color='white', linewidth=0.5)
-    # ax.vlines(v_lines, *ax.get_ylim(), color='white', linewidth=0.5)
-
-    if _agent.is_moving and _agent._destination is not None and model.number_of_agents == 1:
-        ax.scatter(*_agent._destination, color='tab:red', s=20, marker='x')
+    if _agent.is_moving and _agent._destination is not None:  #  and model.number_of_agents == 1
+        ax.scatter(*_agent._destination, color='red', s=20, marker='x')
 
 
 def estimate_catch_rate(agent, model, previous_catch_rate: float = 0):
@@ -163,7 +160,7 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10, interval: i
         #     [a for a in model.schedule.agents if isinstance(a, Agent)], catch_rates)]
         # space_ax.set_title(f"Step {model.schedule.steps} | "
         #                    f"Catch rates " + ' '.join(['%.2f'] * len(catch_rates)) % tuple(catch_rates))
-        space_ax.set_title(f"Step {model.schedule.steps}")
+        space_ax.set_title(f"Step {model.schedule.steps - 1}")
 
         # meso level plots
         draw_agent_meso_belief(model, soc_info_ax, "social_feature")  # , vmix=0, vmax=1, cmap='Greys'
