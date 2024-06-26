@@ -1,13 +1,65 @@
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 from mesa.experimental.jupyter_viz import JupyterContainer
 import seaborn as sns
+from svgpath2mpl import parse_path
+from svgpathtools import svg2paths
 
 from ice_fishing_abm_1.ice_fishing_abm_gp.agent import Agent
 from ice_fishing_abm_1.ice_fishing_abm_gp.resource import Resource
+
+_, fisher_fishing_attributes = svg2paths('fisher-fishing-simple.svg')
+fisher_fishing_marker = parse_path(fisher_fishing_attributes[0]['d'])
+
+fisher_fishing_marker.vertices -= fisher_fishing_marker.vertices.mean(axis=0)
+fisher_fishing_marker = fisher_fishing_marker.transformed(mpl.transforms.Affine2D().rotate_deg(180))
+fisher_fishing_marker = fisher_fishing_marker.transformed(mpl.transforms.Affine2D().scale(-1, 1))
+
+_, fisher_running_attributes = svg2paths('fisher-running-simple.svg')
+fisher_running_marker = parse_path(fisher_running_attributes[0]['d'])
+
+fisher_running_marker.vertices -= fisher_running_marker.vertices.mean(axis=0)
+fisher_running_marker = fisher_running_marker.transformed(mpl.transforms.Affine2D().rotate_deg(180))
+fisher_running_marker = fisher_running_marker.transformed(mpl.transforms.Affine2D().scale(-1, 1))
+
+
+def portray(g, agent_type=Agent, state='fishing'):
+    x = []
+    y = []
+    s = []  # size
+    c = []  # color
+    for i in range(g.width):
+        for j in range(g.height):
+            content = g._grid[i][j]
+            if not content:
+                continue
+            if not hasattr(content, "__iter__"):
+                # Is a single grid
+                content = [content]
+            for agent in content:
+                if not isinstance(agent, agent_type):
+                    continue
+                if state == 'fishing' and not agent._is_sampling:
+                    continue
+                if state == 'moving' and not agent._is_moving:
+                    continue
+
+                is_focused = agent.unique_id == agent.model.n_resource_clusters + 1
+                x.append(i)
+                y.append(j)
+                s.append(500)
+                c.append("red" if is_focused else "blue")
+
+    out = {"x": x, "y": y}
+    if len(s) > 0:
+        out["s"] = s
+    if len(c) > 0:
+        out["c"] = c
+    return out
 
 
 def draw_resource_distribution(model, ax, viz_container: JupyterContainer):
@@ -28,15 +80,21 @@ def draw_resource_distribution(model, ax, viz_container: JupyterContainer):
     # ax.vlines(v_lines, *ax.get_ylim(), color='white', linewidth=0.5)
 
     # draw agents
-    scatter = ax.scatter(**viz_container.portray(model.grid))
-    data = viz_container.portray(model.grid)
-    coords = np.array(list(zip(data["x"], data["y"])))
-    # center coordinates of the scatter points
-    scatter.set_offsets(coords + 0.5)
-    if "c" in data:
-        scatter.set_color(data["c"])
-    if "s" in data:
-        scatter.set_sizes(data["s"])
+    data_fishing = portray(model.grid, state='fishing')
+    data_moving = portray(model.grid, state='moving')
+
+    for data, marker in zip([data_fishing, data_moving], [fisher_fishing_marker, fisher_running_marker]):
+        if len(data["x"]) == 0:
+            continue
+
+        scatter = ax.scatter(**data, marker=marker)
+        coords = np.array(list(zip(data["x"], data["y"])))
+        # center coordinates of the scatter points
+        scatter.set_offsets(coords + 0.5)
+        if "c" in data:
+            scatter.set_color(data["c"])
+        if "s" in data:
+            scatter.set_sizes(data["s"])
 
 
 def draw_agent_meso_belief(model, ax, var_name, vmix=None, vmax=None, cmap='viridis'):
@@ -105,6 +163,7 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10, interval: i
         #     [a for a in model.schedule.agents if isinstance(a, Agent)], catch_rates)]
         # space_ax.set_title(f"Step {model.schedule.steps} | "
         #                    f"Catch rates " + ' '.join(['%.2f'] * len(catch_rates)) % tuple(catch_rates))
+        space_ax.set_title(f"Step {model.schedule.steps}")
 
         # meso level plots
         draw_agent_meso_belief(model, soc_info_ax, "social_feature")  # , vmix=0, vmax=1, cmap='Greys'
@@ -135,18 +194,25 @@ if __name__ == "__main__":
             return {
                 "color": "tab:orange" if is_focused else "tab:blue" if agent._is_moving else "tab:red",
                 "size": 100,
+                "is_resource": False,
+                "focused": is_focused,
+                "fishing": agent._is_sampling,
             }
         else:
             return {
                 "color": "black",
                 "size": 1,
+                "marker": "s",
+                "is_resource": True,
+                "focused": False,
+                "fishing": False,
             }
 
 
     model_params = {
         "grid_size": 80,
         "number_of_agents": 5,
-        "n_resource_clusters": 2,
+        "n_resource_clusters": 10,
     }
     container = JupyterContainer(
         Model,
@@ -159,6 +225,6 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    plot_n_steps(viz_container=container, n_steps=100, interval=800)
+    plot_n_steps(viz_container=container, n_steps=20, interval=800)
     end = time.time()
     print(f"Time elapsed: {end - start} seconds")
