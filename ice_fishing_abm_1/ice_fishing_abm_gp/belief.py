@@ -18,6 +18,7 @@ def construct_dataset_info(grid_size: int, margin_size: int, locs: np.ndarray, s
     # meshgrid size
     mesh_size = (grid_size + margin_size) // step_size
     mesh = np.array(np.meshgrid(range(mesh_size), range(mesh_size))) * step_size
+    mesh += margin_size // 2
 
     # mesh to long format
     mesh = mesh.reshape(2, -1).T

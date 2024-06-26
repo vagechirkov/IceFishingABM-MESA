@@ -50,6 +50,8 @@ class Agent(mesa.Agent):
     def step(self):
         if self._is_moving and not self._is_sampling:
             self.move()
+            # update movement destination because social feature might have changed
+            # self.movement_destination()
             return
 
         if self._is_sampling and not self._is_moving:
@@ -121,7 +123,7 @@ class Agent(mesa.Agent):
             self._collected_resource_last_spot = 0
 
     def movement_destination(self):
-        margin = 20
+        margin = 40
         step_size = 20
         # social feature
         self.add_other_agent_locs()
@@ -131,19 +133,23 @@ class Agent(mesa.Agent):
             Xs, ys = construct_dataset_info(self.model.grid_size, margin, self.other_agent_locs, step_size)
             self.social_feature = generate_belief_matrix(self.model.grid_size, margin, Xs, ys, self.social_gpc, 1).T
 
-        # success feature
-        if self.success_locs.size == 0:
-            self.success_feature = np.zeros((self.model.grid_size, self.model.grid_size))
-        else:
-            Xs, ys = construct_dataset_info(self.model.grid_size, margin, self.success_locs, step_size)
-            self.success_feature = generate_belief_matrix(self.model.grid_size, margin, Xs, ys, self.success_gpc, 1).T
+        # recompute this features only if the agent is not moving
+        if not self._is_moving:
+            # success feature
+            if self.success_locs.size == 0:
+                self.success_feature = np.zeros((self.model.grid_size, self.model.grid_size))
+            else:
+                Xc, yc = construct_dataset_info(self.model.grid_size, margin, self.success_locs, step_size)
+                self.success_feature = generate_belief_matrix(
+                    self.model.grid_size, margin, Xc, yc, self.success_gpc, 1).T
 
-        # failure feature
-        if self.failure_locs.size == 0:
-            self.failure_feature = np.zeros((self.model.grid_size, self.model.grid_size))
-        else:
-            Xs, ys = construct_dataset_info(self.model.grid_size, margin, self.failure_locs, step_size)
-            self.failure_feature = generate_belief_matrix(self.model.grid_size, margin, Xs, ys, self.failure_gpc, 0).T
+            # failure feature
+            if self.failure_locs.size == 0:
+                self.failure_feature = np.zeros((self.model.grid_size, self.model.grid_size))
+            else:
+                Xf, yf = construct_dataset_info(self.model.grid_size, margin, self.failure_locs, step_size)
+                self.failure_feature = generate_belief_matrix(
+                    self.model.grid_size, margin, Xf, yf, self.failure_gpc, 0).T
 
         # combine features
         self.belief = (self.model.w_social * self.social_feature +
