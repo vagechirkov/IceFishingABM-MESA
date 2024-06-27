@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.gaussian_process import GaussianProcessClassifier, GaussianProcessRegressor
 
 
 def generate_belief_matrix(grid_size: int, margin_size: int, X: np.ndarray, y: np.ndarray,
@@ -11,6 +11,16 @@ def generate_belief_matrix(grid_size: int, margin_size: int, X: np.ndarray, y: n
     return s_prob[:, class_index].reshape(size, size)[
            margin_size // 2:-margin_size // 2,
            margin_size // 2:-margin_size // 2]
+
+
+def generate_belief_mean_matrix(grid_size: int, gpr: GaussianProcessRegressor, return_std=True):
+    x = np.meshgrid(range(grid_size), range(grid_size))
+    if return_std:
+        s_mean, s_std = gpr.predict(np.array(x).reshape(2, -1).T, return_std=True)
+        return s_mean.reshape(grid_size, grid_size), s_std.reshape(grid_size, grid_size)
+    else:
+        s_mean, s_cov = gpr.predict(np.array(x).reshape(2, -1).T, return_std=False, return_cov=True)
+        return s_mean.reshape(grid_size, grid_size), s_cov
 
 
 def construct_dataset_info(grid_size: int, margin_size: int, locs: np.ndarray, step_size: int = 20):
