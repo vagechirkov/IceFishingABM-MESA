@@ -1,17 +1,18 @@
+from random import random
 from typing import Union
 
 import mesa
 import numpy as np
-from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.gaussian_process import GaussianProcessClassifier, GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF
 
 from .resource import Resource
-from .belief import construct_dataset_info, generate_belief_matrix
+from .belief import construct_dataset_info, generate_belief_matrix, generate_belief_mean_matrix
 from .utils import x_y_to_i_j, find_peak
 
 
 class Agent(mesa.Agent):
-    def __init__(self, unique_id, model, resource_cluster_radius, agent_type='greedy'):
+    def __init__(self, unique_id, model, resource_cluster_radius, agent_type='greedy', ucb_beta=0.2, tau=0.01):
         super().__init__(unique_id, model)
 
         # states
@@ -28,17 +29,27 @@ class Agent(mesa.Agent):
         self.catch_wait_time = 5
 
         # ---- belief values ----
+        self.ucb_beta = ucb_beta
+        self.softmax_tau = tau
         self.agent_type = agent_type
         self.other_agent_locs = np.empty((0, 2))
-        self.social_gpc = GaussianProcessClassifier(kernel=RBF(12), random_state=0, optimizer=None)
-        self.social_feature = np.zeros((self.model.grid_size, self.model.grid_size))
+        self.social_gpr = GaussianProcessRegressor(kernel=RBF(12), random_state=0, optimizer=None)
+        self.social_feature_m = np.zeros((self.model.grid_size, self.model.grid_size))
+        self.social_feature_std = np.zeros((self.model.grid_size, self.model.grid_size))
         self.success_locs = np.empty((0, 2))
-        self.success_gpc = GaussianProcessClassifier(kernel=RBF(12), random_state=0, optimizer=None)
-        self.success_feature = np.zeros((self.model.grid_size, self.model.grid_size))
+        self.success_gpr = GaussianProcessRegressor(kernel=RBF(5), random_state=0, optimizer=None)
+        self.success_feature_m = np.zeros((self.model.grid_size, self.model.grid_size))
+        self.success_feature_std = np.zeros((self.model.grid_size, self.model.grid_size))
         self.failure_locs = np.empty((0, 2))
-        self.failure_gpc = GaussianProcessClassifier(kernel=RBF(12), random_state=0, optimizer=None)
-        self.failure_feature = np.zeros((self.model.grid_size, self.model.grid_size))
-        self.belief = np.zeros((self.model.grid_size, self.model.grid_size))
+        self.failure_gpr = GaussianProcessRegressor(kernel=RBF(5), random_state=0, optimizer=None)
+        self.failure_feature_m = np.zeros((self.model.grid_size, self.model.grid_size))
+        self.failure_feature_std = np.zeros((self.model.grid_size, self.model.grid_size))
+        self.belief_m = np.zeros((self.model.grid_size, self.model.grid_size))
+        self.belief_std = np.zeros((self.model.grid_size, self.model.grid_size))
+        self.belief_ucb = np.zeros((self.model.grid_size, self.model.grid_size))
+        self.belief_softmax = np.zeros((self.model.grid_size, self.model.grid_size))
+        self.mesh = np.array(np.meshgrid(range(self.model.grid_size), range(self.model.grid_size))).reshape(2, -1).T
+        self.mesh_indices = np.arange(0, self.mesh.shape[0])
 
     @property
     def is_moving(self):
@@ -68,6 +79,7 @@ class Agent(mesa.Agent):
 
             # select a new destination of movement
             self.movement_destination()
+            self._add_margin_around_border_for_destination()
             self._is_moving = True
 
         if self._is_moving and self._is_sampling:
@@ -129,42 +141,84 @@ class Agent(mesa.Agent):
             self._collected_resource_last_spot = 0
 
     def movement_destination(self):
-        margin = 40
-        step_size = 20
         if self.other_agent_locs.size == 0:
-            self.social_feature = np.zeros((self.model.grid_size, self.model.grid_size))
+            self.social_feature_m = np.zeros((self.model.grid_size, self.model.grid_size))
+            self.social_feature_std = np.zeros((self.model.grid_size, self.model.grid_size))
         else:
-            Xs, ys = construct_dataset_info(self.model.grid_size, margin, self.other_agent_locs, step_size)
-            self.social_feature = generate_belief_matrix(self.model.grid_size, margin, Xs, ys, self.social_gpc, 1).T
+            self.social_gpr.fit(self.other_agent_locs, np.ones(self.other_agent_locs.shape[0]))
+            self.social_feature_m, self.social_feature_std = generate_belief_mean_matrix(
+                self.model.grid_size, self.social_gpr, return_std=True)
+
+        self.social_feature_m, self.social_feature_std = self.social_feature_m.T, self.social_feature_std.T
 
         # recompute this features only if the agent is not moving
         if not self._is_moving:
             # success feature
             if self.success_locs.size == 0:
-                self.success_feature = np.zeros((self.model.grid_size, self.model.grid_size))
+                self.success_feature_m = np.zeros((self.model.grid_size, self.model.grid_size))
+                self.success_feature_std = np.zeros((self.model.grid_size, self.model.grid_size))
             else:
-                Xc, yc = construct_dataset_info(self.model.grid_size, margin, self.success_locs, step_size)
-                self.success_feature = generate_belief_matrix(
-                    self.model.grid_size, margin, Xc, yc, self.success_gpc, 1).T
+                self.success_gpr.fit(self.success_locs, np.ones(self.success_locs.shape[0]))
+                self.success_feature_m, self.success_feature_std = generate_belief_mean_matrix(
+                    self.model.grid_size, self.success_gpr, return_std=True)
+
+            self.success_feature_m, self.success_feature_std = self.success_feature_m.T, self.success_feature_std.T
 
             # failure feature
             if self.failure_locs.size == 0:
-                self.failure_feature = np.zeros((self.model.grid_size, self.model.grid_size))
+                self.failure_feature_m = np.zeros((self.model.grid_size, self.model.grid_size))
+                self.failure_feature_std = np.zeros((self.model.grid_size, self.model.grid_size))
             else:
-                Xf, yf = construct_dataset_info(self.model.grid_size, margin, self.failure_locs, step_size)
-                self.failure_feature = generate_belief_matrix(
-                    self.model.grid_size, margin, Xf, yf, self.failure_gpc, 0).T
+                self.failure_gpr.fit(self.failure_locs, np.ones(self.failure_locs.shape[0]))
+                self.failure_feature_m, self.failure_feature_std = generate_belief_mean_matrix(
+                    self.model.grid_size, self.failure_gpr, return_std=True)
+
+            self.failure_feature_m, self.failure_feature_std = self.failure_feature_m.T, self.failure_feature_std.T
 
         # combine features
-        self.belief = (self.model.w_social * self.social_feature +
-                       self.model.w_success * self.success_feature +
-                       self.model.w_failure * self.failure_feature)
+        self.belief_m = self.model.w_social * self.social_feature_m + \
+                        self.model.w_success * self.success_feature_m - \
+                        self.model.w_failure * self.failure_feature_m
+
+        self.belief_std = np.sqrt(
+            self.model.w_social ** 2 * self.social_feature_std ** 2 +
+            self.model.w_success ** 2 * self.success_feature_std ** 2 +
+            self.model.w_failure ** 2 * self.failure_feature_std ** 2)
+
+        # compute UCB
+        self.belief_ucb = self.belief_m + self.ucb_beta * self.belief_std
+
+        # compute softmax
+        self.belief_softmax = np.exp(self.belief_ucb / self.softmax_tau) / np.sum(
+            np.exp(self.belief_ucb / self.softmax_tau))
 
         # Add spacial discounting
         # TODO: add spacial discounting
 
         # find the next destination as a random sample from the belief using belief as a probability distribution
-        self._destination = x_y_to_i_j(*find_peak(self.belief))
+        # self._destination = x_y_to_i_j(*find_peak(self.belief))
+
+        # Sample random destination from the belief softmax
+        # x_y_to_i_j(*)
+        self._destination = self.mesh[np.random.choice(self.mesh_indices, p=self.belief_softmax.reshape(-1)), :]
+
+    def _add_margin_around_border_for_destination(self):
+        """
+        Add a margin around the border of the grid to prevent agents from moving to the border.
+        """
+        if self._destination is None:
+            return
+
+        x, y = self._destination
+        if x == 0:
+            x += 1
+        elif x == self.model.grid.width - 1:
+            x -= 1
+        if y == 0:
+            y += 1
+        elif y == self.model.grid.height - 1:
+            y -= 1
+        self._destination = x, y
 
     def _adjust_destination_if_cell_occupied(self):
         if self._destination is None:

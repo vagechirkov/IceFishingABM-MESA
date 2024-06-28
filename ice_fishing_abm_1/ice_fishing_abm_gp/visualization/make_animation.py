@@ -134,10 +134,10 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10, interval: i
     gs = GridSpec(2, 3, figure=space_fig, wspace=0.08, hspace=0.08,
                   width_ratios=[1, 0.5, 0.5], height_ratios=[1, 1], left=0.02, right=0.98, top=0.96, bottom=0.04)
     space_ax = space_fig.add_subplot(gs[:, 0])
-    observations_ax = space_fig.add_subplot(gs[0, 1])
-    env_belief_ax = space_fig.add_subplot(gs[0, 2])
-    soc_info_ax = space_fig.add_subplot(gs[1, 1])
-    combined_ax = space_fig.add_subplot(gs[1, 2])
+    ax_0_1 = space_fig.add_subplot(gs[0, 1])
+    ax_0_2 = space_fig.add_subplot(gs[0, 2])
+    ax_1_1 = space_fig.add_subplot(gs[1, 1])
+    ax_1_2 = space_fig.add_subplot(gs[1, 2])
 
     # remove axis
     for ax in space_fig.get_axes():
@@ -163,14 +163,14 @@ def plot_n_steps(viz_container: JupyterContainer, n_steps: int = 10, interval: i
         space_ax.set_title(f"Step {model.schedule.steps - 1}")
 
         # meso level plots
-        draw_agent_meso_belief(model, soc_info_ax, "social_feature")  # , vmix=0, vmax=1, cmap='Greys'
-        soc_info_ax.set_title("Social Feature")
-        draw_agent_meso_belief(model, env_belief_ax, "success_feature")
-        env_belief_ax.set_title("Success Feature")
-        draw_agent_meso_belief(model, observations_ax, "failure_feature")
-        observations_ax.set_title("Failure Feature")
-        draw_agent_meso_belief(model, combined_ax, "belief")
-        combined_ax.set_title("Combined Features")
+        draw_agent_meso_belief(model, ax_0_1, "social_feature_m")  # , vmix=0, vmax=1, cmap='Greys'
+        ax_0_1.set_title("Social Feature")
+        draw_agent_meso_belief(model, ax_0_2, "failure_feature_m")
+        ax_0_2.set_title("Loss Feature")
+        draw_agent_meso_belief(model, ax_1_1, "belief_ucb")
+        ax_1_1.set_title("UCB Belief")
+        draw_agent_meso_belief(model, ax_1_2, "belief_softmax")
+        ax_1_2.set_title("Softmax Belief")
 
     ani = animation.FuncAnimation(space_fig, animate, repeat=True, frames=n_steps, interval=interval)
 
