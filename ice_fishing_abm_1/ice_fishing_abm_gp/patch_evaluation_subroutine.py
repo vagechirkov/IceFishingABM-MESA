@@ -12,3 +12,7 @@ class PatchEvaluationSubroutine:
 class GPPatchEvaluationSubroutine(PatchEvaluationSubroutine):
     def __init__(self):
         super().__init__()
+        pass
+
+    def stay_on_patch(self, time_on_patch, time_since_last_catch, threshold):
+        return super().stay_on_patch(time_on_patch, time_since_last_catch, threshold)
