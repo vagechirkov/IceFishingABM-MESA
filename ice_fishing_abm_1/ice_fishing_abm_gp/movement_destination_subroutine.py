@@ -1,5 +1,4 @@
 import numpy as np
-from .utils import x_y_to_i_j
 from .belief import generate_belief_mean_matrix
 
 class GPMovementDestinationSubroutine:

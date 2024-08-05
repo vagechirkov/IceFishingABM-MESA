@@ -118,5 +118,92 @@ def test_calculate_features_with_edge_values(setup_mock_agent):
     assert np.all(feature_m == 100)
     assert np.all(feature_std == 1)
 
+def test_calculate_features_probabilities(setup_mock_agent):
+    mock_gpr = setup_mock_agent
+    grid_size = 10
+    locations = np.array([[1, 1], [2, 2]])
+
+    # Mock the return value of predict with values that should sum to 1
+    mock_gpr.predict = Mock(return_value=(np.random.uniform(0, 1, (10, 10)), np.random.uniform(0, 0.1, (10, 10))))
+
+    mock_agent = Mock()
+    mock_agent.model.grid_size = grid_size
+    mock_agent.social_gpr = mock_gpr
+    mock_agent.success_gpr = mock_gpr
+    mock_agent.failure_gpr = mock_gpr
+    mock_agent.other_agent_locs = np.empty((0, 2))
+    mock_agent.success_locs = np.empty((0, 2))
+    mock_agent.failure_locs = np.empty((0, 2))
+    mock_agent.mesh = np.array(np.meshgrid(range(grid_size), range(grid_size))).reshape(2, -1).T
+    mock_agent.mesh_indices = np.arange(0, mock_agent.mesh.shape[0])
+    mock_agent.ucb_beta = 0.2
+    mock_agent.softmax_tau = 0.01
+
+    subroutine = GPMovementDestinationSubroutine(agent=mock_agent)
+    feature_m, feature_std = subroutine.calculate_features(locations, mock_gpr, grid_size)
+
+    # Check that the mean features are between 0 and 1
+    assert np.all(feature_m >= 0)
+    assert np.all(feature_m <= 1)
+
+    # Check that the sum of features in the entire grid is approximately 1 (if it should be normalized)
+    assert np.isclose(np.sum(feature_m), 1, atol=0.1)
+
+def test_calculate_features_normalization(setup_mock_agent):
+    mock_gpr = setup_mock_agent
+    grid_size = 10
+    locations = np.array([[1, 1], [2, 2]])
+
+    # Mock the return value of predict with values that need normalization
+    mock_gpr.predict = Mock(return_value=(np.random.normal(0, 1, (10, 10)), np.random.normal(0.5, 0.1, (10, 10))))
+
+    mock_agent = Mock()
+    mock_agent.model.grid_size = grid_size
+    mock_agent.social_gpr = mock_gpr
+    mock_agent.success_gpr = mock_gpr
+    mock_agent.failure_gpr = mock_gpr
+    mock_agent.other_agent_locs = np.empty((0, 2))
+    mock_agent.success_locs = np.empty((0, 2))
+    mock_agent.failure_locs = np.empty((0, 2))
+    mock_agent.mesh = np.array(np.meshgrid(range(grid_size), range(grid_size))).reshape(2, -1).T
+    mock_agent.mesh_indices = np.arange(0, mock_agent.mesh.shape[0])
+    mock_agent.ucb_beta = 0.2
+    mock_agent.softmax_tau = 0.01
+
+    subroutine = GPMovementDestinationSubroutine(agent=mock_agent)
+    feature_m, feature_std = subroutine.calculate_features(locations, mock_gpr, grid_size)
+
+    # Check normalization if it's part of the feature processing
+    norm_factor = np.max(feature_m) - np.min(feature_m)
+    assert np.isclose(norm_factor, 1, atol=0.1)
+
+def test_calculate_features_non_negativity(setup_mock_agent):
+    mock_gpr = setup_mock_agent
+    grid_size = 10
+    locations = np.array([[1, 1], [2, 2]])
+
+    # Mock the return value of predict with values that should be non-negative
+    mock_gpr.predict = Mock(return_value=(np.abs(np.random.normal(0, 1, (10, 10))), np.abs(np.random.normal(0.5, 0.1, (10, 10)))) )
+
+    mock_agent = Mock()
+    mock_agent.model.grid_size = grid_size
+    mock_agent.social_gpr = mock_gpr
+    mock_agent.success_gpr = mock_gpr
+    mock_agent.failure_gpr = mock_gpr
+    mock_agent.other_agent_locs = np.empty((0, 2))
+    mock_agent.success_locs = np.empty((0, 2))
+    mock_agent.failure_locs = np.empty((0, 2))
+    mock_agent.mesh = np.array(np.meshgrid(range(grid_size), range(grid_size))).reshape(2, -1).T
+    mock_agent.mesh_indices = np.arange(0, mock_agent.mesh.shape[0])
+    mock_agent.ucb_beta = 0.2
+    mock_agent.softmax_tau = 0.01
+
+    subroutine = GPMovementDestinationSubroutine(agent=mock_agent)
+    feature_m, feature_std = subroutine.calculate_features(locations, mock_gpr, grid_size)
+
+    # Check that all feature values are non-negative
+    assert np.all(feature_m >= 0)
+    assert np.all(feature_std >= 0)
+
 if __name__ == "__main__":
     pytest.main()
