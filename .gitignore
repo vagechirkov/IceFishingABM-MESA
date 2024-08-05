@@ -1,4 +1,9 @@
 ### venv template
+
+## Run Tests
+
+run_tests.py 
+
 # Virtualenv
 # http://iamzed.com/2009/05/07/a-primer-on-virtualenv/
 .Python
