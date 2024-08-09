@@ -1,8 +1,7 @@
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessClassifier, GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF
-from .belief import construct_dataset_info, generate_belief_matrix, generate_belief_mean_matrix
-from .utils import x_y_to_i_j, find_peak
+from .belief import generate_belief_mean_matrix
 class ExplorationStrategy:
     def __init__(self, 
         grid_size: int = 100,
