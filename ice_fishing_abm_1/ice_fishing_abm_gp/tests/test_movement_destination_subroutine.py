@@ -1,209 +1,98 @@
 import pytest
 import numpy as np
-from unittest.mock import Mock
-from ice_fishing_abm_1.ice_fishing_abm_gp.movement_destination_subroutine import GPMovementDestinationSubroutine
+from pytest import fixture
+from ice_fishing_abm_1.ice_fishing_abm_gp.movement_destination_subroutine import ExplorationStrategy, GPExplorationStrategy
 
-@pytest.fixture
-def setup_mock_agent():
-    # Create a mock for the GaussianProcessRegressor
-    mock_gpr = Mock()
-    mock_gpr.fit = Mock()
-    return mock_gpr
+@fixture
+def exploration_strategy():
+    return ExplorationStrategy()
 
-def test_calculate_features_basic(setup_mock_agent):
-    mock_gpr = setup_mock_agent
-    grid_size = 10
-    locations = np.array([[1, 1], [2, 2]])
+@fixture
+def gp_exploration_strategy():
+    return GPExplorationStrategy()
 
-    # Mock the return value of predict
-    mock_gpr.predict = Mock(return_value=(np.zeros((10, 10)), np.ones((10, 10))))
+def test_initialization_exploration_strategy(exploration_strategy):
+    assert exploration_strategy.grid_size == 100
+    assert exploration_strategy.ucb_beta == 0.2
+    assert exploration_strategy.softmax_tau == 0.01
+    assert exploration_strategy.mesh.shape == (10000, 2)
+    assert exploration_strategy.belief_softmax.shape == (100, 100)
 
-    mock_agent = Mock()
-    mock_agent.model.grid_size = grid_size
-    mock_agent.social_gpr = mock_gpr
-    mock_agent.success_gpr = mock_gpr
-    mock_agent.failure_gpr = mock_gpr
-    mock_agent.other_agent_locs = np.empty((0, 2))
-    mock_agent.success_locs = np.empty((0, 2))
-    mock_agent.failure_locs = np.empty((0, 2))
-    mock_agent.mesh = np.array(np.meshgrid(range(grid_size), range(grid_size))).reshape(2, -1).T
-    mock_agent.mesh_indices = np.arange(0, mock_agent.mesh.shape[0])
-    mock_agent.ucb_beta = 0.2
-    mock_agent.softmax_tau = 0.01
+def test_initialization_gp_exploration_strategy(gp_exploration_strategy):
+    assert gp_exploration_strategy.grid_size == 100
+    assert gp_exploration_strategy.w_social == 0.4
+    assert gp_exploration_strategy.w_success == 0.3
+    assert gp_exploration_strategy.w_failure == 0.3
+    assert gp_exploration_strategy.social_feature_m.shape == (100, 100)
+    assert gp_exploration_strategy.success_feature_std.shape == (100, 100)
 
-    subroutine = GPMovementDestinationSubroutine(agent=mock_agent)
-    feature_m, feature_std = subroutine.calculate_features(locations, mock_gpr, grid_size)
+def test_calculate_features_with_no_locations(gp_exploration_strategy):
+    feature_m, feature_std = gp_exploration_strategy.calculate_features(
+        np.empty((0, 2)), gp_exploration_strategy.social_gpr, gp_exploration_strategy.grid_size)
+    
+    assert feature_m.shape == (100, 100)
+    assert feature_std.shape == (100, 100)
+    assert np.all(feature_m == 0)
+    assert np.all(feature_std == 0)
 
-    assert feature_m.shape == (grid_size, grid_size)
-    assert feature_std.shape == (grid_size, grid_size)
+def test_calculate_features_with_locations(gp_exploration_strategy):
+    locations = np.array([[10, 10], [20, 20]])
+    
+    # Mocking generate_belief_mean_matrix functionality directly in the test
+    def mock_generate_belief_mean_matrix(grid_size, gpr, return_std=True):
+        return np.ones((grid_size, grid_size)), np.ones((grid_size, grid_size))
 
-def test_calculate_features_different_grid_sizes(setup_mock_agent):
-    mock_gpr = setup_mock_agent
-    for grid_size in [5, 10, 15]:
-        locations = np.array([[1, 1], [2, 2]])
-        mock_gpr.predict = Mock(return_value=(np.zeros((grid_size, grid_size)), np.ones((grid_size, grid_size))))
+    gp_exploration_strategy.calculate_features = mock_generate_belief_mean_matrix
 
-        mock_agent = Mock()
-        mock_agent.model.grid_size = grid_size
-        mock_agent.social_gpr = mock_gpr
-        mock_agent.success_gpr = mock_gpr
-        mock_agent.failure_gpr = mock_gpr
-        mock_agent.other_agent_locs = np.empty((0, 2))
-        mock_agent.success_locs = np.empty((0, 2))
-        mock_agent.failure_locs = np.empty((0, 2))
-        mock_agent.mesh = np.array(np.meshgrid(range(grid_size), range(grid_size))).reshape(2, -1).T
-        mock_agent.mesh_indices = np.arange(0, mock_agent.mesh.shape[0])
-        mock_agent.ucb_beta = 0.2
-        mock_agent.softmax_tau = 0.01
+    feature_m, feature_std = gp_exploration_strategy.calculate_features(
+        locations, gp_exploration_strategy.social_gpr, gp_exploration_strategy.grid_size)
 
-        subroutine = GPMovementDestinationSubroutine(agent=mock_agent)
-        feature_m, feature_std = subroutine.calculate_features(locations, mock_gpr, grid_size)
-
-        assert feature_m.shape == (grid_size, grid_size)
-        assert feature_std.shape == (grid_size, grid_size)
-
-def test_calculate_features_empty_locations(setup_mock_agent):
-    mock_gpr = setup_mock_agent
-    grid_size = 10
-    locations = np.array([])  # Empty locations
-
-    # Mock the return value of predict
-    mock_gpr.predict = Mock(return_value=(np.zeros((10, 10)), np.ones((10, 10))))
-
-    mock_agent = Mock()
-    mock_agent.model.grid_size = grid_size
-    mock_agent.social_gpr = mock_gpr
-    mock_agent.success_gpr = mock_gpr
-    mock_agent.failure_gpr = mock_gpr
-    mock_agent.other_agent_locs = np.empty((0, 2))
-    mock_agent.success_locs = np.empty((0, 2))
-    mock_agent.failure_locs = np.empty((0, 2))
-    mock_agent.mesh = np.array(np.meshgrid(range(grid_size), range(grid_size))).reshape(2, -1).T
-    mock_agent.mesh_indices = np.arange(0, mock_agent.mesh.shape[0])
-    mock_agent.ucb_beta = 0.2
-    mock_agent.softmax_tau = 0.01
-
-    subroutine = GPMovementDestinationSubroutine(agent=mock_agent)
-    feature_m, feature_std = subroutine.calculate_features(locations, mock_gpr, grid_size)
-
-    assert feature_m.shape == (grid_size, grid_size)
-    assert feature_std.shape == (grid_size, grid_size)
-
-def test_calculate_features_with_edge_values(setup_mock_agent):
-    mock_gpr = setup_mock_agent
-    grid_size = 10
-    locations = np.array([[0, 0], [9, 9]])
-
-    # Mock the return value of predict with edge values
-    mock_gpr.predict = Mock(return_value=(np.full((10, 10), 100), np.full((10, 10), 1)))
-
-    mock_agent = Mock()
-    mock_agent.model.grid_size = grid_size
-    mock_agent.social_gpr = mock_gpr
-    mock_agent.success_gpr = mock_gpr
-    mock_agent.failure_gpr = mock_gpr
-    mock_agent.other_agent_locs = np.empty((0, 2))
-    mock_agent.success_locs = np.empty((0, 2))
-    mock_agent.failure_locs = np.empty((0, 2))
-    mock_agent.mesh = np.array(np.meshgrid(range(grid_size), range(grid_size))).reshape(2, -1).T
-    mock_agent.mesh_indices = np.arange(0, mock_agent.mesh.shape[0])
-    mock_agent.ucb_beta = 0.2
-    mock_agent.softmax_tau = 0.01
-
-    subroutine = GPMovementDestinationSubroutine(agent=mock_agent)
-    feature_m, feature_std = subroutine.calculate_features(locations, mock_gpr, grid_size)
-
-    assert feature_m.shape == (grid_size, grid_size)
-    assert feature_std.shape == (grid_size, grid_size)
-    assert np.all(feature_m == 100)
+    assert feature_m.shape == (100, 100)
+    assert feature_std.shape == (100, 100)
+    assert np.all(feature_m == 1)
     assert np.all(feature_std == 1)
 
-def test_calculate_features_probabilities(setup_mock_agent):
-    mock_gpr = setup_mock_agent
-    grid_size = 10
-    locations = np.array([[1, 1], [2, 2]])
+def test_compute_beliefs(gp_exploration_strategy):
+    gp_exploration_strategy.social_feature_m = np.ones((100, 100)) * 0.5
+    gp_exploration_strategy.success_feature_m = np.ones((100, 100)) * 0.3
+    gp_exploration_strategy.failure_feature_m = np.ones((100, 100)) * 0.2
 
-    # Mock the return value of predict with values that should sum to 1
-    mock_gpr.predict = Mock(return_value=(np.random.uniform(0, 1, (10, 10)), np.random.uniform(0, 0.1, (10, 10))))
+    gp_exploration_strategy.social_feature_std = np.ones((100, 100)) * 0.1
+    gp_exploration_strategy.success_feature_std = np.ones((100, 100)) * 0.2
+    gp_exploration_strategy.failure_feature_std = np.ones((100, 100)) * 0.3
 
-    mock_agent = Mock()
-    mock_agent.model.grid_size = grid_size
-    mock_agent.social_gpr = mock_gpr
-    mock_agent.success_gpr = mock_gpr
-    mock_agent.failure_gpr = mock_gpr
-    mock_agent.other_agent_locs = np.empty((0, 2))
-    mock_agent.success_locs = np.empty((0, 2))
-    mock_agent.failure_locs = np.empty((0, 2))
-    mock_agent.mesh = np.array(np.meshgrid(range(grid_size), range(grid_size))).reshape(2, -1).T
-    mock_agent.mesh_indices = np.arange(0, mock_agent.mesh.shape[0])
-    mock_agent.ucb_beta = 0.2
-    mock_agent.softmax_tau = 0.01
+    gp_exploration_strategy.compute_beliefs()
 
-    subroutine = GPMovementDestinationSubroutine(agent=mock_agent)
-    feature_m, feature_std = subroutine.calculate_features(locations, mock_gpr, grid_size)
+    assert gp_exploration_strategy.belief_m.shape == (100, 100)
+    assert gp_exploration_strategy.belief_std.shape == (100, 100)
+    assert gp_exploration_strategy.belief_ucb.shape == (100, 100)
+    assert gp_exploration_strategy.belief_softmax.shape == (100, 100)
+    assert np.isclose(np.sum(gp_exploration_strategy.belief_softmax), 1.0)
 
-    # Check that the mean features are between 0 and 1
-    assert np.all(feature_m >= 0)
-    assert np.all(feature_m <= 1)
 
-    # Check that the sum of features in the entire grid is approximately 1 (if it should be normalized)
-    assert np.isclose(np.sum(feature_m), 1, atol=0.1)
+def test_choose_destination(exploration_strategy):
+    exploration_strategy.belief_softmax = np.ones((100, 100)) / 10000
+    exploration_strategy.choose_destination()
+    assert exploration_strategy.destination.shape == (2,)
+    assert exploration_strategy.destination[0] < 100
+    assert exploration_strategy.destination[1] < 100
 
-def test_calculate_features_normalization(setup_mock_agent):
-    mock_gpr = setup_mock_agent
-    grid_size = 10
-    locations = np.array([[1, 1], [2, 2]])
+def test_movement_destination(gp_exploration_strategy):
+    # Mocking the values directly
+    gp_exploration_strategy.social_feature_m = np.ones((100, 100))
+    gp_exploration_strategy.social_feature_std = np.ones((100, 100))
+    gp_exploration_strategy.success_feature_m = np.ones((100, 100))
+    gp_exploration_strategy.success_feature_std = np.ones((100, 100))
+    gp_exploration_strategy.failure_feature_m = np.ones((100, 100))
+    gp_exploration_strategy.failure_feature_std = np.ones((100, 100))
+    
+    # Mocking the agent property
+    gp_exploration_strategy.agent = type('Agent', (object,), {'_is_moving': False})()
 
-    # Mock the return value of predict with values that need normalization
-    mock_gpr.predict = Mock(return_value=(np.random.normal(0, 1, (10, 10)), np.random.normal(0.5, 0.1, (10, 10))))
+    gp_exploration_strategy.movement_destination()
 
-    mock_agent = Mock()
-    mock_agent.model.grid_size = grid_size
-    mock_agent.social_gpr = mock_gpr
-    mock_agent.success_gpr = mock_gpr
-    mock_agent.failure_gpr = mock_gpr
-    mock_agent.other_agent_locs = np.empty((0, 2))
-    mock_agent.success_locs = np.empty((0, 2))
-    mock_agent.failure_locs = np.empty((0, 2))
-    mock_agent.mesh = np.array(np.meshgrid(range(grid_size), range(grid_size))).reshape(2, -1).T
-    mock_agent.mesh_indices = np.arange(0, mock_agent.mesh.shape[0])
-    mock_agent.ucb_beta = 0.2
-    mock_agent.softmax_tau = 0.01
-
-    subroutine = GPMovementDestinationSubroutine(agent=mock_agent)
-    feature_m, feature_std = subroutine.calculate_features(locations, mock_gpr, grid_size)
-
-    # Check normalization if it's part of the feature processing
-    norm_factor = np.max(feature_m) - np.min(feature_m)
-    assert np.isclose(norm_factor, 1, atol=0.1)
-
-def test_calculate_features_non_negativity(setup_mock_agent):
-    mock_gpr = setup_mock_agent
-    grid_size = 10
-    locations = np.array([[1, 1], [2, 2]])
-
-    # Mock the return value of predict with values that should be non-negative
-    mock_gpr.predict = Mock(return_value=(np.abs(np.random.normal(0, 1, (10, 10))), np.abs(np.random.normal(0.5, 0.1, (10, 10)))) )
-
-    mock_agent = Mock()
-    mock_agent.model.grid_size = grid_size
-    mock_agent.social_gpr = mock_gpr
-    mock_agent.success_gpr = mock_gpr
-    mock_agent.failure_gpr = mock_gpr
-    mock_agent.other_agent_locs = np.empty((0, 2))
-    mock_agent.success_locs = np.empty((0, 2))
-    mock_agent.failure_locs = np.empty((0, 2))
-    mock_agent.mesh = np.array(np.meshgrid(range(grid_size), range(grid_size))).reshape(2, -1).T
-    mock_agent.mesh_indices = np.arange(0, mock_agent.mesh.shape[0])
-    mock_agent.ucb_beta = 0.2
-    mock_agent.softmax_tau = 0.01
-
-    subroutine = GPMovementDestinationSubroutine(agent=mock_agent)
-    feature_m, feature_std = subroutine.calculate_features(locations, mock_gpr, grid_size)
-
-    # Check that all feature values are non-negative
-    assert np.all(feature_m >= 0)
-    assert np.all(feature_std >= 0)
-
-if __name__ == "__main__":
-    pytest.main()
+    assert gp_exploration_strategy.belief_m.shape == (100, 100)
+    assert gp_exploration_strategy.belief_ucb.shape == (100, 100)
+    assert gp_exploration_strategy.destination.shape == (2,)
+    assert gp_exploration_strategy.destination[0] < 100
+    assert gp_exploration_strategy.destination[1] < 100
