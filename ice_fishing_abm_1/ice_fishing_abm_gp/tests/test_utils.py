@@ -1,14 +1,14 @@
-# ice_fishing_abm_1/ice_fishing_abm_gp/tests/test_utils.py
-
 import numpy as np
 import pytest
 from ice_fishing_abm_1.ice_fishing_abm_gp.utils import x_y_to_i_j, discount_by_distance, find_peak
+
 
 def test_x_y_to_i_j():
     assert x_y_to_i_j(1, 2) == (2, 1)
     assert x_y_to_i_j(0, 0) == (0, 0)
     assert x_y_to_i_j(5, 10) == (10, 5)
     assert x_y_to_i_j(-1, -2) == (-2, -1)
+
 
 def test_discount_by_distance():
     array = np.array([[1, 2], [3, 4]])
@@ -40,6 +40,7 @@ def test_discount_by_distance():
     ])
     np.testing.assert_allclose(discounted_array, expected_array, rtol=1e-5)
 
+
 def test_find_peak():
     array = np.array([[1, 2], [3, 4]])
     assert find_peak(array) == (1, 1)  # 4 is the peak value
@@ -61,6 +62,7 @@ def test_find_peak():
     array = np.array([])
     with pytest.raises(ValueError):
         find_peak(array)
+
 
 if __name__ == "__main__":
     pytest.main()
