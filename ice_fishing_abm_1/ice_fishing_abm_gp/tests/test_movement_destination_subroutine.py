@@ -61,22 +61,25 @@ def test_calculate_gp_feature(social_length_scale):
         plt.show()
 
 
-def test_compute_beliefs(gp_exploration_strategy):
-    gp_exploration_strategy.social_feature_m = np.ones((100, 100)) * 0.5
-    gp_exploration_strategy.success_feature_m = np.ones((100, 100)) * 0.3
-    gp_exploration_strategy.failure_feature_m = np.ones((100, 100)) * 0.2
+@pytest.mark.parametrize("w_social,w_success,w_failure,grid_size",
+                         [(0.4, 0.3, 0.3, 50), (0.1, 0.5, 0.4, 50), (0.2, 0.2, 0.6, 100)])
+def test_compute_beliefs(w_social, w_success, w_failure, grid_size):
+    gp_model = GPExplorationStrategy(w_social=w_social, w_success=w_success, w_failure=w_failure, grid_size=grid_size)
+    gp_model.social_feature_m = np.ones((grid_size, grid_size))
+    gp_model.success_feature_m = np.ones((grid_size, grid_size))
+    gp_model.failure_feature_m = np.ones((grid_size, grid_size))
 
-    gp_exploration_strategy.social_feature_std = np.ones((100, 100)) * 0.1
-    gp_exploration_strategy.success_feature_std = np.ones((100, 100)) * 0.2
-    gp_exploration_strategy.failure_feature_std = np.ones((100, 100)) * 0.3
+    gp_model.social_feature_std = np.ones((grid_size, grid_size))
+    gp_model.success_feature_std = np.ones((grid_size, grid_size))
+    gp_model.failure_feature_std = np.ones((grid_size, grid_size))
 
-    gp_exploration_strategy._compute_beliefs()
+    gp_model._compute_beliefs()
 
-    assert gp_exploration_strategy.belief_m.shape == (100, 100)
-    assert gp_exploration_strategy.belief_std.shape == (100, 100)
-    assert gp_exploration_strategy.belief_ucb.shape == (100, 100)
-    assert gp_exploration_strategy.belief_softmax.shape == (100, 100)
-    assert np.isclose(np.sum(gp_exploration_strategy.belief_softmax), 1.0)
+    assert gp_model.belief_m.shape ==(grid_size, grid_size)
+    assert gp_model.belief_std.shape ==(grid_size, grid_size)
+    assert gp_model.belief_ucb.shape ==(grid_size, grid_size)
+    assert gp_model.belief_softmax.shape ==(grid_size, grid_size)
+    assert np.isclose(np.sum(gp_model.belief_softmax), 1.0)
 
 
 def test_choose_destination(exploration_strategy):

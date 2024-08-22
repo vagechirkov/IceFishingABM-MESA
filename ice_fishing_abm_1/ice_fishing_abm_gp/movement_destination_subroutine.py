@@ -41,8 +41,8 @@ class ExplorationStrategy:
 class GPExplorationStrategy(ExplorationStrategy):
     def __init__(self, social_length_scale: float = 12, success_length_scale: float = 5,
                  failure_length_scale: float = 5, w_social: float = 0.4, w_success: float = 0.3, w_failure: float = 0.3,
-                 random_state: int = 0):
-        super().__init__()
+                 random_state: int = 0, **kwargs):
+        super().__init__(**kwargs)
         # parameters for the Gaussian Process Regressors
         self.social_length_scale = social_length_scale
         self.success_length_scale = success_length_scale
