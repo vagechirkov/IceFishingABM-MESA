@@ -61,7 +61,7 @@ def test_compute_beliefs(gp_exploration_strategy):
     gp_exploration_strategy.success_feature_std = np.ones((100, 100)) * 0.2
     gp_exploration_strategy.failure_feature_std = np.ones((100, 100)) * 0.3
 
-    gp_exploration_strategy.compute_beliefs()
+    gp_exploration_strategy._compute_beliefs()
 
     assert gp_exploration_strategy.belief_m.shape == (100, 100)
     assert gp_exploration_strategy.belief_std.shape == (100, 100)
