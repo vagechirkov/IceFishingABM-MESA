@@ -56,7 +56,7 @@ def test_find_peak():
 
     # Test with a 3D array
     array = np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
-    assert find_peak(array) == (1, 1)  # 8 is the peak value
+    assert find_peak(array) == (1, 1, 1)  # 8 is the peak value
 
     # Test with an empty array
     array = np.array([])
