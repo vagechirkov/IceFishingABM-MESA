@@ -33,9 +33,9 @@ def test_initialization_gp_exploration_strategy(gp_exploration_strategy):
     assert gp_exploration_strategy.success_feature_std.shape == (100, 100)
 
 
-@pytest.mark.happy
-def test_calculate_gp_feature(gp_exploration_strategy):
-    gp_model = GPExplorationStrategy()
+@pytest.mark.parametrize("social_length_scale", [1, 5, 12, 20])
+def test_calculate_gp_feature(social_length_scale):
+    gp_model = GPExplorationStrategy(social_length_scale=social_length_scale)
 
     # empty data case
     data = np.empty((0, 2))
