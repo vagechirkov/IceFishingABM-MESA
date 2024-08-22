@@ -2,12 +2,13 @@ import numpy as np
 from sklearn.gaussian_process import GaussianProcessClassifier, GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF
 from .belief import generate_belief_mean_matrix
+
+
 class ExplorationStrategy:
-    def __init__(self, 
-        grid_size: int = 100,
-        ucb_beta=0.2, 
-        tau=0.01):
-    
+    def __init__(self,
+                 grid_size: int = 100,
+                 ucb_beta=0.2,
+                 tau=0.01):
         self.grid_size = grid_size
         self.ucb_beta = ucb_beta
         self.softmax_tau = tau
@@ -15,12 +16,11 @@ class ExplorationStrategy:
         self.mesh_indices = np.arange(0, self.mesh.shape[0])
         self.belief_softmax = np.zeros((self.grid_size, self.grid_size))
         self.other_agent_locs = np.empty((0, 2))
-        
-        
+
     # Default algorithm selects destination randomly
     def choose_destination(self):
         self.destination = self.mesh[np.random.choice(self.mesh_indices, p=self.belief_softmax.reshape(-1)), :]
-    
+
     def movement_destination(self):
         self.choose_destination()
 
@@ -56,8 +56,8 @@ class GPExplorationStrategy(ExplorationStrategy):
 
     def compute_beliefs(self):
         self.belief_m = self.w_social * self.social_feature_m + \
-                              self.w_success * self.success_feature_m - \
-                              self.w_failure * self.failure_feature_m
+                        self.w_success * self.success_feature_m - \
+                        self.w_failure * self.failure_feature_m
 
         self.belief_std = np.sqrt(
             self.w_social ** 2 * self.social_feature_std ** 2 +
