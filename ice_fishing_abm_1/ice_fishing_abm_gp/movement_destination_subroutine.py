@@ -39,8 +39,9 @@ class ExplorationStrategy:
 
 
 class GPExplorationStrategy(ExplorationStrategy):
-    def __init__(self, social_length_scale=12, success_length_scale=5, failure_length_scale=5,
-                 w_social=0.4, w_success=0.3, w_failure=0.3, random_state=0):
+    def __init__(self, social_length_scale: float = 12, success_length_scale: float = 5,
+                 failure_length_scale: float = 5, w_social: float = 0.4, w_success: float = 0.3, w_failure: float = 0.3,
+                 random_state: int = 0):
         super().__init__()
         # parameters for the Gaussian Process Regressors
         self.social_length_scale = social_length_scale
@@ -74,7 +75,8 @@ class GPExplorationStrategy(ExplorationStrategy):
         self.belief_m = np.zeros(grid_shape)
         self.belief_std = np.zeros(grid_shape)
 
-    def calculate_features(self, locations, gpr, grid_size):
+    def _calculate_gp_feature(self, locations, gpr, grid_size):
+
         if locations.size == 0:
             feature_m = np.zeros((grid_size, grid_size))
             feature_std = np.zeros((grid_size, grid_size))
@@ -111,13 +113,13 @@ class GPExplorationStrategy(ExplorationStrategy):
         self._check_input(failure_locs)
         self._check_input(other_agent_locs)
 
-        self.social_feature_m, self.social_feature_std = self.calculate_features(
+        self.social_feature_m, self.social_feature_std = self._calculate_gp_feature(
             other_agent_locs, self.social_gpr, self.grid_size)
 
-        self.success_feature_m, self.success_feature_std = self.calculate_features(
+        self.success_feature_m, self.success_feature_std = self._calculate_gp_feature(
             success_locs, self.success_gpr, self.grid_size)
 
-        self.failure_feature_m, self.failure_feature_std = self.calculate_features(
+        self.failure_feature_m, self.failure_feature_std = self._calculate_gp_feature(
             failure_locs, self.failure_gpr, self.grid_size)
 
         self._compute_beliefs()
