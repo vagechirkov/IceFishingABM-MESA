@@ -17,8 +17,8 @@ def test_discount_by_distance():
 
     # Manually compute the expected discounted values
     expected_array = np.array([
-        [1 * 0.5 ** 0, 2 * 0.5 ** 1.4142],
-        [3 * 0.5 ** 1.0, 4 * 0.5 ** 2.236]
+        [1 * 0.5 ** 0, 2 * 0.5 ** 1.0],
+        [3 * 0.5 ** 1.0, 4 * 0.5 ** 1.4142]
     ])
 
     np.testing.assert_allclose(discounted_array, expected_array, rtol=1e-5)
@@ -26,8 +26,8 @@ def test_discount_by_distance():
     # Test with different discount factors
     discounted_array = discount_by_distance(array, agent_location, discount_factor=0.8)
     expected_array = np.array([
-        [1 * 0.8 ** 0, 2 * 0.8 ** 1.4142],
-        [3 * 0.8 ** 1.0, 4 * 0.8 ** 2.236]
+        [1 * 0.8 ** 0, 2 * 0.8 ** 1.0],
+        [3 * 0.8 ** 1.0, 4 * 0.8 ** 1.4142]
     ])
     np.testing.assert_allclose(discounted_array, expected_array, rtol=1e-5)
 
@@ -35,7 +35,7 @@ def test_discount_by_distance():
     agent_location = (1, 1)
     discounted_array = discount_by_distance(array, agent_location, discount_factor=0.5)
     expected_array = np.array([
-        [1 * 0.5 ** 2, 2 * 0.5 ** 1.0],
+        [1 * 0.5 ** 1.4142, 2 * 0.5 ** 1.0],
         [3 * 0.5 ** 1.0, 4 * 0.5 ** 0]
     ])
     np.testing.assert_allclose(discounted_array, expected_array, rtol=1e-5)
