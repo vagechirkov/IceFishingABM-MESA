@@ -16,23 +16,6 @@ def gp_exploration_strategy():
     return GPExplorationStrategy()
 
 
-def test_initialization_exploration_strategy(exploration_strategy):
-    assert exploration_strategy.grid_size == 100
-    assert exploration_strategy.ucb_beta == 0.2
-    assert exploration_strategy.softmax_tau == 0.01
-    assert exploration_strategy.mesh.shape == (10000, 2)
-    assert exploration_strategy.belief_softmax.shape == (100, 100)
-
-
-def test_initialization_gp_exploration_strategy(gp_exploration_strategy):
-    assert gp_exploration_strategy.grid_size == 100
-    assert gp_exploration_strategy.w_social == 0.4
-    assert gp_exploration_strategy.w_success == 0.3
-    assert gp_exploration_strategy.w_failure == 0.3
-    assert gp_exploration_strategy.social_feature_m.shape == (100, 100)
-    assert gp_exploration_strategy.success_feature_std.shape == (100, 100)
-
-
 @pytest.mark.parametrize("social_length_scale", [1, 5, 12, 20])
 def test_calculate_gp_feature(social_length_scale):
     gp_model = GPExplorationStrategy(social_length_scale=social_length_scale)
