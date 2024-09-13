@@ -67,7 +67,10 @@ def test_compute_beliefs(w_social, w_success, w_failure, grid_size):
 
 def test_choose_destination(exploration_strategy):
     exploration_strategy.belief_softmax = np.ones((100, 100)) / 10000
-    exploration_strategy.choose_destination()
+    success_locs = np.array([[10, 10], [20, 20]])
+    failure_locs = np.array([[30, 30]])
+    other_agent_locs = np.array([[40, 40]])
+    exploration_strategy.choose_destination(success_locs, failure_locs, other_agent_locs)
     assert exploration_strategy.destination.shape == (2,)
     assert exploration_strategy.destination[0] < 100
     assert exploration_strategy.destination[1] < 100
@@ -82,11 +85,16 @@ def test_movement_destination(gp_exploration_strategy):
     gp_exploration_strategy.failure_feature_m = np.ones((100, 100))
     gp_exploration_strategy.failure_feature_std = np.ones((100, 100))
 
+    
+
     # Mocking the agent property
     gp_exploration_strategy.agent = type('Agent', (object,), {'_is_moving': False})()
 
-    gp_exploration_strategy.movement_destination()
+    # Call compute_beliefs to set the belief_ucb
+    gp_exploration_strategy._compute_beliefs()
 
+    gp_exploration_strategy.choose_destination(np.array([[10, 10], [20, 20]]), np.array([[30, 30]]), np.array([[40, 40]]))
+    
     assert gp_exploration_strategy.belief_m.shape == (100, 100)
     assert gp_exploration_strategy.belief_ucb.shape == (100, 100)
     assert gp_exploration_strategy.destination.shape == (2,)
