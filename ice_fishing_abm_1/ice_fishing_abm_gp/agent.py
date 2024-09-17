@@ -1,55 +1,39 @@
-from random import random
 from typing import Union
 
 import mesa
 import numpy as np
-from sklearn.gaussian_process import GaussianProcessClassifier, GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF
 
+from .movement_destination_subroutine import ExplorationStrategy
+from .patch_evaluation_subroutine import PatchEvaluationSubroutine
 from .resource import Resource
-from .belief import construct_dataset_info, generate_belief_matrix, generate_belief_mean_matrix
-from .utils import x_y_to_i_j, find_peak
+from .utils import x_y_to_i_j
 
 
 class Agent(mesa.Agent):
-    def __init__(self, unique_id, model, resource_cluster_radius, agent_type='greedy', ucb_beta=0.2, tau=0.01):
+    def __init__(
+            self,
+            unique_id,
+            model,
+            resource_cluster_radius,
+            exploration_strategy: ExplorationStrategy,
+            exploitation_strategy: PatchEvaluationSubroutine):
         super().__init__(unique_id, model)
+        # parameters
+        self.exploitation_strategy = exploitation_strategy
+        self.exploration_strategy = exploration_strategy
 
-        # states
-        # ---- movement-related states ----
+        # state variables
         self._is_moving: bool = False
-        self._destination: Union[None, tuple] = None
-
-        # ---- sampling-related states ----
+        self._destination: Union[None, tuple[int, int]] = None
         self._is_sampling: bool = False
+        self._time_on_patch: int = 0
         self._time_since_last_catch: int = 0
         self._collected_resource_last_spot: int = 0
         self._collected_resource: int = 0
         self.resource_cluster_radius = resource_cluster_radius
-        self.catch_wait_time = 5
-
-        # ---- belief values ----
-        self.ucb_beta = ucb_beta
-        self.softmax_tau = tau
-        self.agent_type = agent_type
-        self.other_agent_locs = np.empty((0, 2))
-        self.social_gpr = GaussianProcessRegressor(kernel=RBF(12), random_state=0, optimizer=None)
-        self.social_feature_m = np.zeros((self.model.grid_size, self.model.grid_size))
-        self.social_feature_std = np.zeros((self.model.grid_size, self.model.grid_size))
         self.success_locs = np.empty((0, 2))
-        self.success_gpr = GaussianProcessRegressor(kernel=RBF(5), random_state=0, optimizer=None)
-        self.success_feature_m = np.zeros((self.model.grid_size, self.model.grid_size))
-        self.success_feature_std = np.zeros((self.model.grid_size, self.model.grid_size))
         self.failure_locs = np.empty((0, 2))
-        self.failure_gpr = GaussianProcessRegressor(kernel=RBF(5), random_state=0, optimizer=None)
-        self.failure_feature_m = np.zeros((self.model.grid_size, self.model.grid_size))
-        self.failure_feature_std = np.zeros((self.model.grid_size, self.model.grid_size))
-        self.belief_m = np.zeros((self.model.grid_size, self.model.grid_size))
-        self.belief_std = np.zeros((self.model.grid_size, self.model.grid_size))
-        self.belief_ucb = np.zeros((self.model.grid_size, self.model.grid_size))
-        self.belief_softmax = np.zeros((self.model.grid_size, self.model.grid_size))
-        self.mesh = np.array(np.meshgrid(range(self.model.grid_size), range(self.model.grid_size))).reshape(2, -1).T
-        self.mesh_indices = np.arange(0, self.mesh.shape[0])
+        self.other_agent_locs = np.empty((0, 2))
 
     @property
     def is_moving(self):
@@ -59,34 +43,13 @@ class Agent(mesa.Agent):
     def is_sampling(self):
         return self._is_sampling
 
-    def step(self):
-        if self._is_moving and not self._is_sampling:
-            self._adjust_destination_if_cell_occupied()
-            self.move()
-            # update movement destination because social feature might have changed
-            # self.movement_destination()
+    @property
+    def collected_resource(self):
+        return self._collected_resource
 
-            return
-
-        if self._is_sampling and not self._is_moving:
-            self.sample()
-
-        if not self._is_sampling and not self._is_moving:  # this is also the case when the agent is initialized
-            # if the first step then just sample in the current position
-            if self.model.schedule.steps == 0:
-                self._is_sampling = True
-                return
-
-            # select a new destination of movement
-            self.movement_destination()
-            self._add_margin_around_border_for_destination()
-            self._is_moving = True
-
-        if self._is_moving and self._is_sampling:
-            raise ValueError("Agent is both sampling and moving.")
-
-        # update social information at the end of each step
-        self.add_other_agent_locs()
+    @property
+    def destination(self):
+        return self._destination
 
     def move(self):
         """
@@ -109,11 +72,13 @@ class Agent(mesa.Agent):
             self._is_moving = False
             # start sampling
             self._is_sampling = True
+            self._time_on_patch = 0
 
     def sample(self):
         neighbors = self.model.grid.get_neighbors(self.pos, moore=False, include_center=True,
                                                   radius=self.resource_cluster_radius)
         resource_collected = False
+        self._time_on_patch += 1
 
         # check if there are any resources in the neighborhood
         if len(neighbors) > 0:
@@ -131,7 +96,7 @@ class Agent(mesa.Agent):
         else:
             self._time_since_last_catch += 1
 
-        if self._time_since_last_catch >= self.catch_wait_time:
+        if self.exploitation_strategy.stay_on_patch(self._collected_resource, self._time_since_last_catch):
             self._is_sampling = False
             self._time_since_last_catch = 0
 
@@ -140,67 +105,32 @@ class Agent(mesa.Agent):
 
             self._collected_resource_last_spot = 0
 
-    def movement_destination(self):
-        if self.other_agent_locs.size == 0:
-            self.social_feature_m = np.zeros((self.model.grid_size, self.model.grid_size))
-            self.social_feature_std = np.zeros((self.model.grid_size, self.model.grid_size))
-        else:
-            self.social_gpr.fit(self.other_agent_locs, np.ones(self.other_agent_locs.shape[0]))
-            self.social_feature_m, self.social_feature_std = generate_belief_mean_matrix(
-                self.model.grid_size, self.social_gpr, return_std=True)
+    def step(self):
+        if self._is_moving and not self._is_sampling:
+            self._adjust_destination_if_cell_occupied()
+            self.move()
+            return
 
-        self.social_feature_m, self.social_feature_std = self.social_feature_m.T, self.social_feature_std.T
+        if self._is_sampling and not self._is_moving:
+            self.sample()
 
-        # recompute this features only if the agent is not moving
-        if not self._is_moving:
-            # success feature
-            if self.success_locs.size == 0:
-                self.success_feature_m = np.zeros((self.model.grid_size, self.model.grid_size))
-                self.success_feature_std = np.zeros((self.model.grid_size, self.model.grid_size))
-            else:
-                self.success_gpr.fit(self.success_locs, np.ones(self.success_locs.shape[0]))
-                self.success_feature_m, self.success_feature_std = generate_belief_mean_matrix(
-                    self.model.grid_size, self.success_gpr, return_std=True)
+        if not self._is_sampling and not self._is_moving:  # this is also the case when the agent is initialized
+            # if the first step then just sample in the current position
+            if self.model.schedule.steps == 0:
+                self._is_sampling = True
+                return
 
-            self.success_feature_m, self.success_feature_std = self.success_feature_m.T, self.success_feature_std.T
+            # select a new destination of movement
+            self._destination = self.exploration_strategy.choose_destination(self.success_locs, self.failure_locs,
+                                                                             self.other_agent_locs)
+            self._add_margin_around_border_for_destination()
+            self._is_moving = True
 
-            # failure feature
-            if self.failure_locs.size == 0:
-                self.failure_feature_m = np.zeros((self.model.grid_size, self.model.grid_size))
-                self.failure_feature_std = np.zeros((self.model.grid_size, self.model.grid_size))
-            else:
-                self.failure_gpr.fit(self.failure_locs, np.ones(self.failure_locs.shape[0]))
-                self.failure_feature_m, self.failure_feature_std = generate_belief_mean_matrix(
-                    self.model.grid_size, self.failure_gpr, return_std=True)
+        if self._is_moving and self._is_sampling:
+            raise ValueError("Agent is both sampling and moving.")
 
-            self.failure_feature_m, self.failure_feature_std = self.failure_feature_m.T, self.failure_feature_std.T
-
-        # combine features
-        self.belief_m = self.model.w_social * self.social_feature_m + \
-                        self.model.w_success * self.success_feature_m - \
-                        self.model.w_failure * self.failure_feature_m
-
-        self.belief_std = np.sqrt(
-            self.model.w_social ** 2 * self.social_feature_std ** 2 +
-            self.model.w_success ** 2 * self.success_feature_std ** 2 +
-            self.model.w_failure ** 2 * self.failure_feature_std ** 2)
-
-        # compute UCB
-        self.belief_ucb = self.belief_m + self.ucb_beta * self.belief_std
-
-        # compute softmax
-        self.belief_softmax = np.exp(self.belief_ucb / self.softmax_tau) / np.sum(
-            np.exp(self.belief_ucb / self.softmax_tau))
-
-        # Add spacial discounting
-        # TODO: add spacial discounting
-
-        # find the next destination as a random sample from the belief using belief as a probability distribution
-        # self._destination = x_y_to_i_j(*find_peak(self.belief))
-
-        # Sample random destination from the belief softmax
-        # x_y_to_i_j(*)
-        self._destination = self.mesh[np.random.choice(self.mesh_indices, p=self.belief_softmax.reshape(-1)), :]
+        # update social information at the end of each step
+        self.add_other_agent_locs()
 
     def _add_margin_around_border_for_destination(self):
         """
