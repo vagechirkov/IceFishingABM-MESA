@@ -40,3 +40,9 @@ git pull
 bash run.sh # run the simulation
 
 ```
+
+
+## Run visualization with mesa
+```bash
+python IceFishingABM-MESA/ice_fishing_abm_1/run_server.py 
+```

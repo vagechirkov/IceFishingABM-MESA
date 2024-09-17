@@ -72,7 +72,6 @@ class Agent(mesa.Agent):
             self._is_moving = False
             # start sampling
             self._is_sampling = True
-            self._time_on_patch = 0
 
     def sample(self):
         neighbors = self.model.grid.get_neighbors(self.pos, moore=False, include_center=True,
@@ -96,7 +95,7 @@ class Agent(mesa.Agent):
         else:
             self._time_since_last_catch += 1
 
-        if self.exploitation_strategy.stay_on_patch(self._collected_resource, self._time_since_last_catch):
+        if not self.exploitation_strategy.stay_on_patch(self._time_on_patch, self._time_since_last_catch):
             self._is_sampling = False
             self._time_since_last_catch = 0
 
@@ -104,6 +103,7 @@ class Agent(mesa.Agent):
                 self.add_failure_loc(self.pos)
 
             self._collected_resource_last_spot = 0
+            self._time_on_patch = 0
 
     def step(self):
         if self._is_moving and not self._is_sampling:
