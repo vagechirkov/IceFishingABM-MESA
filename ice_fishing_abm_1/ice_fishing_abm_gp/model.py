@@ -1,6 +1,10 @@
+from typing import Union
+
 import mesa
 import numpy as np
 
+from .movement_destination_subroutine import ExplorationStrategy
+from .patch_evaluation_subroutine import PatchEvaluationSubroutine
 from .resource import Resource, make_resource_centers
 from .agent import Agent
 
@@ -8,13 +12,14 @@ from .agent import Agent
 class Model(mesa.Model):
     def __init__(
             self,
+            exploration_strategy: ExplorationStrategy = ExplorationStrategy(),
+            exploitation_strategy: PatchEvaluationSubroutine = PatchEvaluationSubroutine(threshold=10),
             grid_size: int = 100,
             number_of_agents: int = 5,
             n_resource_clusters: int = 2,
-            resource_quality: float = 0.8,
+            resource_quality: Union[float, tuple[float]] = 0.8,
             resource_cluster_radius: int = 5,
-            keep_overall_abundance: bool = True,
-    ):
+            keep_overall_abundance: bool = True, ):
         super().__init__()
         self.grid_size = grid_size
         self.number_of_agents = number_of_agents
@@ -22,10 +27,6 @@ class Model(mesa.Model):
         self.resource_quality = resource_quality
         self.resource_cluster_radius = resource_cluster_radius
         self.keep_overall_abundance = keep_overall_abundance
-
-        self.w_social = 0.4
-        self.w_success = 0.3
-        self.w_failure = 0.3
 
         self.schedule = mesa.time.RandomActivation(self)
         self.grid = mesa.space.MultiGrid(grid_size, grid_size, False)
@@ -43,18 +44,38 @@ class Model(mesa.Model):
                 keep_overall_abundance=self.keep_overall_abundance,
                 neighborhood_radius=40,
             )
+            r.collected_resource = None
+            r.is_sampling = None
+            r.is_moving = None
             self.schedule.add(r)
             self.grid.place_agent(r, center)
 
         # initialize agents
         for _ in range(self.number_of_agents):
-            a = Agent(self.next_id(), self, resource_cluster_radius=self.resource_cluster_radius)
+            a = Agent(self.next_id(),
+                      self,
+                      self.resource_cluster_radius,
+                      exploration_strategy,
+                      exploitation_strategy)
             self.schedule.add(a)
             # find a random location
             cell = (self.random.randint(0, self.grid.width - 1), self.random.randint(0, self.grid.height - 1))
 
             # place agent
             self.grid.place_agent(a, cell)
+
+        # Data collector
+        model_reporters = {}
+        agent_reporters = {
+            "pos": "pos",
+            "collected_resource": "collected_resource",
+            "is_sampling": "is_sampling",
+            "is_moving": "is_moving"}
+
+        self.datacollector = mesa.datacollection.DataCollector(
+            agent_reporters=agent_reporters,
+            model_reporters=model_reporters
+        )
 
     @property
     def resource_distribution(self) -> np.ndarray:
@@ -63,3 +84,4 @@ class Model(mesa.Model):
 
     def step(self):
         self.schedule.step()
+        self.datacollector.collect(self)

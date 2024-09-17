@@ -10,12 +10,13 @@ from .utils import x_y_to_i_j
 
 
 class Agent(mesa.Agent):
-    def __init__(self,
-                 unique_id,
-                 model,
-                 resource_cluster_radius,
-                 exploration_strategy: ExplorationStrategy,
-                 exploitation_strategy: PatchEvaluationSubroutine):
+    def __init__(
+            self,
+            unique_id,
+            model,
+            resource_cluster_radius,
+            exploration_strategy: ExplorationStrategy,
+            exploitation_strategy: PatchEvaluationSubroutine):
         super().__init__(unique_id, model)
         # parameters
         self.exploitation_strategy = exploitation_strategy
@@ -41,6 +42,14 @@ class Agent(mesa.Agent):
     @property
     def is_sampling(self):
         return self._is_sampling
+
+    @property
+    def collected_resource(self):
+        return self._collected_resource
+
+    @property
+    def destination(self):
+        return self._destination
 
     def move(self):
         """
