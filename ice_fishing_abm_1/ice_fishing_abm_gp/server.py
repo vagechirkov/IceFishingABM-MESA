@@ -1,7 +1,10 @@
 import mesa
+from mesa.visualization.modules import CanvasGrid
 
+from .movement_destination_subroutine import GPExplorationStrategy
+from .patch_evaluation_subroutine import PatchEvaluationSubroutine
 from .model import Model
-from .visualization.CanvasGridVisualization import CustomCanvasGrid
+from .resource import Resource
 
 SHOW_ICONS = True
 
@@ -31,6 +34,15 @@ def draw_grid(agent):
             "r": 0.8,
             "Layer": 1,
             "Collected resource": agent.collected_resource}
+    elif isinstance(agent, Resource):
+        portrayal = {
+            "Shape": "circle",
+            "Filled": "true",
+            "Color": "grey",
+            "r": 0.5,
+            "Layer": 0,
+            "Radius": agent.model.resource_cluster_radius,
+        }
     else:
         portrayal = {}
 
@@ -40,42 +52,19 @@ def draw_grid(agent):
 grid_size = 20
 grid_canvas_size = 600
 
-grid = CustomCanvasGrid(draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size, "grid_colors")
-
-meso_grid_canvas_size = 120
-
-agent_raw_observation_element = CustomCanvasGrid(
-    draw_grid, grid_size, grid_size, meso_grid_canvas_size, meso_grid_canvas_size, "agent_raw_observations")
-
-agent_raw_soc_observation_element = CustomCanvasGrid(
-    draw_grid, grid_size, grid_size, meso_grid_canvas_size, meso_grid_canvas_size, "agent_raw_soc_observations")
-
-agent_raw_env_belief_element = CustomCanvasGrid(
-    draw_grid, grid_size, grid_size, meso_grid_canvas_size, meso_grid_canvas_size, "agent_raw_env_belief")
-
-agent_raw_rand_array_element = CustomCanvasGrid(
-    draw_grid, grid_size, grid_size, meso_grid_canvas_size, meso_grid_canvas_size, "agent_raw_rand_array")
-
-relocation_map = CustomCanvasGrid(
-    draw_grid, grid_size, grid_size, meso_grid_canvas_size, meso_grid_canvas_size, "relocation_map")
+grid = CanvasGrid(draw_grid, grid_size, grid_size, grid_canvas_size, grid_canvas_size)
 
 model_params = {
-    "grid_width": grid_size,
-    "grid_height": grid_size,
-    "visualization": True,
-    "number_of_agents": mesa.visualization.Slider(
-        "The number of agents", value=5, min_value=1, max_value=10, step=1),
-    "n_resource_clusters": mesa.visualization.Slider(
-        "The number of resource clusters", value=3, min_value=1, max_value=5, step=1)
-
+    "exploration_strategy": GPExplorationStrategy(grid_size=grid_size),
+    "exploitation_strategy": PatchEvaluationSubroutine(threshold=10),
+    "grid_size": grid_size,
+    "number_of_agents": 5,
+    "n_resource_clusters": 2,
+    "resource_quality": 0.8,
+    "resource_cluster_radius": 3,
+    "keep_overall_abundance": True,
 }
 
-plots = [grid,
-         agent_raw_observation_element,
-         relocation_map,
-         agent_raw_soc_observation_element,
-         agent_raw_env_belief_element,
-         agent_raw_rand_array_element,
-         ]
+plots = [grid]
 
-server = mesa.visualization.ModularServer(Model, plots, "Ice Fishing Model 1", model_params)
+server = mesa.visualization.ModularServer(Model, plots, "GP Model", model_params)
