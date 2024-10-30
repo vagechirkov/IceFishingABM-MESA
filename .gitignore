@@ -3,7 +3,7 @@
 ## Run Tests
 
 run_tests.py 
-
+ice_fishing_abm_1/temp_run.py
 # Virtualenv
 # http://iamzed.com/2009/05/07/a-primer-on-virtualenv/
 .Python
