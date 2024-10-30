@@ -1,5 +1,4 @@
 import numpy as np
-
 class ExplorationStrategy:
     def __init__(self, grid_size: int = 100, ucb_beta=0.2, tau=0.01):
         self.grid_size = grid_size
@@ -29,21 +28,9 @@ class ExplorationStrategy:
 
 
 class RandomWalkerExplorationStrategy(ExplorationStrategy):
-    def __init__(self, social_length_scale: float = 12, success_length_scale: float = 5,
-                 failure_length_scale: float = 5, w_social: float = 0.4, w_success: float = 0.3, w_failure: float = 0.3,
-                 motion_type="Brownian", sigma: float = 1.0, mu: float = 1.5, dmin: float = 1.0, L: float = 10.0,
+    def __init__(self, motion_type="Brownian", sigma: float = 1.0, mu: float = 1.5, dmin: float = 1.0, L: float = 10.0,
                  C: float = 1.0, alpha: float = 0.1, random_state: int = 0, **kwargs):
         super().__init__(**kwargs)
-
-        # For compatibility with GPExplorationStrategy inputs (not actually used in this strategy)
-        self.social_length_scale = social_length_scale
-        self.success_length_scale = success_length_scale
-        self.failure_length_scale = failure_length_scale
-        self.w_social = w_social
-        self.w_success = w_success
-        self.w_failure = w_failure
-
-        # Random walker-specific parameters
         self.motion_type = motion_type  # 'Brownian' or 'Levy'
         self.sigma = sigma  # Brownian step size
         self.mu = mu  # Levy exponent
@@ -53,24 +40,23 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
         self.alpha = alpha
         self.random_state = random_state
 
-    def choose_destination(self, success_locs, failure_locs, other_agent_locs):
+    def choose_destination(self, social_locs, catch_locs, loss_locs, social_cue=False):
         """
         Choose destination based on motion type (Brownian or Levy)
         """
-        # Ensure input data is in correct format
-        self._check_input(success_locs)
-        self._check_input(failure_locs)
-        self._check_input(other_agent_locs)
+        self._check_input(social_locs)
+        self._check_input(catch_locs)
+        self._check_input(loss_locs)
 
-        # Random walk strategy based on the motion type
         if self.motion_type == "Brownian":
             self.destination = self._brownian_motion()
         elif self.motion_type == "Levy":
             self.destination = self._levy_flight()
-
-        # Ensure destination is integer after computation
-        self.destination = np.round(self.destination).astype(int) 
-
+        
+        # Handle social cue if detected
+        if social_cue:
+            self.destination = self._adjust_for_social_cue(self.destination, social_locs)
+        
         return self.destination
 
     def _brownian_motion(self):
@@ -96,11 +82,11 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
         """
         # Sample from a uniform distribution
         u = np.random.uniform(0, 1)
-
+        
         # Use inverse transform sampling to get d from P(d) = C d^(-mu)
         # Ensure the distance lies between dmin and L
         d = ((self.L**(1 - self.mu) - self.dmin**(1 - self.mu)) * u + self.dmin**(1 - self.mu))**(1 / (1 - self.mu))
-
+        
         # Sample a random angle uniformly between 0 and 2π
         theta = np.random.uniform(0, 2 * np.pi)
 
@@ -114,6 +100,25 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
         # Compute the new position and ensure it's within the grid boundaries
         new_position = np.clip(current_pos + np.array([dx, dy]), 0, self.grid_size - 1)
         return new_position
+    
+    def _adjust_for_social_cue(self, current_destination, social_locs):
+        """
+        Adjust destination based on social cues, if detected
+        """
+        if social_locs.size > 0:
+            # Find the nearest social cue
+            distances = np.linalg.norm(social_locs - current_destination, axis=1)
+            nearest_social_loc = social_locs[np.argmin(distances)]
+
+            # Compute probability to switch to the nearest social cue based on distance
+            delta_d = distances.min()
+            prob_social = np.exp(-self.alpha * delta_d)
+
+            # With probability prob_social, move to the nearest social cue
+            if np.random.rand() < prob_social:
+                current_destination = nearest_social_loc
+
+        return current_destination
 
     def _get_new_position(self, dx, dy):
         """
@@ -125,9 +130,5 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
         # Calculate new position with periodic boundary conditions (wrap around the grid)
         new_x = (current_position[0] + dx) % self.grid_size
         new_y = (current_position[1] + dy) % self.grid_size
-
-        # Ensure new_x and new_y are integers by rounding
-        new_x = int(np.round(new_x))
-        new_y = int(np.round(new_y))
 
         return np.array([new_x, new_y])
