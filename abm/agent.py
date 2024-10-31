@@ -3,8 +3,8 @@ from typing import Union
 import mesa
 import numpy as np
 
-from .movement_destination_subroutine import ExplorationStrategy
-from .patch_evaluation_subroutine import PatchEvaluationSubroutine
+from .exploration_strategy import ExplorationStrategy
+from .exploitation_strategy import ExploitationStrategy
 from .resource import Resource
 from .utils import x_y_to_i_j
 

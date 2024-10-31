@@ -3,8 +3,8 @@ from typing import Union
 import mesa
 import numpy as np
 
-from .movement_destination_subroutine import ExplorationStrategy
-from .patch_evaluation_subroutine import PatchEvaluationSubroutine
+from .exploitation_strategy import ExploitationStrategy
+from .exploration_strategy import ExplorationStrategy
 from .resource import Resource, make_resource_centers
 from .agent import Agent
 
@@ -13,7 +13,7 @@ class Model(mesa.Model):
     def __init__(
             self,
             exploration_strategy: ExplorationStrategy = ExplorationStrategy(),
-            exploitation_strategy: PatchEvaluationSubroutine = PatchEvaluationSubroutine(threshold=10),
+            exploitation_strategy: ExploitationStrategy = ExploitationStrategy(threshold=10),
             grid_size: int = 100,
             number_of_agents: int = 5,
             n_resource_clusters: int = 2,
