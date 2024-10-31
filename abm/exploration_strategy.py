@@ -42,13 +42,17 @@ class ExplorationStrategy:
 
 
 class RandomWalkerExplorationStrategy(ExplorationStrategy):
+
+    '''
+    Do doc string here explaining main parameters of the model 
+    '''
     def __init__(self, mu: float = 1.5, dmin: float = 1.0, L: float = 10.0,
                  alpha: float = 0.1, random_state: int = 0, **kwargs):
         super().__init__(**kwargs)
-        self.mu = mu  # Levy exponent
+        self.mu = mu                                                                                 # Levy exponent
         self.dmin = dmin
         self.L = L
-        self.C = (1 - self.mu) / ((self.L ** (1 - self.mu)) - (self.d_min ** (1 - self.mu)))
+        self.C = (1 - self.mu) / ((self.L ** (1 - self.mu)) - (self.dmin ** (1 - self.mu)))
         self.alpha = alpha
         self.random_state = random_state
 
@@ -90,7 +94,9 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
         current_pos = np.array([self.grid_size // 2, self.grid_size // 2])
 
         # Compute the new position and ensure it's within the grid boundaries
-        new_position = np.clip(current_pos + np.array([dx, dy]), 0, self.grid_size - 1)
+        
+        new_position = np.clip(current_pos + np.array([dx, dy]), 0, self.grid_size - 1).astype(int)
+
         return new_position
     
     def _adjust_for_social_cue(self, current_destination, social_locs):
@@ -122,6 +128,8 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
         # Calculate new position with periodic boundary conditions (wrap around the grid)
         new_x = (current_position[0] + dx) % self.grid_size
         new_y = (current_position[1] + dy) % self.grid_size
+
+        
 
         return np.array([new_x, new_y])
 

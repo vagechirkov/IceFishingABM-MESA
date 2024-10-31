@@ -16,7 +16,7 @@ class Agent(mesa.Agent):
             model,
             resource_cluster_radius,
             exploration_strategy: ExplorationStrategy,
-            exploitation_strategy: PatchEvaluationSubroutine):
+            exploitation_strategy: ExploitationStrategy):
         super().__init__(unique_id, model)
         # parameters
         self.exploitation_strategy = exploitation_strategy

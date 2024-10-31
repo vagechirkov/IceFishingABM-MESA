@@ -2,12 +2,15 @@ import optuna
 import pandas as pd
 import mesa
 
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 
 # Import RandomWalker-specific models and strategies
 from abm.model import Model as RandomWalkerModel
 from abm.exploration_strategy import RandomWalkerExplorationStrategy
 from abm.exploitation_strategy import ExploitationStrategy
-
 
 def objective(trial):
     """
@@ -17,17 +20,15 @@ def objective(trial):
     """
     
     grid_size = 20
-    # Define the hyperparameters for the exploration strategy based on the model type
-    L = grid_size   # Maximum distance for Levy flight
-    d_min = 10^-3   # Minimum distance for Levy flight
+    L = grid_size           # Maximum distance for Levy flight
+    dmin = 1e-3             # Minimum distance for Levy flight
         
-    #dmin = trial.suggest_float("dmin", 0.1, 5.0)  # Minimum distance for Levy flight
-    #L = trial.suggest_float("L", 5.0, 50.0)  # Maximum distance for Levy flight
     
     # Actual hyperparameters 
 
-    mu = trial.suggest_float("mu", 1.1, 3.0)  # Exponent for Levy flight
-    alpha = trial.suggest_float("alpha", 0.01, 1.0)  # Parameter for social cue adjustment
+    mu = trial.suggest_float("mu", 1.1, 3.5)  # Exponent for Levy flight
+    #alpha = trial.suggest_float("alpha", 1e-5, 1.0, log=True)  # Parameter for social cue adjustment
+    alpha = 1e-2
     threshold = trial.suggest_int("threshold", 1, 20)
 
     print('Model type: Random Walker')
@@ -40,7 +41,7 @@ def objective(trial):
         alpha=alpha,
         grid_size=grid_size
     )
-    exploitation_strategy = PatchEvaluationSubroutine(threshold=threshold)
+    exploitation_strategy = ExploitationStrategy(threshold=threshold)
     model = RandomWalkerModel
 
     # Run the simulation using Mesa's batch_run
@@ -58,7 +59,7 @@ def objective(trial):
         },
         iterations=100,
         number_processes=None,  # use all CPUs
-        max_steps=100,
+        max_steps=1000,
         data_collection_period=-1,  # only the last step
     )
     results = pd.DataFrame(results)
@@ -75,7 +76,7 @@ def objective(trial):
 if __name__ == '__main__':
     # Create the Optuna study and optimize the objective function
     study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=5, n_jobs=-1)
+    study.optimize(objective, n_trials=50, n_jobs=-1)
 
     # Print the best trial results
     trial = study.best_trial
@@ -92,7 +93,7 @@ if __name__ == '__main__':
     fig.show()
 
     # Slice plot (visualize the effects of individual parameters)
-    params = ['sigma', 'mu', 'dmin', 'L', 'C', 'alpha', 'threshold']
+    params = ['mu',  'threshold']
 
     fig = optuna.visualization.plot_slice(study, params=params)
     fig.show()
