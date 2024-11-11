@@ -11,6 +11,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from abm.model import Model as RandomWalkerModel
 from abm.exploration_strategy import RandomWalkerExplorationStrategy
 from abm.exploitation_strategy import ExploitationStrategy
+from visualization.visualize_agent_movement import save_agent_movement_gif
+
 
 def objective(trial):
     """
@@ -28,7 +30,7 @@ def objective(trial):
 
     mu = trial.suggest_float("mu", 1.1, 3.5)  # Exponent for Levy flight
     #alpha = trial.suggest_float("alpha", 1e-5, 1.0, log=True)  # Parameter for social cue adjustment
-    alpha = 1e-2
+    alpha = 0
     threshold = trial.suggest_int("threshold", 1, 20)
 
     print('Model type: Random Walker')
@@ -107,3 +109,27 @@ if __name__ == '__main__':
     fig = optuna.visualization.plot_param_importances(study)
     fig.update_layout(height=400, width=1200)
     fig.show()
+
+
+    # After optimization, generate a GIF with the best parameters
+    best_exploration_strategy = RandomWalkerExplorationStrategy(
+        mu=trial.params["mu"],
+        dmin=1e-3,
+        L=20,
+        alpha=1e-2,
+        grid_size=20
+    )
+    best_exploitation_strategy = ExploitationStrategy(threshold=trial.params["threshold"])
+    best_model = RandomWalkerModel(
+        exploration_strategy=best_exploration_strategy,
+        exploitation_strategy=best_exploitation_strategy,
+        grid_size=20,
+        number_of_agents=5,
+        n_resource_clusters=2,
+        resource_quality=0.8,
+        resource_cluster_radius=2,
+        keep_overall_abundance=True
+    )
+
+    # Save a GIF of the agent movement
+    save_agent_movement_gif(best_model, steps=1000, filename="agent_movement.gif")

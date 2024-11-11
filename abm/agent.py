@@ -34,6 +34,7 @@ class Agent(mesa.Agent):
         self.success_locs = np.empty((0, 2))
         self.failure_locs = np.empty((0, 2))
         self.other_agent_locs = np.empty((0, 2))
+        self.is_agent = True
 
     @property
     def is_moving(self):

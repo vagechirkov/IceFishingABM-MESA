@@ -18,6 +18,8 @@ class Resource(mesa.Agent):
         self.current_value: int = current_value
         self.keep_overall_abundance: bool = keep_overall_abundance
         self.neighborhood_radius: int = neighborhood_radius
+        self.is_resource = True
+        
 
     @property
     def catch_probability(self):
