@@ -28,10 +28,10 @@ def objective(trial):
     
     # Actual hyperparameters 
 
-    mu = trial.suggest_float("mu", 1.1, 3.5)  # Exponent for Levy flight
+    mu = trial.suggest_float("mu", 1.1, 2.1)  # Exponent for Levy flight
     #alpha = trial.suggest_float("alpha", 1e-5, 1.0, log=True)  # Parameter for social cue adjustment
-    alpha = 0
-    threshold = trial.suggest_int("threshold", 1, 20)
+    alpha = 1e-5
+    threshold = trial.suggest_int("threshold", 1, 2)
 
     print('Model type: Random Walker')
 
@@ -55,13 +55,13 @@ def objective(trial):
             "grid_size": grid_size,
             "number_of_agents": 5,
             "n_resource_clusters": 2,
-            "resource_quality": 0.8,
+            "resource_quality": 1.0,
             "resource_cluster_radius": 2,
             "keep_overall_abundance": True,
         },
         iterations=100,
         number_processes=None,  # use all CPUs
-        max_steps=1000,
+        max_steps=100,
         data_collection_period=-1,  # only the last step
     )
     results = pd.DataFrame(results)
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     fig.show()
 
     # Slice plot (visualize the effects of individual parameters)
-    params = ['mu',  'threshold']
+    params = ['mu' , 'threshold']
 
     fig = optuna.visualization.plot_slice(study, params=params)
     fig.show()
@@ -116,20 +116,20 @@ if __name__ == '__main__':
         mu=trial.params["mu"],
         dmin=1e-3,
         L=20,
-        alpha=1e-2,
+        alpha=1e-5,
         grid_size=20
     )
-    best_exploitation_strategy = ExploitationStrategy(threshold=trial.params["threshold"])
+    best_exploitation_strategy = ExploitationStrategy(threshold= trial.params["threshold"])
     best_model = RandomWalkerModel(
         exploration_strategy=best_exploration_strategy,
         exploitation_strategy=best_exploitation_strategy,
         grid_size=20,
         number_of_agents=5,
         n_resource_clusters=2,
-        resource_quality=0.8,
+        resource_quality=1.0,
         resource_cluster_radius=2,
         keep_overall_abundance=True
     )
 
     # Save a GIF of the agent movement
-    save_agent_movement_gif(best_model, steps=1000, filename="agent_movement.gif")
+    save_agent_movement_gif(best_model, steps=100, filename="agent_movement.gif")
