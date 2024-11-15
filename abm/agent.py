@@ -132,7 +132,10 @@ class Agent(mesa.Agent):
 
             # select a new destination of movement
             self._destination = self.exploration_strategy.choose_destination(
-                self.success_locs, self.failure_locs, self.other_agent_locs
+                x_y_to_i_j(*self.pos),
+                self.success_locs,
+                self.failure_locs,
+                self.other_agent_locs,
             )
             self._add_margin_around_border_for_destination()
             self._is_moving = True
