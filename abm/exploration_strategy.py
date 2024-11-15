@@ -132,7 +132,7 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
 
     def choose_destination(self, social_locs, catch_locs, loss_locs, social_cue=False):
         """
-        Choose destination based on motion type (Brownian or Levy)
+        Choose destination based on social and private information
         """
         self._check_input(social_locs)
         self._check_input(catch_locs)
