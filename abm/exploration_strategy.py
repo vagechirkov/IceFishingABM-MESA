@@ -43,9 +43,83 @@ class ExplorationStrategy:
 
 class RandomWalkerExplorationStrategy(ExplorationStrategy):
 
-    '''
-    Do doc string here explaining main parameters of the model 
-    '''
+    
+    """
+    Implementation of a Lévy random walk model for simulating ice angler movement patterns.
+    This model incorporates social cues and environmental factors to simulate realistic
+    fishing site selection behavior.
+
+    The Lévy walk is characterized by a power-law distribution of step lengths, which produces
+    a combination of short, localized movements and occasional long-distance relocations.
+    This pattern has been observed in many foraging animals and has been shown to be an
+    efficient search strategy when resources are sparsely and randomly distributed.
+
+    Mathematical Model:
+    ------------------
+    The probability density function P(d) of step lengths d follows:
+        P(d) = C * d^(-μ)
+    where:
+        - C is the normalization constant
+        - μ (mu) is the Lévy exponent
+        - d is the step length
+
+    The cumulative distribution function is used for generating random steps:
+        F(d) = C * (d^(1-μ) - dmin^(1-μ))/(1-μ)
+    
+    Parameters:
+    -----------
+    mu : float, default=1.5
+        The Lévy exponent (μ) controlling the power-law distribution of step lengths.
+        - Values between 1 and 3 produce superdiffusive behavior
+        - μ ≈ 2.0 corresponds to optimal foraging in 2D spaces
+        - Lower values increase the frequency of long jumps
+        - Higher values make movement more Brownian-like
+
+    dmin : float, default=1.0
+        Minimum step length in the spatial units of the simulation grid.
+        - Acts as a lower cutoff for the power-law distribution
+        - Prevents singularity at d=0
+        - Should be set based on minimum meaningful movement distance
+
+    L : float, default=10.0
+        Maximum step length allowed in the spatial units of the simulation grid.
+        - Acts as an upper cutoff for the power-law distribution
+        - Should be set based on physical constraints of the environment
+        - Prevents unrealistic jumps across the entire space
+
+    alpha : float, default=0.1
+        Social influence parameter controlling the strength of attraction to other anglers.
+        - Range: [0,1] where:
+            0 = no social influence (pure Lévy walk)
+            1 = strongest social influence
+        - Determines probability of being attracted to nearby occupied sites
+        - Higher values increase clustering behavior
+
+    random_state : int, default=0
+        Seed for random number generator to ensure reproducibility.
+
+    Attributes:
+    -----------
+    C : float
+        Normalization constant calculated as:
+        C = (1-μ)/((L^(1-μ)) - (dmin^(1-μ)))
+        Ensures the probability distribution integrates to 1
+
+    Methods:
+    --------
+    _levy_flight()
+        Generates a single Lévy flight step based on the power-law distribution.
+    
+    _adjust_for_social_cue(current_pos, social_locations)
+        Modifies movement based on locations of other angents within social range.
+
+    choose_destination(social_locs, resource_locs, obstacle_locs, social_cue=True)
+        Determines next destination considering environmental and social factors.
+
+    Example:
+    --------
+    
+    """
     def __init__(self, mu: float = 1.5, dmin: float = 1.0, L: float = 10.0,
                  alpha: float = 0.1, random_state: int = 0, **kwargs):
         super().__init__(**kwargs)

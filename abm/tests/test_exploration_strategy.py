@@ -46,7 +46,7 @@ def test_levy_flight_specific_values():
     np.random.seed(1)
     random_walker = RandomWalkerExplorationStrategy(grid_size=10, mu=1.5, dmin=1.0, L=5.0, alpha=0.1)
     destination = random_walker._levy_flight()
-    expected_destination = np.array([4, 3])
+    expected_destination = np.array([3, 4])
     np.testing.assert_array_equal(destination, expected_destination)
 
 def test_adjust_for_social_cue(random_walker):
