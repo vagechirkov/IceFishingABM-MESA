@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def x_y_to_i_j(x: int, y: int) -> tuple[int, int]:
     """
     Mesa coordinate system counts axis differently than numpy.
@@ -14,13 +15,15 @@ def discount_by_distance(array, agent_location, discount_factor=0.5):
     Exponentially discount array by distance from the agent.
     """
     # create a meshgrid
-    x, y = np.meshgrid(np.arange(array.shape[0]), np.arange(array.shape[1]), indexing='ij')
+    x, y = np.meshgrid(
+        np.arange(array.shape[0]), np.arange(array.shape[1]), indexing="ij"
+    )
 
     # calculate distance from the agent
     distance = np.sqrt((x - agent_location[0]) ** 2 + (y - agent_location[1]) ** 2)
 
     # discount observations by distance
-    return array * discount_factor ** distance
+    return array * discount_factor**distance
 
 
 def find_peak(array: np.ndarray) -> tuple[int, ...]:

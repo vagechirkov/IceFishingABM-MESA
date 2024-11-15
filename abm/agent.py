@@ -11,12 +11,13 @@ from .utils import x_y_to_i_j
 
 class Agent(mesa.Agent):
     def __init__(
-            self,
-            unique_id,
-            model,
-            resource_cluster_radius,
-            exploration_strategy: ExplorationStrategy,
-            exploitation_strategy: ExploitationStrategy):
+        self,
+        unique_id,
+        model,
+        resource_cluster_radius,
+        exploration_strategy: ExplorationStrategy,
+        exploitation_strategy: ExploitationStrategy,
+    ):
         super().__init__(unique_id, model)
         # parameters
         self.exploitation_strategy = exploitation_strategy
@@ -75,8 +76,12 @@ class Agent(mesa.Agent):
             self._is_sampling = True
 
     def sample(self):
-        neighbors = self.model.grid.get_neighbors(self.pos, moore=False, include_center=True,
-                                                  radius=self.resource_cluster_radius)
+        neighbors = self.model.grid.get_neighbors(
+            self.pos,
+            moore=False,
+            include_center=True,
+            radius=self.resource_cluster_radius,
+        )
         resource_collected = False
         self._time_on_patch += 1
 
@@ -96,7 +101,9 @@ class Agent(mesa.Agent):
         else:
             self._time_since_last_catch += 1
 
-        if not self.exploitation_strategy.stay_on_patch(self._time_on_patch, self._time_since_last_catch):
+        if not self.exploitation_strategy.stay_on_patch(
+            self._time_on_patch, self._time_since_last_catch
+        ):
             self._is_sampling = False
             self._time_since_last_catch = 0
 
@@ -115,15 +122,21 @@ class Agent(mesa.Agent):
         if self._is_sampling and not self._is_moving:
             self.sample()
 
-        if not self._is_sampling and not self._is_moving:  # this is also the case when the agent is initialized
+        if (
+            not self._is_sampling and not self._is_moving
+        ):  # this is also the case when the agent is initialized
             # if the first step then just sample in the current position
             if self.model.schedule.steps == 0:
                 self._is_sampling = True
                 return
 
             # select a new destination of movement
-            self._destination = self.exploration_strategy.choose_destination(self.success_locs, self.failure_locs,
-                                                                             self.other_agent_locs)
+            self._destination = self.exploration_strategy.choose_destination(
+                x_y_to_i_j(*self.pos),
+                self.success_locs,
+                self.failure_locs,
+                self.other_agent_locs,
+            )
             self._add_margin_around_border_for_destination()
             self._is_moving = True
 
@@ -180,22 +193,33 @@ class Agent(mesa.Agent):
         return self.random.choice(empty_cells)
 
     def _get_empty_cells(self, destination, radius=1):
-        neighbors = self.model.grid.get_neighborhood(destination, moore=True, include_center=True, radius=radius)
+        neighbors = self.model.grid.get_neighborhood(
+            destination, moore=True, include_center=True, radius=radius
+        )
         return [cell for cell in neighbors if self.model.grid.is_cell_empty(cell)]
 
     def add_success_loc(self, loc: tuple):
-        self.success_locs = np.vstack([self.success_locs, np.array(x_y_to_i_j(*loc))[np.newaxis, :]])
+        self.success_locs = np.vstack(
+            [self.success_locs, np.array(x_y_to_i_j(*loc))[np.newaxis, :]]
+        )
 
     def add_failure_loc(self, loc: tuple):
-        self.failure_locs = np.vstack([self.failure_locs, np.array(x_y_to_i_j(*loc))[np.newaxis, :]])
+        self.failure_locs = np.vstack(
+            [self.failure_locs, np.array(x_y_to_i_j(*loc))[np.newaxis, :]]
+        )
 
     def add_other_agent_locs(self):
-        other_agents = self.model.grid.get_neighbors(self.pos, moore=True, include_center=False,
-                                                     radius=self.model.grid.width)
+        other_agents = self.model.grid.get_neighbors(
+            self.pos, moore=True, include_center=False, radius=self.model.grid.width
+        )
         agents = np.array([agent for agent in other_agents if isinstance(agent, Agent)])
 
         # sampling agents
-        agents = [np.array(x_y_to_i_j(*agent.pos))[np.newaxis, :] for agent in agents if agent.is_sampling]
+        agents = [
+            np.array(x_y_to_i_j(*agent.pos))[np.newaxis, :]
+            for agent in agents
+            if agent.is_sampling
+        ]
 
         if len(agents) > 0:
             self.other_agent_locs = np.vstack(agents)

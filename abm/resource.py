@@ -3,14 +3,16 @@ import numpy as np
 
 
 class Resource(mesa.Agent):
-    def __init__(self,
-                 unique_id,
-                 model,
-                 radius: int = 5,
-                 max_value: int = 100,
-                 current_value: int = 50,
-                 keep_overall_abundance: bool = True,
-                 neighborhood_radius: int = 20):
+    def __init__(
+        self,
+        unique_id,
+        model,
+        radius: int = 5,
+        max_value: int = 100,
+        current_value: int = 50,
+        keep_overall_abundance: bool = True,
+        neighborhood_radius: int = 20,
+    ):
         super().__init__(unique_id, model)
         self.radius: int = radius
         self.model = model
@@ -19,7 +21,6 @@ class Resource(mesa.Agent):
         self.keep_overall_abundance: bool = keep_overall_abundance
         self.neighborhood_radius: int = neighborhood_radius
         self.is_resource = True
-        
 
     @property
     def catch_probability(self):
@@ -37,14 +38,17 @@ class Resource(mesa.Agent):
 
     def _add_resource_to_neighbour(self):
         """Add one resource to the closest neighbor"""
-        neighbors = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False,
-                                                     radius=self.neighborhood_radius)
+        neighbors = self.model.grid.get_neighborhood(
+            self.pos, moore=True, include_center=False, radius=self.neighborhood_radius
+        )
         resources = [n for n in neighbors if isinstance(n, Resource)]
 
         # if the current resource is not the only resource in the neighborhood
         if len(resources) > 0:
             # find closest resource
-            closest_resource = min(resources, key=lambda x: self.model.grid.get_distance(self.pos, x.pos))
+            closest_resource = min(
+                resources, key=lambda x: self.model.grid.get_distance(self.pos, x.pos)
+            )
             closest_resource.current_value += 1
 
     def step(self):
@@ -54,8 +58,9 @@ class Resource(mesa.Agent):
         # create a meshgrid
         _resource_map = np.zeros((self.model.grid.width, self.model.grid.height))
 
-        iter_neighborhood = self.model.grid.iter_neighborhood(self.pos, moore=False, include_center=True,
-                                                              radius=self.radius)
+        iter_neighborhood = self.model.grid.iter_neighborhood(
+            self.pos, moore=False, include_center=True, radius=self.radius
+        )
 
         for n in iter_neighborhood:
             _resource_map[n] = 1
@@ -64,7 +69,9 @@ class Resource(mesa.Agent):
         return _resource_map.astype(float) * self.catch_probability
 
 
-def make_resource_centers(model, n_clusters: int = 1, cluster_radius: int = 5) -> tuple[tuple[int, int], ...]:
+def make_resource_centers(
+    model, n_clusters: int = 1, cluster_radius: int = 5
+) -> tuple[tuple[int, int], ...]:
     """make sure that the cluster centers are not too close together"""
     centers = []
 
@@ -79,6 +86,9 @@ def make_resource_centers(model, n_clusters: int = 1, cluster_radius: int = 5) -
         # TODO: fix this to avoid infinite loop in the case when it is not possible to add a new center far enough
         # TODO: from the existing centers
         # check if the new center is not too close to any of the existing centers
-        if np.all(np.linalg.norm(np.array(centers) - np.array((x, y)), axis=-1) > cluster_radius * 2):
+        if np.all(
+            np.linalg.norm(np.array(centers) - np.array((x, y)), axis=-1)
+            > cluster_radius * 2
+        ):
             centers.append((x, y))
     return tuple(centers)
