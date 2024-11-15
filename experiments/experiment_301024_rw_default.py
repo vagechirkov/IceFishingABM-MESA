@@ -4,8 +4,7 @@ import mesa
 
 import sys
 import os
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 
 # Import RandomWalker-specific models and strategies
@@ -21,23 +20,28 @@ def objective(trial):
     It defines the parameters for both GP and Random Walker models
     and computes the average collected resource based on the exploration and exploitation strategies.
     """
-
+    
     grid_size = 20
-    L = grid_size  # Maximum distance for Levy flight
-    dmin = 1e-3  # Minimum distance for Levy flight
+    L = grid_size           # Maximum distance for Levy flight
+    dmin = 1e-3             # Minimum distance for Levy flight
+        
+    
+    # Actual hyperparameters 
 
-    # Actual hyperparameters
+    mu = trial.suggest_float("mu", 1.1, 2.1)  # Exponent for Levy flight
+    #alpha = trial.suggest_float("alpha", 1e-5, 1.0, log=True)  # Parameter for social cue adjustment
+    alpha = 1e-5
+    threshold = trial.suggest_int("threshold", 1, 2)
 
-    mu = trial.suggest_float("mu", 1.1, 3.5)  # Exponent for Levy flight
-    # alpha = trial.suggest_float("alpha", 1e-5, 1.0, log=True)  # Parameter for social cue adjustment
-    alpha = 0
-    threshold = trial.suggest_int("threshold", 1, 20)
-
-    print("Model type: Random Walker")
+    print('Model type: Random Walker')
 
     # Set up Random Walker exploration strategy
     exploration_strategy = RandomWalkerExplorationStrategy(
-        mu=mu, dmin=dmin, L=L, alpha=alpha, grid_size=grid_size
+        mu=mu,
+        dmin=dmin,
+        L=L,
+        alpha=alpha,
+        grid_size=grid_size
     )
     exploitation_strategy = ExploitationStrategy(threshold=threshold)
     model = RandomWalkerModel
@@ -51,13 +55,13 @@ def objective(trial):
             "grid_size": grid_size,
             "number_of_agents": 5,
             "n_resource_clusters": 2,
-            "resource_quality": 0.8,
+            "resource_quality": 1.0,
             "resource_cluster_radius": 2,
             "keep_overall_abundance": True,
         },
         iterations=100,
         number_processes=None,  # use all CPUs
-        max_steps=1000,
+        max_steps=100,
         data_collection_period=-1,  # only the last step
     )
     results = pd.DataFrame(results)
@@ -66,12 +70,12 @@ def objective(trial):
     mask = results.AgentID != 0
 
     # Calculate the average collected resource
-    avg_collected_resource = results.loc[mask, "collected_resource"].mean()
+    avg_collected_resource = results.loc[mask, 'collected_resource'].mean()
 
     return avg_collected_resource
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # Create the Optuna study and optimize the objective function
     study = optuna.create_study(direction="maximize")
     study.optimize(objective, n_trials=50, n_jobs=-1)
@@ -83,8 +87,7 @@ if __name__ == "__main__":
 
     # Visualization: Plot the optimization history
     import plotly.io as pio
-
-    pio.templates["plotly"].layout["autosize"] = False
+    pio.templates['plotly'].layout['autosize'] = False
 
     # Optimization history
     fig = optuna.visualization.plot_optimization_history(study)
@@ -92,7 +95,7 @@ if __name__ == "__main__":
     fig.show()
 
     # Slice plot (visualize the effects of individual parameters)
-    params = ["mu", "threshold"]
+    params = ['mu' , 'threshold']
 
     fig = optuna.visualization.plot_slice(study, params=params)
     fig.show()
@@ -107,23 +110,26 @@ if __name__ == "__main__":
     fig.update_layout(height=400, width=1200)
     fig.show()
 
+
     # After optimization, generate a GIF with the best parameters
     best_exploration_strategy = RandomWalkerExplorationStrategy(
-        mu=trial.params["mu"], dmin=1e-3, L=20, alpha=1e-2, grid_size=20
+        mu=trial.params["mu"],
+        dmin=1e-3,
+        L=20,
+        alpha=1e-5,
+        grid_size=20
     )
-    best_exploitation_strategy = ExploitationStrategy(
-        threshold=trial.params["threshold"]
-    )
+    best_exploitation_strategy = ExploitationStrategy(threshold= trial.params["threshold"])
     best_model = RandomWalkerModel(
         exploration_strategy=best_exploration_strategy,
         exploitation_strategy=best_exploitation_strategy,
         grid_size=20,
         number_of_agents=5,
         n_resource_clusters=2,
-        resource_quality=0.8,
+        resource_quality=1.0,
         resource_cluster_radius=2,
-        keep_overall_abundance=True,
+        keep_overall_abundance=True
     )
 
     # Save a GIF of the agent movement
-    save_agent_movement_gif(best_model, steps=1000, filename="agent_movement.gif")
+    save_agent_movement_gif(best_model, steps=100, filename="agent_movement.gif")
