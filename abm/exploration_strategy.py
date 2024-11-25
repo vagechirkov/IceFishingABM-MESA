@@ -114,7 +114,7 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
     _adjust_for_social_cue(current_pos, social_locations)
         Modifies movement based on locations of other angents within social range.
 
-    choose_destination(social_locs, resource_locs, obstacle_locs, social_cue=True)
+    choose_destination(social_locs, resource_locs, obstacle_locs)
         Determines next destination considering environmental and social factors.
 
     Example:
@@ -146,10 +146,11 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
         """
         Choose destination based on social and private information
         """
+        current_position = np.array(current_position, dtype=np.int32)
         self._check_input(social_locs)
         self._check_input(catch_locs)
         self._check_input(loss_locs)
-        self._levy_flight()
+        self._levy_flight(current_position)
 
         # Handle social cue if detected
         # if social_cue:
@@ -157,7 +158,7 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
 
         return self.destination
 
-    def _levy_flight(self):
+    def _levy_flight(self, current_position):
         """
         Sample a displacement distance using a Levy flight distribution and ensure
         the distance is within the given bounds (dmin and L).
@@ -179,16 +180,15 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
         dx = d * np.cos(theta)
         dy = d * np.sin(theta)
 
-        # Assume current position is the center of the grid (grid_size / 2, grid_size / 2)
-        current_pos = np.array([self.grid_size // 2, self.grid_size // 2])
+        # Ensure current position data type is integer
+        current_position = np.array(current_position , dtype=np.int32)
 
-        # Compute the new position and ensure it's within the grid boundaries
+        new_x = int(np.clip(current_position[0] + dx, 0, self.grid_size - 1))
+        new_y = int(np.clip(current_position[1] + dy, 0, self.grid_size - 1))
+        
+        self.destination = np.array([new_x, new_y], dtype=int)
 
-        new_position = np.clip(
-            current_pos + np.array([dx, dy]), 0, self.grid_size - 1
-        ).astype(int)
-
-        self.destination = new_position
+        return self.destination
 
     def _adjust_for_social_cue(self, position, social_locs):
         """
@@ -205,23 +205,9 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
 
             # With probability prob_social, move to the nearest social cue
             if np.random.rand() < self._prob_social:
-                self.destination = nearest_social_loc
+                self.destination = np.array(nearest_social_loc, dtype=int)
 
         return self.destination
-
-    def _get_new_position(self, dx, dy):
-        """
-        Compute the new position from a displacement (dx, dy)
-        """
-        # Current position (we assume the walker starts from the center of the grid)
-        current_position = np.array([self.grid_size // 2, self.grid_size // 2])
-
-        # Calculate new position with periodic boundary conditions (wrap around the grid)
-        new_x = (current_position[0] + dx) % self.grid_size
-        new_y = (current_position[1] + dy) % self.grid_size
-
-        return np.array([new_x, new_y])
-
 
 ###  ALGORITHM 3: GP EXPLORATION STRATEGY
 
