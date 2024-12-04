@@ -11,7 +11,7 @@ class Resource(mesa.Agent):
         max_value: int = 100,
         current_value: int = 50,
         keep_overall_abundance: bool = True,
-        neighborhood_radius: int = 20,
+        neighborhood_radius: int = 20
     ):
         super().__init__(unique_id, model)
         self.radius: int = radius
@@ -21,11 +21,15 @@ class Resource(mesa.Agent):
         self.keep_overall_abundance: bool = keep_overall_abundance
         self.neighborhood_radius: int = neighborhood_radius
         self.is_resource = True
+        self.const_resource: bool = True
 
     @property
     def catch_probability(self):
         # this relation is linear for now but might be more realistic if it is sigmoidal
-        return self.current_value / self.max_value
+        if self.const_resource:
+            return 1
+        else:
+            return self.current_value / self.max_value
 
     def catch(self):
         if self.model.random.random() < self.catch_probability:

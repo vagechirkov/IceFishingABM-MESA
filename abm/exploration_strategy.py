@@ -176,6 +176,8 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
         # Sample a random angle uniformly between 0 and 2π
         theta = np.random.uniform(0, 2 * np.pi)
 
+        
+
         # Convert polar coordinates (d, θ) into Cartesian coordinates (dx, dy)
         dx = d * np.cos(theta)
         dy = d * np.sin(theta)
@@ -183,10 +185,12 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
         # Ensure current position data type is integer
         current_position = np.array(current_position , dtype=np.int32)
 
-        new_x = int(np.clip(current_position[0] + dx, 0, self.grid_size - 1))
-        new_y = int(np.clip(current_position[1] + dy, 0, self.grid_size - 1))
+        new_x = int(np.clip(np.round(current_position[0] + dx), 0, self.grid_size - 1))
+        new_y = int(np.clip(np.round(current_position[1] + dy), 0, self.grid_size - 1))
+
         
         self.destination = np.array([new_x, new_y], dtype=int)
+        #print('Destination:', self.destination)
 
         return self.destination
 

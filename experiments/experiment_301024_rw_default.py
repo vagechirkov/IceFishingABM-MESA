@@ -15,6 +15,14 @@ from abm.exploitation_strategy import ExploitationStrategy
 from visualization.visualize_agent_movement import save_agent_movement_gif
 
 
+'''
+RUN HYPERPARAMETERS GO HERE:
+'''
+
+num_agents = 1 # Number of agents
+d_min  = 1     # Minimum distance for Levy flight
+max_sim_steps = 1000 # Maximum number of steps
+
 def objective(trial):
     """
     The objective function that Optuna will optimize.
@@ -23,8 +31,8 @@ def objective(trial):
     """
 
     grid_size = 20
-    L = grid_size  # Maximum distance for Levy flight
-    dmin = 1e-3  # Minimum distance for Levy flight
+    L = grid_size / 2   # Maximum distance for Levy flight
+    dmin = d_min  # Minimum distance for Levy flight
 
     # Actual hyperparameters
 
@@ -49,7 +57,7 @@ def objective(trial):
             "exploration_strategy": exploration_strategy,
             "exploitation_strategy": exploitation_strategy,
             "grid_size": grid_size,
-            "number_of_agents": 5,
+            "number_of_agents": num_agents,
             "n_resource_clusters": 2,
             "resource_quality": 1.0,
             "resource_cluster_radius": 2,
@@ -57,7 +65,7 @@ def objective(trial):
         },
         iterations=100,
         number_processes=None,  # use all CPUs
-        max_steps=100,
+        max_steps=max_sim_steps,
         data_collection_period=-1,  # only the last step
     )
     results = pd.DataFrame(results)
@@ -109,7 +117,7 @@ if __name__ == "__main__":
 
     # After optimization, generate a GIF with the best parameters
     best_exploration_strategy = RandomWalkerExplorationStrategy(
-        mu=trial.params["mu"], dmin=1e-3, L=20, alpha=1e-5, grid_size=20
+        mu=trial.params["mu"], dmin=d_min, L=20, alpha=1e-5, grid_size=20
     )
     best_exploitation_strategy = ExploitationStrategy(
         threshold=trial.params["threshold"]
@@ -118,7 +126,7 @@ if __name__ == "__main__":
         exploration_strategy=best_exploration_strategy,
         exploitation_strategy=best_exploitation_strategy,
         grid_size=20,
-        number_of_agents=5,
+        number_of_agents= num_agents,
         n_resource_clusters=2,
         resource_quality=1.0,
         resource_cluster_radius=2,
@@ -126,6 +134,6 @@ if __name__ == "__main__":
     )
 
     # Save a GIF of the agent movement
-    save_agent_movement_gif(best_model, steps=100, filename="agent_movement.gif")
+    save_agent_movement_gif(best_model, steps=max_sim_steps, filename="agent_movement.gif", resource_cluster_radius=2)
     print("Agent Movement Visualization Saved successfully...")
     print("Simulation Completed Successfully...")

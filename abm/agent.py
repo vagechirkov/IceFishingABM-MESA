@@ -137,6 +137,7 @@ class Agent(mesa.Agent):
                 self.failure_locs,
                 self.other_agent_locs,
             )
+            print(self.destination)
             self._add_margin_around_border_for_destination()
             self._is_moving = True
 
@@ -218,10 +219,16 @@ class Agent(mesa.Agent):
         agents = [
             np.array(x_y_to_i_j(*agent.pos))[np.newaxis, :]
             for agent in agents
-            if agent.is_sampling
+            if agent.is_sampling 
+            
         ]
+        '''
+        Additional filteering for agents based on social information quality. Probability of it being a social cue based fitness / catch  rate, filter below certain fitness threshold 
 
+        '''
         if len(agents) > 0:
             self.other_agent_locs = np.vstack(agents)
         else:
             self.other_agent_locs = np.empty((0, 2))
+
+
