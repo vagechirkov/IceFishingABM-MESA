@@ -15,6 +15,18 @@ from abm.exploitation_strategy import ExploitationStrategy
 from visualization.visualize_agent_movement import save_agent_movement_gif
 
 
+'''
+RUN HYPERPARAMETERS GO HERE:
+'''
+
+NUM_AGENTS     = 1                   # Number of agents
+D_MIN          = 1                  # Minimum distance for Levy flight
+max_sim_steps  = 100                # Maximum number of steps
+GRID_SIZE      = 10                 # Grid size for simulation
+MAX_L          = GRID_SIZE / 2      # Maximum distance for Levy flight
+NUM_ITERATIONS = 100                # Number of iterations
+ALPHA          = 1e-5               # Parameter for social cue coupling 
+
 def objective(trial):
     """
     The objective function that Optuna will optimize.
@@ -22,15 +34,15 @@ def objective(trial):
     and computes the average collected resource based on the exploration and exploitation strategies.
     """
 
-    grid_size = 20
-    L = grid_size  # Maximum distance for Levy flight
-    dmin = 1e-3  # Minimum distance for Levy flight
+    grid_size = GRID_SIZE 
+    L = MAX_L    # Maximum distance for Levy flight
+    dmin = D_MIN  # Minimum distance for Levy flight
 
     # Actual hyperparameters
 
     mu = trial.suggest_float("mu", 1.1, 2.1)  # Exponent for Levy flight
     # alpha = trial.suggest_float("alpha", 1e-5, 1.0, log=True)  # Parameter for social cue adjustment
-    alpha = 1e-5
+    alpha = ALPHA
     threshold = trial.suggest_int("threshold", 1, 2)
 
     print("Model type: Random Walker")
@@ -49,15 +61,15 @@ def objective(trial):
             "exploration_strategy": exploration_strategy,
             "exploitation_strategy": exploitation_strategy,
             "grid_size": grid_size,
-            "number_of_agents": 5,
+            "number_of_agents": NUM_AGENTS,
             "n_resource_clusters": 2,
             "resource_quality": 1.0,
             "resource_cluster_radius": 2,
             "keep_overall_abundance": True,
         },
-        iterations=100,
+        iterations= NUM_ITERATIONS,
         number_processes=None,  # use all CPUs
-        max_steps=100,
+        max_steps=max_sim_steps,
         data_collection_period=-1,  # only the last step
     )
     results = pd.DataFrame(results)
@@ -109,7 +121,7 @@ if __name__ == "__main__":
 
     # After optimization, generate a GIF with the best parameters
     best_exploration_strategy = RandomWalkerExplorationStrategy(
-        mu=trial.params["mu"], dmin=1e-3, L=20, alpha=1e-5, grid_size=20
+        mu=trial.params["mu"], dmin=D_MIN, L=MAX_L, alpha=ALPHA, grid_size=GRID_SIZE
     )
     best_exploitation_strategy = ExploitationStrategy(
         threshold=trial.params["threshold"]
@@ -117,8 +129,8 @@ if __name__ == "__main__":
     best_model = RandomWalkerModel(
         exploration_strategy=best_exploration_strategy,
         exploitation_strategy=best_exploitation_strategy,
-        grid_size=20,
-        number_of_agents=5,
+        grid_size=GRID_SIZE,
+        number_of_agents= NUM_AGENTS,
         n_resource_clusters=2,
         resource_quality=1.0,
         resource_cluster_radius=2,
@@ -126,6 +138,6 @@ if __name__ == "__main__":
     )
 
     # Save a GIF of the agent movement
-    save_agent_movement_gif(best_model, steps=100, filename="agent_movement.gif")
+    save_agent_movement_gif(best_model, steps=max_sim_steps, filename="agent_movement.gif", resource_cluster_radius=2)
     print("Agent Movement Visualization Saved successfully...")
     print("Simulation Completed Successfully...")

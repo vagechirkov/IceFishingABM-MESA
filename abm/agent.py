@@ -1,5 +1,4 @@
 from typing import Union
-
 import mesa
 import numpy as np
 
@@ -19,14 +18,15 @@ class Agent(mesa.Agent):
         exploitation_strategy: ExploitationStrategy,
     ):
         super().__init__(unique_id, model)
-        # parameters
+        # Parameters
         self.exploitation_strategy = exploitation_strategy
         self.exploration_strategy = exploration_strategy
 
-        # state variables
+        # State variables
         self._is_moving: bool = False
-        self._destination: Union[None, tuple[int, int]] = None
         self._is_sampling: bool = False
+        self._is_consuming: bool = False
+        self._destination: Union[None, tuple[int, int]] = None
         self._time_on_patch: int = 0
         self._time_since_last_catch: int = 0
         self._collected_resource_last_spot: int = 0
@@ -46,16 +46,20 @@ class Agent(mesa.Agent):
         return self._is_sampling
 
     @property
-    def collected_resource(self):
-        return self._collected_resource
+    def is_consuming(self):
+        return self._is_consuming
 
     @property
     def destination(self):
         return self._destination
 
+    @property
+    def collected_resource(self):
+        return self._collected_resource
+
     def move(self):
         """
-        Move agent one cell closer to the destination
+        Move agent one cell closer to the destination.
         """
         x, y = self.pos
         dx, dy = self._destination
@@ -69,10 +73,8 @@ class Agent(mesa.Agent):
             y -= 1
         self.model.grid.move_agent(self, (x, y))
 
-        # check if destination has been reached
-        if self.pos == self._destination:
+        if np.array_equal(self.pos, self._destination): 
             self._is_moving = False
-            # start sampling
             self._is_sampling = True
 
     def sample(self):
@@ -84,21 +86,16 @@ class Agent(mesa.Agent):
         )
         resource_collected = False
         self._time_on_patch += 1
+        self._is_consuming = False
 
-        # check if there are any resources in the neighborhood
-        if len(neighbors) > 0:
-            for neighbour in neighbors:
-                if isinstance(neighbour, Resource):
-                    if neighbour.catch():
-                        # NB: sample multiple times if resources overlap
-                        resource_collected = True
+        for neighbor in neighbors:
+            if isinstance(neighbor, Resource) and neighbor.catch():
+                self._collected_resource += 1
+                self._collected_resource_last_spot += 1
+                resource_collected = True
+                self._is_consuming = True
 
-        if resource_collected:
-            self._time_since_last_catch = 0
-            self._collected_resource += 1
-            self._collected_resource_last_spot += 1
-            self.add_success_loc(self.pos)
-        else:
+        if not resource_collected:
             self._time_since_last_catch += 1
 
         if not self.exploitation_strategy.stay_on_patch(
@@ -115,88 +112,21 @@ class Agent(mesa.Agent):
 
     def step(self):
         if self._is_moving and not self._is_sampling:
-            self._adjust_destination_if_cell_occupied()
             self.move()
-            return
-
-        if self._is_sampling and not self._is_moving:
+        elif self._is_sampling and not self._is_moving:
             self.sample()
-
-        if (
-            not self._is_sampling and not self._is_moving
-        ):  # this is also the case when the agent is initialized
-            # if the first step then just sample in the current position
-            if self.model.schedule.steps == 0:
-                self._is_sampling = True
-                return
-
-            # select a new destination of movement
+        else:
+            # Select a new destination
             self._destination = self.exploration_strategy.choose_destination(
                 x_y_to_i_j(*self.pos),
                 self.success_locs,
                 self.failure_locs,
                 self.other_agent_locs,
             )
-            self._add_margin_around_border_for_destination()
             self._is_moving = True
 
-        if self._is_moving and self._is_sampling:
-            raise ValueError("Agent is both sampling and moving.")
-
-        # update social information at the end of each step
+        # Update social information at the end of each step
         self.add_other_agent_locs()
-
-    def _add_margin_around_border_for_destination(self):
-        """
-        Add a margin around the border of the grid to prevent agents from moving to the border.
-        """
-        if self._destination is None:
-            return
-
-        x, y = self._destination
-        if x == 0:
-            x += 1
-        elif x == self.model.grid.width - 1:
-            x -= 1
-        if y == 0:
-            y += 1
-        elif y == self.model.grid.height - 1:
-            y -= 1
-        self._destination = x, y
-
-    def _adjust_destination_if_cell_occupied(self):
-        if self._destination is None:
-            return
-
-        if self.model.grid.is_cell_empty(self._destination):
-            return
-
-        # get cell inhabitants
-        inhabitants = self.model.grid.get_cell_list_contents(self._destination)
-
-        agents = [agent for agent in inhabitants if isinstance(agent, Agent)]
-        if any([agent.is_sampling for agent in agents]):
-            self._destination = self._closest_empty_cell(self._destination)
-
-    def _closest_empty_cell(self, destination: tuple[int, int]):
-        # check if the destination is empty
-        if self.model.grid.is_cell_empty(destination):
-            return destination
-
-        radius = 2
-        empty_cells = self._get_empty_cells(destination, radius)
-
-        # increase the radius until an empty cell is found
-        while len(empty_cells) == 0:
-            radius += 1
-            empty_cells = self._get_empty_cells(destination, radius=radius)
-        return self.random.choice(empty_cells)
-
-    def _get_empty_cells(self, destination, radius=1):
-        neighbors = self.model.grid.get_neighborhood(
-            destination, moore=True, include_center=True, radius=radius
-        )
-        return [cell for cell in neighbors if self.model.grid.is_cell_empty(cell)]
 
     def add_success_loc(self, loc: tuple):
         self.success_locs = np.vstack(
@@ -212,13 +142,10 @@ class Agent(mesa.Agent):
         other_agents = self.model.grid.get_neighbors(
             self.pos, moore=True, include_center=False, radius=self.model.grid.width
         )
-        agents = np.array([agent for agent in other_agents if isinstance(agent, Agent)])
-
-        # sampling agents
         agents = [
             np.array(x_y_to_i_j(*agent.pos))[np.newaxis, :]
-            for agent in agents
-            if agent.is_sampling
+            for agent in other_agents
+            if isinstance(agent, Agent) and agent.is_sampling
         ]
 
         if len(agents) > 0:

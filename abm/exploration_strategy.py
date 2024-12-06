@@ -29,6 +29,7 @@ class ExplorationStrategy:
         """
         Select destination randomly
         """
+        assert len(current_position.shape) == 1 and current_position.shape[0] == 2, "Current position must be a 1D array with 2 elements"
         self._check_input(success_locs)
         self._check_input(failure_locs)
         self._check_input(other_agent_locs)
@@ -39,8 +40,9 @@ class ExplorationStrategy:
         return self.destination
 
     def _check_input(self, input_data):
-        assert input_data.ndim == 2, "Input data must have shape (n data points, 2)"
-        assert input_data.shape[1] == 2, "Input data must have shape (n data points, 2)"
+            if input_data.size > 0:
+                assert input_data.ndim == 2, "Input data must have shape (n data points, 2)"
+                assert input_data.shape[1] == 2, "Input data must have shape (n data points, 2)"
 
 
 ### ALGORITHM 2:  RANDOM WALKER EXPLORATION STRATEGY
@@ -147,6 +149,10 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
         Choose destination based on social and private information
         """
         current_position = np.array(current_position, dtype=np.int32)
+        # Added assertions as later needed for testing
+        assert len(current_position.shape) == 1 and current_position.shape[0] == 2, "Current position must be a 1D array with 2 elements"
+        assert catch_locs.shape[1] == 2 if   catch_locs.size > 0 else True, "Catch locations must be Nx2 array"
+        assert loss_locs.shape[1] == 2 if loss_locs.size > 0 else True, "Failure locations must be Nx2 array"
         self._check_input(social_locs)
         self._check_input(catch_locs)
         self._check_input(loss_locs)
@@ -176,6 +182,8 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
         # Sample a random angle uniformly between 0 and 2π
         theta = np.random.uniform(0, 2 * np.pi)
 
+        
+
         # Convert polar coordinates (d, θ) into Cartesian coordinates (dx, dy)
         dx = d * np.cos(theta)
         dy = d * np.sin(theta)
@@ -183,10 +191,12 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
         # Ensure current position data type is integer
         current_position = np.array(current_position , dtype=np.int32)
 
-        new_x = int(np.clip(current_position[0] + dx, 0, self.grid_size - 1))
-        new_y = int(np.clip(current_position[1] + dy, 0, self.grid_size - 1))
+        new_x = int(np.clip(np.round(current_position[0] + dx), 0, self.grid_size - 1))
+        new_y = int(np.clip(np.round(current_position[1] + dy), 0, self.grid_size - 1))
+
         
         self.destination = np.array([new_x, new_y], dtype=int)
+        #print('Destination:', self.destination)
 
         return self.destination
 
@@ -305,6 +315,7 @@ class GPExplorationStrategy(ExplorationStrategy):
         :param other_agent_locs: shape (n data points, 2), locations of other agents
         :return: destination (x, y)
         """
+        
         # make sure all inputs are in the correct format
         self._check_input(success_locs)
         self._check_input(failure_locs)
@@ -328,3 +339,156 @@ class GPExplorationStrategy(ExplorationStrategy):
             np.random.choice(self.mesh_indices, p=self.belief_softmax.reshape(-1)), :
         ]
         return self.destination
+
+# ALGORITHM 4: SOCIAL INFOTAXIS EXPLORATION STRATEGY
+
+class SocialInfotaxisExplorationStrategy(ExplorationStrategy):
+    """
+    Implementation of the Social Infotaxis Exploration Strategy.
+    This algorithm computes the next destination based on entropy reduction, information gain,
+    and Bayesian belief updates to locate a source efficiently.
+    """
+
+    def __init__(self, tau: float = 0.1, epsilon: float = 0.1, **kwargs):
+        """
+        Parameters:
+        ----------
+        tau : float
+            Temperature parameter for softmax action selection.
+        epsilon : float
+            Exploration probability for choosing random actions.
+        """
+        super().__init__(**kwargs)
+        self.tau = tau
+        self.epsilon = epsilon
+
+    def choose_destination(self, current_position, success_locs, failure_locs, other_agent_locs):
+        """
+        Choose the next destination based on the Social Infotaxis algorithm.
+
+        Parameters:
+        ----------
+        current_position : tuple
+            Current position of the agent (x, y).
+        success_locs : np.ndarray
+            Array of successful resource locations visited by the agent.
+        failure_locs : np.ndarray
+            Array of failed resource locations visited by the agent.
+        other_agent_locs : np.ndarray
+            Array of locations of other agents.
+
+        Returns:
+        -------
+        np.ndarray
+            Selected destination (x, y).
+        """
+        # Initialize belief as uniform if not already initialized
+        if not hasattr(self, "belief"):
+            self.belief = np.ones((self.grid_size, self.grid_size)) / (self.grid_size**2)
+
+        # Update belief with social information (e.g., from other agents)
+        self._update_belief_with_social_info(other_agent_locs)
+
+        # Compute current entropy
+        current_entropy = self._compute_entropy(self.belief)
+
+        # Compute expected entropy for all possible actions
+        action_set = np.array([[0, 1], [1, 0], [-1, 0], [0, -1]])  # Example actions
+        expected_entropies = np.array([
+            self._compute_expected_entropy(current_position, action, self.belief)
+            for action in action_set
+        ])
+
+        # Compute information gain
+        information_gain = current_entropy - expected_entropies
+
+        # Compute softmax probabilities for action selection
+        probabilities = np.exp(information_gain / self.tau) / np.sum(np.exp(information_gain / self.tau))
+
+        # Choose an action
+        if np.random.rand() < self.epsilon:  # Exploration
+            chosen_action = action_set[np.random.choice(len(action_set))]
+        else:  # Exploitation
+            chosen_action = action_set[np.argmax(probabilities)]
+
+        # Compute new position
+        new_position = np.clip(current_position + chosen_action, 0, self.grid_size - 1)
+
+        # Update belief state
+        self._update_belief(self.belief, new_position)
+
+        return new_position
+
+
+    def _compute_entropy(self, belief):
+        """
+        Compute the entropy of the current belief distribution.
+
+        Parameters:
+        ----------
+        belief : np.ndarray
+            Current belief distribution.
+
+        Returns:
+        -------
+        float
+            Entropy of the belief distribution.
+        """
+        return -np.sum(belief * np.log(belief + 1e-9))  # Add a small value to prevent log(0)
+    
+
+    def _compute_expected_entropy(self, current_position, action, belief):
+        """
+        Compute the expected entropy after taking a given action.
+
+        Parameters:
+        ----------
+        current_position : tuple
+            Current position of the agent (x, y).
+        action : np.ndarray
+            Action to evaluate (x, y offsets).
+        belief : np.ndarray
+            Current belief distribution.
+
+        Returns:
+        -------
+        float
+            Expected entropy after taking the action.
+        """
+        # Predict the next position
+        new_position = np.clip(current_position + action, 0, self.grid_size - 1)
+
+        # Approximate the new belief state using Bayesian inference
+        new_belief = belief.copy()
+        self._update_belief(new_belief, new_position)
+
+        # Compute entropy of the new belief state
+        return self._compute_entropy(new_belief)
+
+    def _update_belief(self, belief, new_position):
+        """
+        Update the belief state using Bayesian inference.
+
+        Parameters:
+        ----------
+        belief : np.ndarray
+            Current belief distribution to update.
+        new_position : tuple
+            New position of the agent (x, y).
+        """
+        # Placeholder for observation likelihood (this would be domain-specific)
+        observation_likelihood = np.random.uniform(0.1, 1.0, belief.shape)
+
+        # Bayesian update
+        belief *= observation_likelihood
+        belief /= np.sum(belief)  # Normalize the belief distribution
+
+    def _update_belief_with_social_info(self, other_agent_locs):
+        """
+        Update the belief state with social information (e.g., other agents' sampling locations).
+        """
+        if len(other_agent_locs) > 0:
+            for loc in other_agent_locs:
+                x, y = loc
+                self.belief[x, y] += 1  # Boost belief at other agents' locations
+            self.belief /= np.sum(self.belief)  # Normalize the belief distribution

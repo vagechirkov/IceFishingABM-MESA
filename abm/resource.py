@@ -21,15 +21,22 @@ class Resource(mesa.Agent):
         self.keep_overall_abundance: bool = keep_overall_abundance
         self.neighborhood_radius: int = neighborhood_radius
         self.is_resource = True
+        self.const_resource: bool = True
 
     @property
     def catch_probability(self):
-        # this relation is linear for now but might be more realistic if it is sigmoidal
-        return self.current_value / self.max_value
+        # Linear relation for catch probability
+        if self.const_resource:
+            return 1
+        else:
+            return self.current_value / self.max_value
 
     def catch(self):
-        if self.model.random.random() < self.catch_probability:
-            self.current_value -= 1
+        if self.model.random.random() < self.catch_probability and self.current_value > 0:
+            if self.const_resource:     # Constant resource doesnt deplet. 
+                pass
+            elif self.current_value > 0: 
+                self.current_value -= 1
             if self.keep_overall_abundance:
                 self._add_resource_to_neighbour()
             return True
@@ -37,36 +44,26 @@ class Resource(mesa.Agent):
             return False
 
     def _add_resource_to_neighbour(self):
-        """Add one resource to the closest neighbor"""
-        neighbors = self.model.grid.get_neighborhood(
-            self.pos, moore=True, include_center=False, radius=self.neighborhood_radius
-        )
+        """Add one resource to the closest neighbor."""
+        neighbors = self.model.grid.get_neighbors(self.pos, moore=True, include_center=False)
         resources = [n for n in neighbors if isinstance(n, Resource)]
 
-        # if the current resource is not the only resource in the neighborhood
         if len(resources) > 0:
-            # find closest resource
             closest_resource = min(
                 resources, key=lambda x: self.model.grid.get_distance(self.pos, x.pos)
             )
             closest_resource.current_value += 1
 
-    def step(self):
-        pass
-
     def resource_map(self) -> np.ndarray:
-        # create a meshgrid
+        # Generate resource map based on resource radius
         _resource_map = np.zeros((self.model.grid.width, self.model.grid.height))
-
         iter_neighborhood = self.model.grid.iter_neighborhood(
             self.pos, moore=False, include_center=True, radius=self.radius
         )
-
         for n in iter_neighborhood:
             _resource_map[n] = 1
-
-        # return a resource map
         return _resource_map.astype(float) * self.catch_probability
+
 
 
 def make_resource_centers(
