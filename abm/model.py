@@ -88,7 +88,14 @@ class Model(mesa.Model):
         }
 
         self.datacollector = mesa.datacollection.DataCollector(
-            agent_reporters=agent_reporters, model_reporters=model_reporters
+            agent_reporters={
+                "collected_resource": lambda agent: agent.collected_resource
+                if hasattr(agent, "collected_resource") else None,  # Safeguard for non-agent objects
+                "pos": "pos",
+                "is_sampling": "is_sampling",
+                "is_moving": "is_moving",
+            },
+            model_reporters=model_reporters,
         )
 
     @property
@@ -100,5 +107,8 @@ class Model(mesa.Model):
         ).T
 
     def step(self):
+        """
+        Run one step of the model. This includes updating the schedule, collecting data, etc.
+        """
         self.schedule.step()
         self.datacollector.collect(self)

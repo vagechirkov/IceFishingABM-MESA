@@ -29,6 +29,7 @@ class ExplorationStrategy:
         """
         Select destination randomly
         """
+        assert len(current_position.shape) == 1 and current_position.shape[0] == 2, "Current position must be a 1D array with 2 elements"
         self._check_input(success_locs)
         self._check_input(failure_locs)
         self._check_input(other_agent_locs)
@@ -39,8 +40,9 @@ class ExplorationStrategy:
         return self.destination
 
     def _check_input(self, input_data):
-        assert input_data.ndim == 2, "Input data must have shape (n data points, 2)"
-        assert input_data.shape[1] == 2, "Input data must have shape (n data points, 2)"
+            if input_data.size > 0:
+                assert input_data.ndim == 2, "Input data must have shape (n data points, 2)"
+                assert input_data.shape[1] == 2, "Input data must have shape (n data points, 2)"
 
 
 ### ALGORITHM 2:  RANDOM WALKER EXPLORATION STRATEGY
@@ -147,6 +149,10 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
         Choose destination based on social and private information
         """
         current_position = np.array(current_position, dtype=np.int32)
+        # Added assertions as later needed for testing
+        assert len(current_position.shape) == 1 and current_position.shape[0] == 2, "Current position must be a 1D array with 2 elements"
+        assert catch_locs.shape[1] == 2 if   catch_locs.size > 0 else True, "Catch locations must be Nx2 array"
+        assert loss_locs.shape[1] == 2 if loss_locs.size > 0 else True, "Failure locations must be Nx2 array"
         self._check_input(social_locs)
         self._check_input(catch_locs)
         self._check_input(loss_locs)
@@ -309,6 +315,7 @@ class GPExplorationStrategy(ExplorationStrategy):
         :param other_agent_locs: shape (n data points, 2), locations of other agents
         :return: destination (x, y)
         """
+        
         # make sure all inputs are in the correct format
         self._check_input(success_locs)
         self._check_input(failure_locs)
