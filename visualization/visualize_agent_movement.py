@@ -11,6 +11,7 @@ def save_agent_movement_gif(
     fig, ax = plt.subplots(figsize=(12, 10))
     ax.set_xlim(0, model.grid.width)
     ax.set_ylim(0, model.grid.height)
+    ax.set_aspect('equal', 'box')
 
     # Add dotted grid lines
     ax.set_xticks(np.arange(0, model.grid.width + 1, 1))
@@ -44,13 +45,10 @@ def save_agent_movement_gif(
         handle._sizes = [80]  # Set a consistent legend marker size
         handle.set_alpha(1.0)  # Ensure legend markers are opaque
 
-    #plt.tight_layout()  # Adjust layout
-    # Make room for legend on right side
-    #plt.subplots_adjust(right=0.85, left=0.1)
-
     def update(frame):
         model.step()
         agent_positions = []
+        agent_colors = []  # New list to store colors for each agent
         resource_positions = []
         resource_intensities = []
         destinations = []
@@ -61,28 +59,24 @@ def save_agent_movement_gif(
 
                 # Adjust agent color based on state
                 if obj.is_moving:
-                    agent_color = "blue"
+                    agent_colors.append("blue")
                 elif obj.is_sampling:
                     if obj.is_consuming:
-                        agent_color = "red"
+                        agent_colors.append("red")
                     else:
-                        agent_color = "#FFA500"  # Orange (not too bright)
-                else:
-                    agent_color = "gray"
+                       agent_colors.append("#FFA500")
 
-                agent_scatter.set_color(agent_color)
+                else:
+                    agent_colors.append("gray")
+
+                
 
                 # Record destination marker if the agent is moving
                 if obj.is_moving and obj.destination is not None:
                     destinations.append(obj.destination)
 
             elif hasattr(obj, "is_resource") and obj.is_resource:
-                print('lalalal loop works')
                 resource_positions.append(obj.pos)
-
-                # Debugging: Check resource values
-                print(f"Resource at {obj.pos}: current_value={obj.current_value}, max_value={obj.max_value}")
-
 
                 # Normalize and ensure visibility for intensities
                 if obj.max_value > 0:
@@ -101,6 +95,8 @@ def save_agent_movement_gif(
 
         # Update scatter plots
         agent_scatter.set_offsets(np.c_[agent_x, agent_y])
+        agent_scatter.set_color(agent_colors)  # Set individual colors for each agent
+        
 
         #resource_scatter.set_offsets(np.c_[resource_x, resource_y])
 
@@ -113,9 +109,6 @@ def save_agent_movement_gif(
             resource_scatter.set_offsets(np.empty((0, 2)))
             resource_scatter.set_array(np.array([]))
 
-        
-        print('resource intensities (note we use 2x that value for better visibility):')
-        print(resource_intensities)
         
         destination_marker.set_offsets(np.c_[destination_x, destination_y])
         ax.set_title(f"Step: {frame+1}")

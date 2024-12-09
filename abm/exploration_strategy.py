@@ -214,7 +214,7 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
             self._prob_social = np.exp(-self.alpha * delta_d)
 
             # With probability prob_social, move to the nearest social cue
-            if np.random.rand() < self._prob_social:
+            if np.random.rand() > self._prob_social:    # i think this should be > instead of < so changed it 
                 self.destination = np.array(nearest_social_loc, dtype=int)
 
         return self.destination

@@ -35,7 +35,8 @@ class Agent(mesa.Agent):
         self.success_locs = np.empty((0, 2))
         self.failure_locs = np.empty((0, 2))
         self.other_agent_locs = np.empty((0, 2))
-        self.is_agent = True
+        self.is_agent: bool = True
+        self.model.social_information = None # If True, agent has full access to social catch  information, by default this will be False 
 
     @property
     def is_moving(self):
@@ -60,6 +61,7 @@ class Agent(mesa.Agent):
     def move(self):
         """
         Move agent one cell closer to the destination.
+        Add variable of distance moved by agent (TODO)
         """
         x, y = self.pos
         dx, dy = self._destination
@@ -142,12 +144,27 @@ class Agent(mesa.Agent):
         other_agents = self.model.grid.get_neighbors(
             self.pos, moore=True, include_center=False, radius=self.model.grid.width
         )
-        agents = [
-            np.array(x_y_to_i_j(*agent.pos))[np.newaxis, :]
-            for agent in other_agents
-            if isinstance(agent, Agent) and agent.is_sampling
-        ]
+        # Initialize agents as empty list
+        agents = [] 
+        if not self.model.social_information:
+            # No social info case - empty array
+            self.other_agent_locs = np.empty((0, 2))
+        elif self.model.social_information == "consuming":
+            # Only get positions of agents that are both sampling AND consuming
+            agents = [
+                np.array(x_y_to_i_j(*agent.pos))[np.newaxis, :]
+                for agent in other_agents
+                if isinstance(agent, Agent) and agent.is_sampling and agent.is_consuming
+            ]
+        elif self.model.social_information == "sampling":
+            # Get positions of all sampling agents
+            agents = [
+                np.array(x_y_to_i_j(*agent.pos))[np.newaxis, :]
+                for agent in other_agents
+                if isinstance(agent, Agent) and agent.is_sampling
+            ]
 
+        # Stack positions if any agents were found
         if len(agents) > 0:
             self.other_agent_locs = np.vstack(agents)
         else:
