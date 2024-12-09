@@ -36,7 +36,7 @@ class Agent(mesa.Agent):
         self.failure_locs = np.empty((0, 2))
         self.other_agent_locs = np.empty((0, 2))
         self.is_agent: bool = True
-        self.model.social_information = None # If True, agent has full access to social catch  information, by default this will be False 
+        self.model.social_information = None  # If True, agent has full access to social catch information, by default this will be False
 
     @property
     def is_moving(self):
@@ -75,7 +75,7 @@ class Agent(mesa.Agent):
             y -= 1
         self.model.grid.move_agent(self, (x, y))
 
-        if np.array_equal(self.pos, self._destination): 
+        if np.array_equal(self.pos, self._destination):
             self._is_moving = False
             self._is_sampling = True
 
@@ -145,7 +145,7 @@ class Agent(mesa.Agent):
             self.pos, moore=True, include_center=False, radius=self.model.grid.width
         )
         # Initialize agents as empty list
-        agents = [] 
+        agents = []
         if not self.model.social_information:
             # No social info case - empty array
             self.other_agent_locs = np.empty((0, 2))

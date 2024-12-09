@@ -33,10 +33,13 @@ class Resource(mesa.Agent):
             return self.current_value / self.max_value
 
     def catch(self):
-        if self.model.random.random() < self.catch_probability and self.current_value > 0:
-            if self.const_resource:          # Constant resource doesnt deplet. 
+        if (
+            self.model.random.random() < self.catch_probability
+            and self.current_value > 0
+        ):
+            if self.const_resource:  # Constant resource doesnt deplet.
                 pass
-            elif self.current_value > 0: 
+            elif self.current_value > 0:
                 self.current_value -= 1
             if self.keep_overall_abundance:
                 self._add_resource_to_neighbour()
@@ -47,7 +50,9 @@ class Resource(mesa.Agent):
     def _add_resource_to_neighbour(self):
         """Add one resource to the closest neighbor."""
         # Comment : Need to update this so that the resource is added to a new randomly created resource
-        neighbors = self.model.grid.get_neighbors(self.pos, moore=True, include_center=False)
+        neighbors = self.model.grid.get_neighbors(
+            self.pos, moore=True, include_center=False
+        )
         resources = [n for n in neighbors if isinstance(n, Resource)]
 
         if len(resources) > 0:
@@ -65,7 +70,6 @@ class Resource(mesa.Agent):
         for n in iter_neighborhood:
             _resource_map[n] = 1
         return _resource_map.astype(float) * self.catch_probability
-
 
 
 def make_resource_centers(

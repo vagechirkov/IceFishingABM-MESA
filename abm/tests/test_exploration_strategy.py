@@ -45,37 +45,31 @@ def test_invalid_inputs(exploration_strategy):
     # Test invalid position array
     with pytest.raises(AssertionError):
         exploration_strategy.choose_destination(
-            np.array([1, 2, 3]), # 3D position
-            np.ones((1, 2)),  
+            np.array([1, 2, 3]),  # 3D position
             np.ones((1, 2)),
-            np.ones((1, 2))
+            np.ones((1, 2)),
+            np.ones((1, 2)),
         )
 
     # Test invalid locations array shape
     with pytest.raises(AssertionError):
         exploration_strategy.choose_destination(
             np.array([1, 2]),
-            np.ones((2, 3)), # Wrong shape - 3 columns
+            np.ones((2, 3)),  # Wrong shape - 3 columns
             np.ones((1, 2)),
-            np.ones((1, 2))
+            np.ones((1, 2)),
         )
 
     # Test invalid catch_locs shape
     with pytest.raises(AssertionError):
         exploration_strategy.choose_destination(
-            np.array([1, 2]),
-            np.empty((0, 2)),
-            np.array([[1, 2, 3]]),
-            np.empty((0, 2))
+            np.array([1, 2]), np.empty((0, 2)), np.array([[1, 2, 3]]), np.empty((0, 2))
         )
 
     # Test invalid loss_locs shape
     with pytest.raises(AssertionError):
         exploration_strategy.choose_destination(
-            np.array([1, 2]),
-            np.empty((0, 2)),
-            np.empty((0, 2)),
-            np.array([[1, 2, 3]])
+            np.array([1, 2]), np.empty((0, 2)), np.empty((0, 2)), np.array([[1, 2, 3]])
         )
 
 
@@ -96,7 +90,7 @@ def test_levy_flight_specific_values():
     )
     current_position = np.array([5, 5])
     destination = random_walker._levy_flight(current_position)
-    expected_destination = np.array([4, 5])  
+    expected_destination = np.array([4, 5])
     np.testing.assert_array_equal(destination, expected_destination)
 
 
@@ -121,7 +115,9 @@ def test_adjust_for_social_cue():
     social_locs = np.array([[5, 5], [1, 1]])
     rw._adjust_for_social_cue(current_positions, social_locs)
     assert np.allclose(rw._prob_social, 1, atol=1e-5)
-    assert np.array_equal(rw.destination, levi_flight_destination)  # Keeps original destination
+    assert np.array_equal(
+        rw.destination, levi_flight_destination
+    )  # Keeps original destination
 
     # Strong social influence case (high alpha)
     rw.alpha = 100
@@ -145,7 +141,6 @@ def test_destination_with_social_cue(random_walker):
 
 
 ## Tests for Social Infotaxis Exploration Strategy
-
 @pytest.fixture
 def social_infotaxis():
     np.random.seed(0)
@@ -154,7 +149,7 @@ def social_infotaxis():
 
 @pytest.mark.xfail
 # Tests for SocialInfotaxisExplorationStrategy
-def test_choose_destination_trivial(social_infotaxis):
+def test_choose_destination_trivial_social_infotaxis(social_infotaxis):
     # Basic test to ensure destination is within grid bounds
     belief = np.ones((10, 10)) / 100  # Uniform belief distribution
     action_set = np.array([[0, 1], [1, 0], [-1, 0], [0, -1]])
@@ -168,15 +163,16 @@ def test_choose_destination_trivial(social_infotaxis):
     assert 0 <= y < social_infotaxis.grid_size
 
 
-def test_entropy_computation(social_infotaxis):
+def test_entropy_computation_social_infotaxis(social_infotaxis):
     # Explicit entropy computation check
     belief = np.array([[0.25, 0.25], [0.25, 0.25]])  # Uniform belief
     entropy = social_infotaxis._compute_entropy(belief)
     expected_entropy = -np.sum(belief * np.log(belief + 1e-9))
     assert np.isclose(entropy, expected_entropy, atol=1e-4)
 
+
 @pytest.mark.xfail
-def test_expected_entropy_computation(social_infotaxis):
+def test_expected_entropy_computation_social_infotaxis(social_infotaxis):
     belief = np.ones((10, 10)) / 100  # Uniform belief distribution
     action_set = np.array([[0, 1], [1, 0], [-1, 0], [0, -1]])
     current_position = np.array([5, 5])
@@ -192,19 +188,19 @@ def test_expected_entropy_computation(social_infotaxis):
     manual_entropy = social_infotaxis._compute_entropy(new_belief)
 
     print(f"Expected Entropy: {expected_entropy}, Manual Entropy: {manual_entropy}")
-    assert np.isclose(expected_entropy, manual_entropy, atol=1e-4)  
+    assert np.isclose(expected_entropy, manual_entropy, atol=1e-4)
 
 
-
-def test_belief_update(social_infotaxis):
+def test_belief_update_social_infotaxis(social_infotaxis):
     # Verify that the belief state is updated correctly
     belief = np.ones((10, 10)) / 100  # Uniform belief distribution
     new_position = np.array([5, 5])
     social_infotaxis._update_belief(belief, new_position)
     assert np.isclose(np.sum(belief), 1.0, atol=1e-5)  # Belief should remain normalized
 
+
 @pytest.mark.xfail
-def test_action_selection(social_infotaxis):
+def test_action_selection_social_infotaxis(social_infotaxis):
     # Verify that actions are selected based on softmax probabilities
     belief = np.ones((10, 10)) / 100  # Uniform belief distribution
     action_set = np.array([[0, 1], [1, 0], [-1, 0], [0, -1]])

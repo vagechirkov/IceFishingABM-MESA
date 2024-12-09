@@ -89,8 +89,11 @@ class Model(mesa.Model):
 
         self.datacollector = mesa.datacollection.DataCollector(
             agent_reporters={
-                "collected_resource": lambda agent: agent.collected_resource
-                if hasattr(agent, "collected_resource") else None,  # Safeguard for non-agent objects
+                "collected_resource": lambda agent: (
+                    agent.collected_resource
+                    if hasattr(agent, "collected_resource")
+                    else None
+                ),  # Safeguard for non-agent objects
                 "pos": "pos",
                 "is_sampling": "is_sampling",
                 "is_moving": "is_moving",
