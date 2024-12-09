@@ -25,7 +25,7 @@ def random_walker():
 def test_choose_destination_trivial(exploration_strategy):
     # Basic test to ensure destination is within grid bounds
     destination = exploration_strategy.choose_destination(
-        np.empty((0, 2)), np.empty((0, 2)), np.empty((0, 2))
+        np.zeros(2), np.empty((0, 2)), np.empty((0, 2)), np.empty((0, 2))
     )
     x, y = destination
     assert 0 <= x < exploration_strategy.grid_size
