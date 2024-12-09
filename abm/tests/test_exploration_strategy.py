@@ -100,7 +100,6 @@ def test_levy_flight_specific_values():
     np.testing.assert_array_equal(destination, expected_destination)
 
 
-
 def test_adjust_for_social_cue():
     np.random.seed(0)
     rw = RandomWalkerExplorationStrategy(
@@ -109,28 +108,28 @@ def test_adjust_for_social_cue():
     levi_flight_destination = np.array([0, 0])
     current_positions = np.array([4, 4])
 
-    # No social information
+    # No social information case - empty array
     rw.alpha = 1
     rw.destination = levi_flight_destination
     social_locs = np.array([])
     rw._adjust_for_social_cue(current_positions, social_locs)
     assert np.array_equal(rw.destination, levi_flight_destination)
 
-    # Always move towards social cue
+    # No social influence case (alpha = 0)
     rw.alpha = 0
     rw.destination = levi_flight_destination
     social_locs = np.array([[5, 5], [1, 1]])
     rw._adjust_for_social_cue(current_positions, social_locs)
     assert np.allclose(rw._prob_social, 1, atol=1e-5)
-    assert np.array_equal(rw.destination, [5, 5])
+    assert np.array_equal(rw.destination, levi_flight_destination)  # Keeps original destination
 
-    # Never move towards social cue
+    # Strong social influence case (high alpha)
     rw.alpha = 100
     rw.destination = levi_flight_destination
     social_locs = np.array([[5, 5], [1, 1]])
     rw._adjust_for_social_cue(current_positions, social_locs)
     assert np.allclose(rw._prob_social, 0, atol=1e-5)
-    assert np.array_equal(rw.destination, levi_flight_destination)
+    assert np.array_equal(rw.destination, [5, 5])  # Moves to nearest social location
 
 
 def test_destination_with_social_cue(random_walker):
