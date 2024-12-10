@@ -36,7 +36,6 @@ class Agent(mesa.Agent):
         self.failure_locs = np.empty((0, 2))
         self.other_agent_locs = np.empty((0, 2))
         self.is_agent: bool = True
-        self.model.social_information = None  # If True, agent has full access to social catch information, by default this will be False
 
     @property
     def is_moving(self):
