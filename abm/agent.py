@@ -96,7 +96,7 @@ class Agent(mesa.Agent):
             include_center=True,
             radius=self.resource_cluster_radius,
         )
-        resource_collected = False
+        _is_resource_collected = False
         self._time_on_patch += 1
         self._is_consuming = False
 
@@ -104,10 +104,10 @@ class Agent(mesa.Agent):
             if isinstance(neighbor, Resource) and neighbor.catch():
                 self._collected_resource += 1
                 self._collected_resource_last_spot += 1
-                resource_collected = True
+                _is_resource_collected = True
                 self._is_consuming = True
 
-        if not resource_collected:
+        if not _is_resource_collected:
             self._time_since_last_catch += 1
 
         if not self.exploitation_strategy.stay_on_patch(
