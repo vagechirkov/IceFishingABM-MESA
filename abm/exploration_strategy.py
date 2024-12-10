@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.gaussian_process import GaussianProcessClassifier, GaussianProcessRegressor
+from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF
 from .belief import generate_belief_mean_matrix
 

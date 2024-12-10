@@ -5,6 +5,7 @@ import mesa
 from abm.agent import Agent
 from abm.exploration_strategy import ExplorationStrategy
 from abm.exploitation_strategy import ExploitationStrategy
+from abm.utils import x_y_to_i_j
 
 
 @pytest.fixture
@@ -34,11 +35,11 @@ def setup_agent():
 
 
 @pytest.mark.parametrize("destination", [(5, 5), (1, 3), (5, 9)])
-def test_agent_moves_to_correct_destination(setup_agent, destination):
+def test_agent_moves_to_correct_destination(setup_agent, destination: tuple[int, int]):
     agent, exploration_strategy = setup_agent
 
     # Mock the choose_destination method to return a specific destination
-    exploration_strategy.choose_destination.return_value = destination
+    exploration_strategy.choose_destination.return_value = x_y_to_i_j(*destination)
 
     # Run the agent's step method
     agent.step()
