@@ -22,6 +22,7 @@ class Model(mesa.Model):
         resource_quality: Union[float, tuple[float]] = 0.8,
         resource_cluster_radius: int = 5,
         keep_overall_abundance: bool = True,
+        social_information_quality = "sampling"
     ):
         super().__init__()
         self.grid_size = grid_size
@@ -33,6 +34,9 @@ class Model(mesa.Model):
 
         self.schedule = mesa.time.RandomActivation(self)
         self.grid = mesa.space.MultiGrid(grid_size, grid_size, False)
+
+        # agent parameters
+        self.social_information_quality = social_information_quality
 
         # initialize resources
         centers = make_resource_centers(
@@ -65,6 +69,7 @@ class Model(mesa.Model):
                 self.next_id(),
                 self,
                 self.resource_cluster_radius,
+                self.social_information_quality,
                 exploration_strategy,
                 exploitation_strategy,
             )
@@ -78,15 +83,6 @@ class Model(mesa.Model):
             # place agent
             self.grid.place_agent(a, cell)
 
-        # Data collector
-        model_reporters = {}
-        agent_reporters = {
-            "pos": "pos",
-            "collected_resource": "collected_resource",
-            "is_sampling": "is_sampling",
-            "is_moving": "is_moving",
-        }
-
         self.datacollector = mesa.datacollection.DataCollector(
             agent_reporters={
                 "collected_resource": lambda agent: (
@@ -94,11 +90,16 @@ class Model(mesa.Model):
                     if hasattr(agent, "collected_resource")
                     else None
                 ),  # Safeguard for non-agent objects
+                "traveled_distance": lambda agent: (
+                    agent.traveled_distance
+                    if hasattr(agent, "traveled_distance")
+                    else None
+                ),  # Safeguard for non-agent objects
                 "pos": "pos",
                 "is_sampling": "is_sampling",
                 "is_moving": "is_moving",
             },
-            model_reporters=model_reporters,
+            model_reporters={},
         )
 
     @property

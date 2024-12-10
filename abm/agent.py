@@ -14,6 +14,7 @@ class Agent(mesa.Agent):
         unique_id,
         model,
         resource_cluster_radius,
+        social_info_quality,
         exploration_strategy: ExplorationStrategy,
         exploitation_strategy: ExploitationStrategy,
     ):
@@ -21,7 +22,7 @@ class Agent(mesa.Agent):
         # Parameters
         self.exploitation_strategy = exploitation_strategy
         self.exploration_strategy = exploration_strategy
-        self.social_info_quality = self.model.social_information
+        self.social_info_quality = social_info_quality
 
         # State variables
         self._is_moving: bool = False
@@ -31,12 +32,16 @@ class Agent(mesa.Agent):
         self._time_on_patch: int = 0
         self._time_since_last_catch: int = 0
         self._collected_resource_last_spot: int = 0
-        self._collected_resource: int = 0
+
         self.resource_cluster_radius = resource_cluster_radius
         self.success_locs = np.empty((0, 2))
         self.failure_locs = np.empty((0, 2))
         self.other_agent_locs = np.empty((0, 2))
         self.is_agent: bool = True
+
+        # Output variable
+        self._collected_resource: int = 0
+        self._traveled_distance: int = 0
 
     @property
     def is_moving(self):
@@ -58,10 +63,13 @@ class Agent(mesa.Agent):
     def collected_resource(self):
         return self._collected_resource
 
+    @property
+    def traveled_distance(self):
+        return self._traveled_distance
+
     def move(self):
         """
         Move agent one cell closer to the destination.
-        Add variable of distance moved by agent (TODO)
         """
         x, y = self.pos
         dx, dy = self._destination
@@ -74,6 +82,8 @@ class Agent(mesa.Agent):
         elif y > dy:
             y -= 1
         self.model.grid.move_agent(self, (x, y))
+
+        self._traveled_distance += 1
 
         if np.array_equal(self.pos, self._destination):
             self._is_moving = False
