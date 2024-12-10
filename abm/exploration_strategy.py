@@ -146,7 +146,7 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
         self.random_state = random_state
         self._prob_social = 0
 
-    def choose_destination(self, current_position, social_locs, catch_locs, loss_locs):
+    def choose_destination(self, current_position, success_locs, failure_locs, other_agent_locs):
         """
         Choose destination based on social and private information
         """
@@ -156,19 +156,19 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
             len(current_position.shape) == 1 and current_position.shape[0] == 2
         ), "Current position must be a 1D array with 2 elements"
         assert (
-            catch_locs.shape[1] == 2 if catch_locs.size > 0 else True
+            success_locs.shape[1] == 2 if success_locs.size > 0 else True
         ), "Catch locations must be Nx2 array"
         assert (
-            loss_locs.shape[1] == 2 if loss_locs.size > 0 else True
+            other_agent_locs.shape[1] == 2 if other_agent_locs.size > 0 else True
         ), "Failure locations must be Nx2 array"
-        self._check_input(social_locs)
-        self._check_input(catch_locs)
-        self._check_input(loss_locs)
-        self._levy_flight(current_position)
+        self._check_input(other_agent_locs)
+        self._check_input(success_locs)
+        self._check_input(failure_locs)
+        _ = self._levy_flight(current_position)
 
         # Handle social cue if detected
         # if social_cue:
-        self._adjust_for_social_cue(current_position, social_locs)
+        _ = self._adjust_for_social_cue(current_position, other_agent_locs)
 
         return self.destination
 
