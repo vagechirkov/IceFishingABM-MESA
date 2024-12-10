@@ -21,11 +21,9 @@ class ExplorationStrategy:
         self.other_agent_locs = np.empty((0, 2))
         self.destination = None
 
-    def choose_destination(self,
-                           current_position,
-                           success_locs,
-                           failure_locs,
-                           other_agent_locs):
+    def choose_destination(
+        self, current_position, success_locs, failure_locs, other_agent_locs
+    ):
         """
         Select destination randomly
         """
@@ -203,8 +201,6 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
         new_y = int(np.clip(np.round(current_position[1] + dy), 0, self.grid_size - 1))
 
         self.destination = np.array([new_x, new_y], dtype=int)
-        # print('Destination:', self.destination)
-
         return self.destination
 
     def _adjust_for_social_cue(self, position, social_locs):
@@ -314,13 +310,28 @@ class GPExplorationStrategy(ExplorationStrategy):
             np.exp(self.belief_ucb / self.softmax_tau)
         )
 
-    def choose_destination(self, success_locs, failure_locs, other_agent_locs):
+    def choose_destination(
+        self, current_position, success_locs, failure_locs, other_agent_locs
+    ):
         """
-        Choose exploration destination using the GP model
-        :param success_locs: shape (n data points, 2), locations of successful sampling attempts
-        :param failure_locs: shape (n data points, 2), locations of failed sampling attempts
-        :param other_agent_locs: shape (n data points, 2), locations of other agents
-        :return: destination (x, y)
+
+        Choose exploration destination using the GP model.
+
+        Parameters:
+        ----------
+        current_position : tuple
+            Current position of the agent (x, y).
+        success_locs : np.ndarray
+            Array of successful resource locations visited by the agent.
+        failure_locs : np.ndarray
+            Array of failed resource locations visited by the agent.
+        other_agent_locs : np.ndarray
+            Array of locations of other agents.
+
+        Returns:
+        -------
+        np.ndarray
+            Selected destination (x, y).
         """
 
         # make sure all inputs are in the correct format
