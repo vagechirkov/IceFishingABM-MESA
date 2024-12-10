@@ -22,7 +22,11 @@ class ExplorationStrategy:
         self.destination = None
 
     def choose_destination(
-        self, current_position, success_locs, failure_locs, other_agent_locs
+        self, *,
+        current_position=np.empty((0, 2)),
+        success_locs=np.empty((0, 2)),
+        failure_locs=np.empty((0, 2)),
+        other_agent_locs=np.empty((0, 2)),
     ):
         """
         Select destination randomly
@@ -146,7 +150,13 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
         self.random_state = random_state
         self._prob_social = 0
 
-    def choose_destination(self, current_position, success_locs, failure_locs, other_agent_locs):
+    def choose_destination(
+        self, *,
+        current_position=np.empty((0, 2)),
+        success_locs=np.empty((0, 2)),
+        failure_locs=np.empty((0, 2)),
+        other_agent_locs=np.empty((0, 2)),
+    ):
         """
         Choose destination based on social and private information
         """
@@ -311,7 +321,11 @@ class GPExplorationStrategy(ExplorationStrategy):
         )
 
     def choose_destination(
-        self, current_position, success_locs, failure_locs, other_agent_locs
+        self, *,
+        current_position=np.empty((0, 2)),
+        success_locs=np.empty((0, 2)),
+        failure_locs=np.empty((0, 2)),
+        other_agent_locs=np.empty((0, 2)),
     ):
         """
 
@@ -383,7 +397,11 @@ class SocialInfotaxisExplorationStrategy(ExplorationStrategy):
         self.epsilon = epsilon
 
     def choose_destination(
-        self, current_position, success_locs, failure_locs, other_agent_locs
+        self,
+        current_position=np.empty((0, 2)),
+        success_locs=np.empty((0, 2)),
+        failure_locs=np.empty((0, 2)),
+        other_agent_locs=np.empty((0, 2)),
     ):
         """
         Choose the next destination based on the Social Infotaxis algorithm.

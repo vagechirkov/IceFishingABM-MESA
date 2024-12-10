@@ -130,10 +130,10 @@ class Agent(mesa.Agent):
         else:
             # Select a new destination
             self._destination = self.exploration_strategy.choose_destination(
-                xy2ij(*self.pos),
-                self.success_locs,
-                self.failure_locs,
-                self.other_agent_locs,
+                current_position=xy2ij(*self.pos),
+                success_locs=self.success_locs,
+                failure_locs=self.failure_locs,
+                other_agent_locs=self.other_agent_locs,
             )
             self._is_moving = True
 

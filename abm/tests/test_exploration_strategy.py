@@ -25,7 +25,10 @@ def random_walker():
 def test_choose_destination_trivial(exploration_strategy):
     # Basic test to ensure destination is within grid bounds
     destination = exploration_strategy.choose_destination(
-        np.zeros(2), np.empty((0, 2)), np.empty((0, 2)), np.empty((0, 2))
+        current_position=np.zeros(2),
+        success_locs=np.empty((0, 2)),
+        failure_locs=np.empty((0, 2)),
+        other_agent_locs=np.empty((0, 2))
     )
     x, y = destination
     assert 0 <= x < exploration_strategy.grid_size
@@ -45,31 +48,37 @@ def test_invalid_inputs(exploration_strategy):
     # Test invalid position array
     with pytest.raises(AssertionError):
         exploration_strategy.choose_destination(
-            np.array([1, 2, 3]),  # 3D position
-            np.ones((1, 2)),
-            np.ones((1, 2)),
-            np.ones((1, 2)),
+            current_position=np.array([1, 2, 3]),  # 3D position
+            success_locs=np.ones((1, 2)),
+            failure_locs=np.ones((1, 2)),
+            other_agent_locs=np.ones((1, 2)),
         )
 
     # Test invalid locations array shape
     with pytest.raises(AssertionError):
         exploration_strategy.choose_destination(
-            np.array([1, 2]),
-            np.ones((2, 3)),  # Wrong shape - 3 columns
-            np.ones((1, 2)),
-            np.ones((1, 2)),
+            current_position=np.array([1, 2]),
+            success_locs=np.ones((2, 3)),  # Wrong shape - 3 columns
+            failure_locs=np.ones((1, 2)),
+            other_agent_locs=np.ones((1, 2)),
         )
 
     # Test invalid catch_locs shape
     with pytest.raises(AssertionError):
         exploration_strategy.choose_destination(
-            np.array([1, 2]), np.empty((0, 2)), np.array([[1, 2, 3]]), np.empty((0, 2))
+            current_position=np.array([1, 2]),
+            success_locs=np.empty((0, 2)),
+            failure_locs=np.array([[1, 2, 3]]),
+            other_agent_locs=np.empty((0, 2))
         )
 
     # Test invalid loss_locs shape
     with pytest.raises(AssertionError):
         exploration_strategy.choose_destination(
-            np.array([1, 2]), np.empty((0, 2)), np.empty((0, 2)), np.array([[1, 2, 3]])
+            current_position=np.array([1, 2]),
+            success_locs=np.empty((0, 2)),
+            failure_locs=np.empty((0, 2)),
+            other_agent_locs=np.array([[1, 2, 3]])
         )
 
 
@@ -133,7 +142,10 @@ def test_destination_with_social_cue(random_walker):
     social_locs = np.array([[3, 3], [7, 7]])
     current_position = np.array([5, 5])
     destination = random_walker.choose_destination(
-        current_position, np.empty((0, 2)), np.empty((0, 2)), social_locs
+        current_position=current_position,
+        success_locs=np.empty((0, 2)),
+        failure_locs=np.empty((0, 2)),
+        other_agent_locs=social_locs
     )
     x, y = destination
     assert 0 <= x < random_walker.grid_size
