@@ -5,7 +5,7 @@ import mesa
 from abm.agent import Agent
 from abm.exploration_strategy import ExplorationStrategy
 from abm.exploitation_strategy import ExploitationStrategy
-from abm.utils import x_y_to_i_j
+from abm.utils import ij2xy
 
 
 @pytest.fixture
@@ -39,17 +39,17 @@ def test_agent_moves_to_correct_destination(setup_agent, destination: tuple[int,
     agent, exploration_strategy = setup_agent
 
     # Mock the choose_destination method to return a specific destination
-    exploration_strategy.choose_destination.return_value = x_y_to_i_j(*destination)
+    exploration_strategy.choose_destination.return_value = destination
 
     # Run the agent's step method
     agent.step()
 
     # Check if the agent's destination is set correctly
-    assert agent.destination == destination
+    assert agent.destination == ij2xy(*destination)
 
     # Move the agent towards the destination
     while agent.is_moving:
         agent.move()
 
     # Check if the agent has arrived at the correct destination
-    assert agent.pos == destination
+    assert agent.pos == ij2xy(*destination)

@@ -5,7 +5,7 @@ import numpy as np
 from .exploration_strategy import ExplorationStrategy
 from .exploitation_strategy import ExploitationStrategy
 from .resource import Resource
-from .utils import x_y_to_i_j
+from .utils import ij2xy, xy2ij
 
 
 class Agent(mesa.Agent):
@@ -130,24 +130,27 @@ class Agent(mesa.Agent):
         else:
             # Select a new destination
             self._destination = self.exploration_strategy.choose_destination(
-                x_y_to_i_j(*self.pos),
+                xy2ij(*self.pos),
                 self.success_locs,
                 self.failure_locs,
                 self.other_agent_locs,
             )
             self._is_moving = True
 
+            # convert destination back to x,y
+            self._destination = ij2xy(*self._destination)
+
         # Update social information at the end of each step
         self.add_other_agent_locs()
 
     def add_success_loc(self, loc: tuple):
         self.success_locs = np.vstack(
-            [self.success_locs, np.array(x_y_to_i_j(*loc))[np.newaxis, :]]
+            [self.success_locs, np.array(xy2ij(*loc))[np.newaxis, :]]
         )
 
     def add_failure_loc(self, loc: tuple):
         self.failure_locs = np.vstack(
-            [self.failure_locs, np.array(x_y_to_i_j(*loc))[np.newaxis, :]]
+            [self.failure_locs, np.array(xy2ij(*loc))[np.newaxis, :]]
         )
 
     def add_other_agent_locs(self):
@@ -165,14 +168,14 @@ class Agent(mesa.Agent):
         if self.social_info_quality == "consuming":
             # Only get positions of agents that are both sampling AND consuming
             agents = [
-                np.array(x_y_to_i_j(*agent.pos))[np.newaxis, :]
+                np.array(xy2ij(*agent.pos))[np.newaxis, :]
                 for agent in other_agents
                 if isinstance(agent, Agent) and agent.is_sampling and agent.is_consuming
             ]
         elif self.social_info_quality == "sampling":
             # Get positions of all sampling agents
             agents = [
-                np.array(x_y_to_i_j(*agent.pos))[np.newaxis, :]
+                np.array(xy2ij(*agent.pos))[np.newaxis, :]
                 for agent in other_agents
                 if isinstance(agent, Agent) and agent.is_sampling
             ]

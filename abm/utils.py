@@ -1,13 +1,22 @@
 import numpy as np
 
 
-def x_y_to_i_j(x: int, y: int) -> tuple[int, int]:
+def xy2ij(x: int, y: int) -> tuple[int, int]:
     """
     Mesa coordinate system counts axis differently than numpy.
     """
     i, j = y, x
 
     return i, j
+
+
+def ij2xy(i: int, j: int) -> tuple[int, int]:
+    """
+    Mesa coordinate system counts axis differently than numpy.
+    """
+    y, x = i, j
+
+    return x, y
 
 
 def discount_by_distance(array, agent_location, discount_factor=0.5):
