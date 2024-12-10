@@ -21,6 +21,7 @@ class Agent(mesa.Agent):
         # Parameters
         self.exploitation_strategy = exploitation_strategy
         self.exploration_strategy = exploration_strategy
+        self.social_info_quality = self.model.social_information
 
         # State variables
         self._is_moving: bool = False
@@ -140,31 +141,36 @@ class Agent(mesa.Agent):
         )
 
     def add_other_agent_locs(self):
+        self.other_agent_locs = np.empty((0, 2))
+
+        # avoid searching for neighbors if social info is ignored
+        if self.social_info_quality is None:
+            return
+
         other_agents = self.model.grid.get_neighbors(
             self.pos, moore=True, include_center=False, radius=self.model.grid.width
         )
-        # Initialize agents as empty list
+
         agents = []
-        if not self.model.social_information:
-            # No social info case - empty array
-            self.other_agent_locs = np.empty((0, 2))
-        elif self.model.social_information == "consuming":
+        if self.social_info_quality == "consuming":
             # Only get positions of agents that are both sampling AND consuming
             agents = [
                 np.array(x_y_to_i_j(*agent.pos))[np.newaxis, :]
                 for agent in other_agents
                 if isinstance(agent, Agent) and agent.is_sampling and agent.is_consuming
             ]
-        elif self.model.social_information == "sampling":
+        elif self.social_info_quality == "sampling":
             # Get positions of all sampling agents
             agents = [
                 np.array(x_y_to_i_j(*agent.pos))[np.newaxis, :]
                 for agent in other_agents
                 if isinstance(agent, Agent) and agent.is_sampling
             ]
+        else:
+            raise ValueError(
+                f"Unknown social info quality parameter value: {self.social_info_quality}"
+            )
 
         # Stack positions if any agents were found
         if len(agents) > 0:
             self.other_agent_locs = np.vstack(agents)
-        else:
-            self.other_agent_locs = np.empty((0, 2))
