@@ -1,12 +1,22 @@
 import numpy as np
-from scipy.ndimage import gaussian_filter
 
 
-def smooth_with_gaussian_filter(array: np.ndarray, sigma=5):
+def xy2ij(x: int, y: int) -> tuple[int, int]:
     """
-    Smooth array with a Gaussian kernel.
+    Mesa coordinate system counts axis differently than numpy.
     """
-    return gaussian_filter(array, sigma=sigma, mode='constant')
+    i, j = y, x
+
+    return i, j
+
+
+def ij2xy(i: int, j: int) -> tuple[int, int]:
+    """
+    Mesa coordinate system counts axis differently than numpy.
+    """
+    y, x = i, j
+
+    return x, y
 
 
 def discount_by_distance(array, agent_location, discount_factor=0.5):
@@ -14,13 +24,15 @@ def discount_by_distance(array, agent_location, discount_factor=0.5):
     Exponentially discount array by distance from the agent.
     """
     # create a meshgrid
-    x, y = np.meshgrid(np.arange(array.shape[0]), np.arange(array.shape[1]), indexing='ij')
+    x, y = np.meshgrid(
+        np.arange(array.shape[0]), np.arange(array.shape[1]), indexing="ij"
+    )
 
     # calculate distance from the agent
     distance = np.sqrt((x - agent_location[0]) ** 2 + (y - agent_location[1]) ** 2)
 
     # discount observations by distance
-    return array * discount_factor ** distance
+    return array * discount_factor**distance
 
 
 def find_peak(array: np.ndarray) -> tuple[int, ...]:

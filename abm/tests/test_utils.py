@@ -1,13 +1,13 @@
 import numpy as np
 import pytest
-from ice_fishing_abm_1.ice_fishing_abm_gp.utils import x_y_to_i_j, discount_by_distance, find_peak
+from abm.utils import xy2ij, discount_by_distance, find_peak
 
 
 def test_x_y_to_i_j():
-    assert x_y_to_i_j(1, 2) == (2, 1)
-    assert x_y_to_i_j(0, 0) == (0, 0)
-    assert x_y_to_i_j(5, 10) == (10, 5)
-    assert x_y_to_i_j(-1, -2) == (-2, -1)
+    assert xy2ij(1, 2) == (2, 1)
+    assert xy2ij(0, 0) == (0, 0)
+    assert xy2ij(5, 10) == (10, 5)
+    assert xy2ij(-1, -2) == (-2, -1)
 
 
 def test_discount_by_distance():
