@@ -22,14 +22,14 @@ from visualization.visualize_agent_movement import save_agent_movement_gif
 RUN HYPERPARAMETERS GO HERE:
 '''
 
-NUM_AGENTS     = 10                   # Number of agents
+NUM_AGENTS     = 3                   # Number of agents
 D_MIN          = 1                    # Minimum distance for Levy flight
 max_sim_steps  = 1000                 # Maximum number of steps
-GRID_SIZE      = 100                  # Grid size for simulation
+GRID_SIZE      = 20                  # Grid size for simulation
 MAX_L          = GRID_SIZE / 2        # Maximum distance for Levy flight
 NUM_ITERATIONS = 50                   # Number of iterations
-ALPHA          = 1e-5                 # Parameter for social cue coupling 
-NUM_RESOURCE_CLUSTERS = 5             # Number of resource clusters
+ALPHA          = 1e-2                 # Parameter for social cue coupling 
+NUM_RESOURCE_CLUSTERS = 2            # Number of resource clusters
 RESOURCE_CLUSTER_RADIUS = 2           # Radius of resource clusters    
 RESOURCE_QUALITY = 1.0                # Quality of resources    
 
@@ -72,6 +72,7 @@ def objective(trial):
             "resource_quality": 1.0,
             "resource_cluster_radius": RESOURCE_CLUSTER_RADIUS,
             "keep_overall_abundance": True,
+            "social_information": "consuming",
         },
         iterations= NUM_ITERATIONS,
         number_processes=None,  # use all CPUs
@@ -141,6 +142,7 @@ if __name__ == "__main__":
         resource_quality=RESOURCE_QUALITY,
         resource_cluster_radius= RESOURCE_CLUSTER_RADIUS,
         keep_overall_abundance=True,
+        social_information= "consuming",
     )
 
     # Save a GIF of the agent movement

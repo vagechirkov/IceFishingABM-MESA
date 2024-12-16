@@ -31,12 +31,14 @@ class Model(mesa.Model):
         self.resource_quality = resource_quality
         self.resource_cluster_radius = resource_cluster_radius
         self.keep_overall_abundance = keep_overall_abundance
+        self.social_information_quality = social_information_quality
+        
 
         self.schedule = mesa.time.RandomActivation(self)
         self.grid = mesa.space.MultiGrid(grid_size, grid_size, False)
 
         # agent parameters
-        self.social_information_quality = social_information_quality
+        
 
         # initialize resources
         centers = make_resource_centers(
