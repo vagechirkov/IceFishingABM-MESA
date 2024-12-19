@@ -111,7 +111,7 @@ if __name__ == "__main__":
     study = optuna.create_study(direction="maximize", sampler=optuna.samplers.CmaEsSampler() , storage=storage_name)
     
 
-    study.optimize(objective, n_trials=50, n_jobs=-1)
+    study.optimize(objective, n_trials=50, n_jobs=10)
 
     # Print the best trial results
     trial = study.best_trial
