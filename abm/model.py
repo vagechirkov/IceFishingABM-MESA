@@ -22,7 +22,7 @@ class Model(mesa.Model):
         resource_quality: Union[float, tuple[float]] = 0.8,
         resource_cluster_radius: int = 5,
         keep_overall_abundance: bool = True,
-        social_information_quality = "sampling"
+        social_info_quality = None,
     ):
         super().__init__()
         self.grid_size = grid_size
@@ -31,7 +31,7 @@ class Model(mesa.Model):
         self.resource_quality = resource_quality
         self.resource_cluster_radius = resource_cluster_radius
         self.keep_overall_abundance = keep_overall_abundance
-        self.social_information_quality = social_information_quality
+        self.social_info_quality = social_info_quality
         
 
         self.schedule = mesa.time.RandomActivation(self)
@@ -71,7 +71,7 @@ class Model(mesa.Model):
                 self.next_id(),
                 self,
                 self.resource_cluster_radius,
-                self.social_information_quality,
+                self.social_info_quality,
                 exploration_strategy,
                 exploitation_strategy,
             )

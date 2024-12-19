@@ -1,6 +1,8 @@
 import optuna
 import pandas as pd
 import mesa
+import matplotlib.pyplot as plt
+import plotly.io as pio
 
 import sys
 import os
@@ -22,17 +24,17 @@ from visualization.visualize_agent_movement import save_agent_movement_gif
 RUN HYPERPARAMETERS GO HERE:
 '''
 
-NUM_AGENTS     = 3                   # Number of agents
+NUM_AGENTS     = 2                    # Number of agents
 D_MIN          = 1                    # Minimum distance for Levy flight
-max_sim_steps  = 1000                 # Maximum number of steps
-GRID_SIZE      = 20                  # Grid size for simulation
+max_sim_steps  = 100                 # Maximum number of steps
+GRID_SIZE      = 20                 # Grid size for simulation
 MAX_L          = GRID_SIZE / 2        # Maximum distance for Levy flight
 NUM_ITERATIONS = 50                   # Number of iterations
-ALPHA          = 1e-5                 # Parameter for social cue coupling 
+#ALPHA          = 1e-5                 # Parameter for social cue coupling 
 NUM_RESOURCE_CLUSTERS = 5             # Number of resource clusters
 RESOURCE_CLUSTER_RADIUS = 2           # Radius of resource clusters    
 RESOURCE_QUALITY = 1.0                # Quality of resources    
-
+THRESHOLD = 1
 def objective(trial):
     """
     The objective function that Optuna will optimize.
@@ -47,9 +49,9 @@ def objective(trial):
     # Actual hyperparameters
 
     mu = trial.suggest_float("mu", 1.1, 2.1)  # Exponent for Levy flight
-    # alpha = trial.suggest_float("alpha", 1e-5, 1.0, log=True)  # Parameter for social cue adjustment
-    alpha = ALPHA
-    threshold = trial.suggest_int("threshold", 1, 2)
+    alpha = trial.suggest_float("alpha", 1e-5, 1.0, log=True)  # Parameter for social cue adjustment
+    #alpha = ALPHA
+    threshold = 1
 
     print("Model type: Random Walker")
 
@@ -72,6 +74,7 @@ def objective(trial):
             "resource_quality": 1.0,
             "resource_cluster_radius": RESOURCE_CLUSTER_RADIUS,
             "keep_overall_abundance": True,
+            "social_info_quality": "sampling",
         },
         iterations= NUM_ITERATIONS,
         number_processes=None,  # use all CPUs
@@ -83,15 +86,32 @@ def objective(trial):
     # Filter out agents (resource AgentID is usually 0, so we remove it)
     mask = results.AgentID != 0
 
-    # Calculate the average collected resource
-    avg_collected_resource = results.loc[mask, "collected_resource"].mean()
+    
+    agent_metrics = results.groupby('AgentID').agg({
+        'collected_resource': 'max',
+        'traveled_distance': 'max',
+        'time_to_first_catch': 'first'
+        
+    }).reset_index()
 
-    return avg_collected_resource
+    # Calculate efficiency (resource/distance)
+    agent_metrics['efficiency'] = agent_metrics['collected_resource'] / (agent_metrics['traveled_distance'] + 1e-10)
+    
+    # Use mean efficiency as objective
+    avg_efficiency = agent_metrics['efficiency'].mean()
+
+
+    
+    return avg_efficiency
 
 
 if __name__ == "__main__":
     # Create the Optuna study and optimize the objective function
-    study = optuna.create_study(direction="maximize")
+    study_name = "foraging-db"  # Unique identifier of the study
+    storage_name = "sqlite:///{}.db".format(study_name)
+    study = optuna.create_study(direction="maximize", sampler=optuna.samplers.CmaEsSampler() , storage=storage_name)
+    
+
     study.optimize(objective, n_trials=50, n_jobs=-1)
 
     # Print the best trial results
@@ -100,8 +120,7 @@ if __name__ == "__main__":
     print("Best hyperparameters: {}".format(trial.params))
 
     # Visualization: Plot the optimization history
-    import plotly.io as pio
-
+    
     pio.templates["plotly"].layout["autosize"] = False
 
     # Optimization history
@@ -110,7 +129,7 @@ if __name__ == "__main__":
     fig.show()
 
     # Slice plot (visualize the effects of individual parameters)
-    params = ["mu", "threshold"]
+    params = ["mu", "alpha"]
 
     fig = optuna.visualization.plot_slice(study, params=params)
     fig.show()
@@ -127,10 +146,10 @@ if __name__ == "__main__":
 
     # After optimization, generate a GIF with the best parameters
     best_exploration_strategy = RandomWalkerExplorationStrategy(
-        mu=trial.params["mu"], dmin=D_MIN, L=MAX_L, alpha=ALPHA, grid_size=GRID_SIZE
+        mu=trial.params["mu"], dmin=D_MIN, L=MAX_L, alpha=trial.params["alpha"], grid_size=GRID_SIZE
     )
     best_exploitation_strategy = ExploitationStrategy(
-        threshold=trial.params["threshold"]
+        threshold= THRESHOLD 
     )
     best_model = RandomWalkerModel(
         exploration_strategy=best_exploration_strategy,
@@ -141,7 +160,58 @@ if __name__ == "__main__":
         resource_quality=RESOURCE_QUALITY,
         resource_cluster_radius= RESOURCE_CLUSTER_RADIUS,
         keep_overall_abundance=True,
+        social_info_quality = "sampling",
     )
+
+
+    # Run best model for data collection
+    results = mesa.batch_run(
+        RandomWalkerModel,
+        parameters={
+            "exploration_strategy": best_exploration_strategy,
+            "exploitation_strategy": best_exploitation_strategy,
+            "grid_size": GRID_SIZE,
+            "number_of_agents": NUM_AGENTS,
+            "n_resource_clusters": NUM_RESOURCE_CLUSTERS,
+            "resource_quality": RESOURCE_QUALITY,
+            "resource_cluster_radius": RESOURCE_CLUSTER_RADIUS,
+            "keep_overall_abundance": True,
+            "social_info_quality": "sampling",
+        },
+        iterations=1,  # Single run for analysis
+        max_steps=max_sim_steps,
+        data_collection_period=1  # Collect at every step
+    )
+    
+    # Convert to DataFrame and analyze
+    results_df = pd.DataFrame(results)
+    agent_mask = results_df['AgentID'] != 0
+    agent_results = results_df[agent_mask]
+
+    # Plot distance distribution
+    plt.figure(figsize=(10, 6))
+    plt.hist(agent_results['traveled_distance'], bins=20)
+    plt.axvline(agent_results['traveled_distance'].mean(), color='r', 
+                linestyle='--', label=f'Mean: {agent_results["traveled_distance"].mean():.2f}')
+    plt.xlabel('Total Distance Traveled')
+    plt.ylabel('Count')
+    plt.title('Distribution of Agent Travel Distances (Best Parameters)')
+    plt.legend()
+    plt.savefig('distance_distribution_best.png')
+    plt.close()
+
+    # Plot time to first catch distribution
+    plt.figure(figsize=(10, 6))
+    plt.hist(agent_results['time_to_first_catch'].dropna(), bins=20)
+    plt.axvline(agent_results['time_to_first_catch'].dropna().mean(), color='r',
+                linestyle='--', label=f'Mean: {agent_results["time_to_first_catch"].dropna().mean():.2f}')
+    plt.xlabel('Steps until First Catch')
+    plt.ylabel('Count')
+    plt.title('Distribution of Time to First Catch (Best Parameters)')
+    plt.legend()
+    plt.savefig('first_catch_distribution_best.png')
+    plt.close()
+
 
     # Save a GIF of the agent movement
     save_agent_movement_gif(best_model, steps=max_sim_steps, filename="agent_movement.gif", resource_cluster_radius=2)
