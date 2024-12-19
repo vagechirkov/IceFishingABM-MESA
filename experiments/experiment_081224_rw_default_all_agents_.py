@@ -24,10 +24,10 @@ from visualization.visualize_agent_movement import save_agent_movement_gif
 RUN HYPERPARAMETERS GO HERE:
 '''
 
-NUM_AGENTS     = 2                    # Number of agents
+NUM_AGENTS     = 10                   # Number of agents
 D_MIN          = 1                    # Minimum distance for Levy flight
-max_sim_steps  = 100                 # Maximum number of steps
-GRID_SIZE      = 20                 # Grid size for simulation
+max_sim_steps  = 1000                 # Maximum number of steps
+GRID_SIZE      = 100                 # Grid size for simulation
 MAX_L          = GRID_SIZE / 2        # Maximum distance for Levy flight
 NUM_ITERATIONS = 50                   # Number of iterations
 #ALPHA          = 1e-5                 # Parameter for social cue coupling 
