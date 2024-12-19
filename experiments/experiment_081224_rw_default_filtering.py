@@ -24,13 +24,13 @@ from visualization.visualize_agent_movement import save_agent_movement_gif
 RUN HYPERPARAMETERS GO HERE:
 '''
 
-NUM_AGENTS     = 10                    # Number of agents
+NUM_AGENTS     = 10                   # Number of agents
 D_MIN          = 1                    # Minimum distance for Levy flight
 max_sim_steps  = 1000                 # Maximum number of steps
-GRID_SIZE      = 100                 # Grid size for simulation
-MAX_L          = GRID_SIZE / 2        # Maximum distance for Levy flight
-NUM_ITERATIONS = 50                   # Number of iterations
-#ALPHA          = 1e-5                 # Parameter for social cue coupling 
+GRID_SIZE      = 100                  # Grid size for simulation
+MAX_L          = GRID_SIZE            # Maximum distance for Levy flight
+NUM_ITERATIONS = 100                  # Number of iterations
+#ALPHA          = 1e-5                # Parameter for social cue coupling 
 NUM_RESOURCE_CLUSTERS = 5             # Number of resource clusters
 RESOURCE_CLUSTER_RADIUS = 2           # Radius of resource clusters    
 RESOURCE_QUALITY = 1.0                # Quality of resources    
@@ -126,23 +126,24 @@ if __name__ == "__main__":
     # Optimization history
     fig = optuna.visualization.plot_optimization_history(study)
     fig.update_layout(height=400, width=1200)
-    fig.show()
+    fig.write_html("optimization_history_1.html")  # Save as HTML file
+
 
     # Slice plot (visualize the effects of individual parameters)
     params = ["mu", "alpha"]
 
     fig = optuna.visualization.plot_slice(study, params=params)
-    fig.show()
+    fig.write_html("optimization_history_2.html")  # Save as HTML file
 
     # Contour plot (visualize parameter interactions)
     fig = optuna.visualization.plot_contour(study, params=params)
     fig.update_layout(height=800, width=1200)
-    fig.show()
+    fig.write_html("optimization_history_3.html")  # Save as HTML file
 
     # Parameter importances (visualize which parameters contribute most to the objective)
     fig = optuna.visualization.plot_param_importances(study)
     fig.update_layout(height=400, width=1200)
-    fig.show()
+    fig.write_html("optimization_history_4.html")  # Save as HTML file
 
     # After optimization, generate a GIF with the best parameters
     best_exploration_strategy = RandomWalkerExplorationStrategy(

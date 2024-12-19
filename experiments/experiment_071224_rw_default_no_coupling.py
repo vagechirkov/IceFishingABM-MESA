@@ -24,12 +24,12 @@ from visualization.visualize_agent_movement import save_agent_movement_gif
 RUN HYPERPARAMETERS GO HERE:
 '''
 
-NUM_AGENTS     = 10                    # Number of agents
+NUM_AGENTS     = 10                   # Number of agents
 D_MIN          = 1                    # Minimum distance for Levy flight
 max_sim_steps  = 1000                 # Maximum number of steps
 GRID_SIZE      = 100                  # Grid size for simulation
-MAX_L          = GRID_SIZE / 2        # Maximum distance for Levy flight
-NUM_ITERATIONS = 50                   # Number of iterations
+MAX_L          = GRID_SIZE            # Maximum distance for Levy flight
+NUM_ITERATIONS = 100                  # Number of iterations
 ALPHA          = 1e-5                 # Parameter for social cue coupling 
 NUM_RESOURCE_CLUSTERS = 5             # Number of resource clusters
 RESOURCE_CLUSTER_RADIUS = 2           # Radius of resource clusters    
@@ -51,7 +51,7 @@ def objective(trial):
     mu = trial.suggest_float("mu", 1.1, 2.1)  # Exponent for Levy flight
     # alpha = trial.suggest_float("alpha", 1e-5, 1.0, log=True)  # Parameter for social cue adjustment
     alpha = ALPHA
-    threshold = trial.suggest_int("threshold", 1, 2)
+    threshold = trial.suggest_categorical("threshold", [1, 2])
 
     print("Model type: Random Walker")
 
@@ -108,10 +108,12 @@ if __name__ == "__main__":
     # Create the Optuna study and optimize the objective function
     study_name = "foraging-db"  # Unique identifier of the study
     storage_name = "sqlite:///{}.db".format(study_name)
-    study = optuna.create_study(direction="maximize", sampler=optuna.samplers.CmaEsSampler() , storage=storage_name)
+
+    
+    study = optuna.create_study(direction="maximize",  storage=storage_name)
     
 
-    study.optimize(objective, n_trials=50, n_jobs=10)
+    study.optimize(objective, n_trials=50, n_jobs=1)
 
     # Print the best trial results
     trial = study.best_trial
@@ -125,23 +127,27 @@ if __name__ == "__main__":
     # Optimization history
     fig = optuna.visualization.plot_optimization_history(study)
     fig.update_layout(height=400, width=1200)
-    fig.show()
+    fig.write_html("optimization_history_1.html")  # Save as HTML file
+
 
     # Slice plot (visualize the effects of individual parameters)
     params = ["mu", "threshold"]
 
     fig = optuna.visualization.plot_slice(study, params=params)
-    fig.show()
+    fig.write_html("optimization_history_2.html")  # Save as HTML file
+
 
     # Contour plot (visualize parameter interactions)
     fig = optuna.visualization.plot_contour(study, params=params)
     fig.update_layout(height=800, width=1200)
-    fig.show()
+    fig.write_html("optimization_history_3.html")  # Save as HTML file
+
 
     # Parameter importances (visualize which parameters contribute most to the objective)
     fig = optuna.visualization.plot_param_importances(study)
     fig.update_layout(height=400, width=1200)
-    fig.show()
+    fig.write_html("optimization_history_4.html")  # Save as HTML file
+
 
     # After optimization, generate a GIF with the best parameters
     best_exploration_strategy = RandomWalkerExplorationStrategy(
