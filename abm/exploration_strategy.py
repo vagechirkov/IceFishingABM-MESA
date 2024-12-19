@@ -226,8 +226,7 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
             delta_d = distances.min()
             self._prob_social = np.exp(-self.alpha * delta_d)
 
-            # With probability prob_social, move to the nearest social cue
-            # i think this should be > instead of < so changed it
+            #CONVENTION :  WEAK COUPLING = LOW  AlPHA 
             if np.random.rand() > self._prob_social:
                 self.destination = np.array(nearest_social_loc, dtype=int)
 

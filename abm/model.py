@@ -100,6 +100,9 @@ class Model(mesa.Model):
                 "pos": "pos",
                 "is_sampling": "is_sampling",
                 "is_moving": "is_moving",
+                "step_sizes": lambda a: a._step_sizes if hasattr(a, '_step_sizes') else None,
+                "traveled_distance": lambda a: a._traveled_distance if hasattr(a, 'traveled_distance') else None,
+                "time_to_first_catch": lambda a: a._time_to_first_catch if hasattr(a, '_time_to_first_catch') else None
             },
             model_reporters={},
         )
