@@ -1,6 +1,7 @@
 from typing import Union
 import mesa
 import numpy as np
+from scipy.spatial.distance import pdist
 
 from .exploration_strategy import ExplorationStrategy
 from .exploitation_strategy import ExploitationStrategy
@@ -41,7 +42,8 @@ class Agent(mesa.Agent):
 
         # Output / Tracked variables
         self._collected_resource: int = 0
-        self._traveled_distance: int = 0
+        self._traveled_distance_euclidean: int = 0
+        self._traveled_distance_manhattan: int = 0
         self._step_sizes = []  # Track movement distances
         self._time_to_first_catch = None  # Track time to first catch
 
@@ -66,8 +68,12 @@ class Agent(mesa.Agent):
         return self._collected_resource
 
     @property
-    def traveled_distance(self):
-        return self._traveled_distance
+    def traveled_distance_euclidean(self):
+        return self._traveled_distance_euclidean
+
+    @property
+    def traveled_distance_manhattan(self):
+        return self._traveled_distance_manhattan
 
     def move(self):
         """
@@ -75,7 +81,6 @@ class Agent(mesa.Agent):
         """
         x, y = self.pos
         dx, dy = self._destination
-        x_, y_ = x, y  # Store old position for step size calculation
         if x < dx:
             x += 1
         elif x > dx:
@@ -86,10 +91,6 @@ class Agent(mesa.Agent):
             y -= 1
         self.model.grid.move_agent(self, (x, y))
 
-        # Calculate step size
-        step_size = np.sqrt((x - x_) ** 2 + (y - y_) ** 2)
-        self._step_sizes.append(step_size)
-        self._traveled_distance += step_size  # I update the traveled distance here instead of incrementing by 1
 
         if np.array_equal(self.pos, self._destination):
             self._is_moving = False
@@ -149,6 +150,12 @@ class Agent(mesa.Agent):
 
             # convert destination back to x,y
             self._destination = ij2xy(*self._destination)
+
+            # Calculate euclidean distance to destination using scipy pdist
+            step_size = pdist(np.array([self.pos, self._destination]), "euclidean")[0]
+            self._step_sizes.append(step_size)
+            self._traveled_distance_euclidean += step_size
+            self._traveled_distance_manhattan += pdist(np.array([self.pos, self._destination]), "cityblock")[0]
 
         # Update social information at the end of each step
         self.add_other_agent_locs()
