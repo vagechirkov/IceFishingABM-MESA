@@ -42,9 +42,8 @@ class Agent(mesa.Agent):
         # Output / Tracked variables
         self._collected_resource: int = 0
         self._traveled_distance: int = 0
-        self._step_sizes = []                   # Track movement distances
-        self._time_to_first_catch = None        # Track time to first catch
-        
+        self._step_sizes = []  # Track movement distances
+        self._time_to_first_catch = None  # Track time to first catch
 
     @property
     def is_moving(self):
@@ -74,9 +73,9 @@ class Agent(mesa.Agent):
         """
         Move agent one cell closer to the destination.
         """
-        x, y         = self.pos
-        dx, dy       = self._destination
-        x_, y_ = x, y # Store old position for step size calculation 
+        x, y = self.pos
+        dx, dy = self._destination
+        x_, y_ = x, y  # Store old position for step size calculation
         if x < dx:
             x += 1
         elif x > dx:
@@ -88,22 +87,15 @@ class Agent(mesa.Agent):
         self.model.grid.move_agent(self, (x, y))
 
         # Calculate step size
-        step_size = np.sqrt((x - x_)**2 + (y - y_)**2)
+        step_size = np.sqrt((x - x_) ** 2 + (y - y_) ** 2)
         self._step_sizes.append(step_size)
-        self._traveled_distance += step_size        # I update the traveled distance here instead of incrementing by 1
+        self._traveled_distance += step_size  # I update the traveled distance here instead of incrementing by 1
 
         if np.array_equal(self.pos, self._destination):
             self._is_moving = False
             self._is_sampling = True
 
     def sample(self):
-        
-        # Start tracking time to first catch
-        if self._collected_resource == 0 and self._time_to_first_catch is None:
-            start_tracking = True
-        else:
-            start_tracking = False
-
         neighbors = self.model.grid.get_neighbors(
             self.pos,
             moore=False,
@@ -120,12 +112,10 @@ class Agent(mesa.Agent):
                 self._collected_resource_last_spot += 1
                 _is_resource_collected = True
                 self._is_consuming = True
-        
-        # Get time to first catch
-        
-        if _is_resource_collected and start_tracking:
-            self._time_to_first_catch = self.model.schedule.steps
 
+        # Save time to first catch
+        if _is_resource_collected and self._time_to_first_catch is None:
+            self._time_to_first_catch = self.model.schedule.steps
 
         if not _is_resource_collected:
             self._time_since_last_catch += 1
@@ -141,7 +131,6 @@ class Agent(mesa.Agent):
 
             self._collected_resource_last_spot = 0
             self._time_on_patch = 0
-        
 
     def step(self):
         if self._is_moving and not self._is_sampling:
