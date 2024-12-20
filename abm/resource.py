@@ -21,7 +21,7 @@ class Resource(mesa.Agent):
         self.keep_overall_abundance: bool = keep_overall_abundance
         self.neighborhood_radius: int = neighborhood_radius
         self.is_resource = True
-        self.const_resource: bool = True
+        self.const_resource: bool = False 
         self.const_catch_probability: bool = True
 
     @property

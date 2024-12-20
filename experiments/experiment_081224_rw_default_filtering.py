@@ -24,6 +24,9 @@ from visualization.visualize_agent_movement import save_agent_movement_gif
 RUN HYPERPARAMETERS GO HERE:
 '''
 
+plotting = False # Set to True to plot the agent movement
+
+
 NUM_AGENTS     = 10                   # Number of agents
 D_MIN          = 1                    # Minimum distance for Levy flight
 max_sim_steps  = 1000                 # Maximum number of steps
@@ -35,6 +38,7 @@ NUM_RESOURCE_CLUSTERS = 5             # Number of resource clusters
 RESOURCE_CLUSTER_RADIUS = 2           # Radius of resource clusters    
 RESOURCE_QUALITY = 1.0                # Quality of resources    
 THRESHOLD = 1
+
 def objective(trial):
     """
     The objective function that Optuna will optimize.
