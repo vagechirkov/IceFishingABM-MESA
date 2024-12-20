@@ -994,3 +994,5 @@ fabric.properties
 *.png
 *_figures
 *.gif
+*.html
+*.db
