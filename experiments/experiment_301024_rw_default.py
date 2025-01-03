@@ -4,36 +4,34 @@ import mesa
 import matplotlib.pyplot as plt
 import plotly.io as pio
 
-import sys
-import os
-
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-
 # Import RandomWalker-specific models and strategies
+# NOTE: Make sure to add the project root to the Python path:
+# export PYTHONPATH=/path/to/myproject:$PYTHONPATH
+# this line can be added to the shell configuration file (`~/.bashrc`, `~/.zshrc`, etc.) so that it’s permanent for the
+# terminal environment
 from abm.model import Model as RandomWalkerModel
 from abm.exploration_strategy import RandomWalkerExplorationStrategy
 from abm.exploitation_strategy import ExploitationStrategy
 from visualization.visualize_agent_movement import save_agent_movement_gif
 
 
-# 5 resources with radius 2 instead of current values, agents : 5,10,50; grid_size =  100. 
+# 5 resources with radius 2 instead of current values, agents : 5,10,50; grid_size =  100.
 
-'''
+"""
 RUN HYPERPARAMETERS GO HERE:
-'''
+"""
 
 NUM_AGENTS     = 3                    # Number of agents
 D_MIN          = 1                    # Minimum distance for Levy flight
-max_sim_steps  = 100                 # Maximum number of steps
-GRID_SIZE      = 20                  # Grid size for simulation
+max_sim_steps  = 100                  # Maximum number of steps
+GRID_SIZE      = 20                   # Grid size for simulation
 MAX_L          = GRID_SIZE / 2        # Maximum distance for Levy flight
 NUM_ITERATIONS = 10                   # Number of iterations
 ALPHA          = 1e-5                 # Parameter for social cue coupling 
 NUM_RESOURCE_CLUSTERS = 5             # Number of resource clusters
 RESOURCE_CLUSTER_RADIUS = 2           # Radius of resource clusters    
 RESOURCE_QUALITY = 1.0                # Quality of resources    
+
 
 def objective(trial):
     """
@@ -42,8 +40,8 @@ def objective(trial):
     and computes the average collected resource based on the exploration and exploitation strategies.
     """
 
-    grid_size = GRID_SIZE 
-    L = MAX_L    # Maximum distance for Levy flight
+    grid_size = GRID_SIZE
+    L = MAX_L  # Maximum distance for Levy flight
     dmin = D_MIN  # Minimum distance for Levy flight
 
     # Actual hyperparameters
@@ -57,7 +55,11 @@ def objective(trial):
 
     # Set up Random Walker exploration strategy
     exploration_strategy = RandomWalkerExplorationStrategy(
-        mu=mu, dmin=dmin, L=L, alpha=alpha, grid_size=grid_size, 
+        mu=mu,
+        dmin=dmin,
+        L=L,
+        alpha=alpha,
+        grid_size=grid_size,
     )
     exploitation_strategy = ExploitationStrategy(threshold=threshold)
     model = RandomWalkerModel
@@ -75,32 +77,38 @@ def objective(trial):
             "resource_cluster_radius": RESOURCE_CLUSTER_RADIUS,
             "keep_overall_abundance": True,
         },
-        iterations= NUM_ITERATIONS,
+        iterations=NUM_ITERATIONS,
         number_processes=None,  # use all CPUs
         max_steps=max_sim_steps,
         data_collection_period=-1,  # only the last step
     )
-    results = pd.DataFrame(results) ### MAKE THIS SCALE FREE BY NORMALISING WITH NUM OF STEPS
+    results = pd.DataFrame(
+        results
+    )  ### MAKE THIS SCALE FREE BY NORMALISING WITH NUM OF STEPS
 
     # Filter out agents (resource AgentID is usually 0, so we remove it)
     mask = results.AgentID != 0
 
-    
-    agent_metrics = results.groupby('AgentID').agg({
-        'collected_resource': 'max',
-        'traveled_distance': 'max',
-        'time_to_first_catch': 'first'
-        
-    }).reset_index()
+    agent_metrics = (
+        results.groupby("AgentID")
+        .agg(
+            {
+                "collected_resource": "max",
+                "traveled_distance": "max",
+                "time_to_first_catch": "first",
+            }
+        )
+        .reset_index()
+    )
 
     # Calculate efficiency (resource/distance)
-    agent_metrics['efficiency'] = agent_metrics['collected_resource'] / (agent_metrics['traveled_distance'] + 1e-10)
-    
+    agent_metrics["efficiency"] = agent_metrics["collected_resource"] / (
+        agent_metrics["traveled_distance"] + 1e-10
+    )
+
     # Use mean efficiency as objective
-    avg_efficiency = agent_metrics['efficiency'].mean()
+    avg_efficiency = agent_metrics["efficiency"].mean()
 
-
-    
     return avg_efficiency
 
 
@@ -108,8 +116,11 @@ if __name__ == "__main__":
     # Create the Optuna study and optimize the objective function
     study_name = "foraging-db"  # Unique identifier of the study
     storage_name = "sqlite:///{}.db".format(study_name)
-    study = optuna.create_study(direction="maximize", sampler=optuna.samplers.CmaEsSampler() , storage=storage_name)
-    
+    study = optuna.create_study(
+        direction="maximize",
+        sampler=optuna.samplers.CmaEsSampler(),
+        storage=storage_name,
+    )
 
     study.optimize(objective, n_trials=50, n_jobs=1)
 
@@ -119,7 +130,7 @@ if __name__ == "__main__":
     print("Best hyperparameters: {}".format(trial.params))
 
     # Visualization: Plot the optimization history
-    
+
     pio.templates["plotly"].layout["autosize"] = False
 
     # Optimization history
@@ -154,13 +165,12 @@ if __name__ == "__main__":
         exploration_strategy=best_exploration_strategy,
         exploitation_strategy=best_exploitation_strategy,
         grid_size=GRID_SIZE,
-        number_of_agents= NUM_AGENTS,
+        number_of_agents=NUM_AGENTS,
         n_resource_clusters=NUM_RESOURCE_CLUSTERS,
         resource_quality=RESOURCE_QUALITY,
-        resource_cluster_radius= RESOURCE_CLUSTER_RADIUS,
+        resource_cluster_radius=RESOURCE_CLUSTER_RADIUS,
         keep_overall_abundance=True,
     )
-
 
     # Run best model for data collection
     results = mesa.batch_run(
@@ -177,40 +187,52 @@ if __name__ == "__main__":
         },
         iterations=1,  # Single run for analysis
         max_steps=max_sim_steps,
-        data_collection_period=1  # Collect at every step
+        data_collection_period=1,  # Collect at every step
     )
-    
+
     # Convert to DataFrame and analyze
     results_df = pd.DataFrame(results)
-    agent_mask = results_df['AgentID'] != 0
+    agent_mask = results_df["AgentID"] != 0
     agent_results = results_df[agent_mask]
 
     # Plot distance distribution
     plt.figure(figsize=(10, 6))
-    plt.hist(agent_results['traveled_distance'], bins=20)
-    plt.axvline(agent_results['traveled_distance'].mean(), color='r', 
-                linestyle='--', label=f'Mean: {agent_results["traveled_distance"].mean():.2f}')
-    plt.xlabel('Total Distance Traveled')
-    plt.ylabel('Count')
-    plt.title('Distribution of Agent Travel Distances (Best Parameters)')
+    plt.hist(agent_results["traveled_distance"], bins=20)
+    plt.axvline(
+        agent_results["traveled_distance"].mean(),
+        color="r",
+        linestyle="--",
+        label=f'Mean: {agent_results["traveled_distance"].mean():.2f}',
+    )
+    plt.xlabel("Total Distance Traveled")
+    plt.ylabel("Count")
+    plt.title("Distribution of Agent Travel Distances (Best Parameters)")
     plt.legend()
-    plt.savefig('distance_distribution_best.png')
+    plt.savefig("distance_distribution_best.png")
     plt.close()
 
     # Plot time to first catch distribution
     plt.figure(figsize=(10, 6))
-    plt.hist(agent_results['time_to_first_catch'].dropna(), bins=20)
-    plt.axvline(agent_results['time_to_first_catch'].dropna().mean(), color='r',
-                linestyle='--', label=f'Mean: {agent_results["time_to_first_catch"].dropna().mean():.2f}')
-    plt.xlabel('Steps until First Catch')
-    plt.ylabel('Count')
-    plt.title('Distribution of Time to First Catch (Best Parameters)')
+    plt.hist(agent_results["time_to_first_catch"].dropna(), bins=20)
+    plt.axvline(
+        agent_results["time_to_first_catch"].dropna().mean(),
+        color="r",
+        linestyle="--",
+        label=f'Mean: {agent_results["time_to_first_catch"].dropna().mean():.2f}',
+    )
+    plt.xlabel("Steps until First Catch")
+    plt.ylabel("Count")
+    plt.title("Distribution of Time to First Catch (Best Parameters)")
     plt.legend()
-    plt.savefig('first_catch_distribution_best.png')
+    plt.savefig("first_catch_distribution_best.png")
     plt.close()
 
-
     # Save a GIF of the agent movement
-    save_agent_movement_gif(best_model, steps=max_sim_steps, filename="agent_movement.gif", resource_cluster_radius=2)
+    save_agent_movement_gif(
+        best_model,
+        steps=max_sim_steps,
+        filename="agent_movement.gif",
+        resource_cluster_radius=2,
+    )
     print("Agent Movement Visualization Saved successfully...")
     print("Simulation Completed Successfully...")

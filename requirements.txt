@@ -9,4 +9,5 @@ pytest~=7.4.2
 svgpath2mpl~=1.0.0
 svgpathtools~=1.6.1
 optuna
+optuna-dashboard
 plotly

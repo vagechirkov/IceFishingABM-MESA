@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 from unittest.mock import Mock
 import mesa
@@ -108,6 +109,9 @@ def test_random_walk_agent_moves_to_other_agent(
 
     # Check if the agent's destination is set to the other agent's position
     assert agent.destination == other_agent_pos
+    assert agent.traveled_distance_euclidean == np.linalg.norm(np.array(agent.pos) - np.array(other_agent_pos))
+    assert agent.traveled_distance_manhattan == np.sum(np.abs(np.array(agent.pos) - np.array(other_agent_pos)))
+    assert agent._step_sizes == [agent.traveled_distance_euclidean]
 
     # Move the agent towards the destination
     while agent.is_moving:

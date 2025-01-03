@@ -2,12 +2,11 @@ import optuna
 import pandas as pd
 import mesa
 
-import sys
-import os
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 # Import SocialInfotaxis-specific models and strategies
+# NOTE: Make sure to add the project root to the Python path:
+# export PYTHONPATH=/path/to/myproject:$PYTHONPATH
+# this line can be added to the shell configuration file (`~/.bashrc`, `~/.zshrc`, etc.) so that it’s permanent for the
+# terminal environment
 from abm.model import Model as SocialInfotaxisModel
 from abm.exploration_strategy import SocialInfotaxisExplorationStrategy
 from abm.exploitation_strategy import ExploitationStrategy

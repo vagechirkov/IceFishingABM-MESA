@@ -17,32 +17,21 @@ pip install -r dev_requirements.txt
 
 ```
 
-## Images for visualization
-
-* [Fisher](https://www.svgrepo.com/svg/36567/fisher)
-* [Ice skating](https://www.svgrepo.com/svg/116117/ice-skating)
-* [Jackhammer](https://www.svgrepo.com/svg/233732/jackhammer)
-
-## Run simulation on the cluster
-
-Speed:~ 177 runs/s ~ 10k runs/min
+## Running the Model
 
 ```bash
-tmux list-sessions 
+# activate the virtual environment
+source venv/bin/activate
 
-tmux attach # attach to the session or create a new one if it does not exist: tmux
+# add python path
+export PYTHONPATH=absolute/path/to/IceFishingABM-MESA:$PYTHONPATH
 
-cd /mesa-simulations/IceFishingABM-MESA
-
-git fetch
-git pull
-
-bash run.sh # run the simulation
-
+# run experiment
+python -m experiments.experiment_experiment_name
 ```
 
+## View optuna results
 
-## Run visualization with mesa
 ```bash
-python IceFishingABM-MESA/ice_fishing_abm_1/run_server.py 
+optuna-dashboard sqlite:///foraging-db.db
 ```
