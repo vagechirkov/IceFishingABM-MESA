@@ -218,7 +218,7 @@ if __name__ == "__main__":
     plt.close()
 
 
-    # Save a GIF of the agent movement
-    save_agent_movement_gif(best_model, steps=max_sim_steps, filename="agent_movement.gif", resource_cluster_radius=2)
-    print("Agent Movement Visualization Saved successfully...")
-    print("Simulation Completed Successfully...")
+# Save a GIF of the agent movement
+save_agent_movement_gif(best_model, steps=max_sim_steps, filename="agent_movement.gif", resource_cluster_radius=2)
+print("Agent Movement Visualization Saved successfully...")
+print("Simulation Completed Successfully...")
