@@ -4,7 +4,12 @@ TODO.txt
 
 ## Optuna Database
 
-foraging-db.db
+foraging.db
+
+
+## Visualizations from Optuna Study 
+visualizations 
+
 
 ### venv template
 
