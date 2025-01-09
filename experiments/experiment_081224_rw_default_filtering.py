@@ -18,12 +18,14 @@ D_MIN          = 1                    # Minimum distance for Levy flight
 max_sim_steps  = 1000                 # Maximum number of steps
 GRID_SIZE      = 100                  # Grid size for simulation
 MAX_L          = GRID_SIZE            # Maximum distance for Levy flight
-NUM_ITERATIONS = 100                  # Number of iterations
+NUM_ITERATIONS = 10_000                    # Number of iterations
 #ALPHA          = 1e-5                # Parameter for social cue coupling 
 NUM_RESOURCE_CLUSTERS = 5             # Number of resource clusters
 RESOURCE_CLUSTER_RADIUS = 2           # Radius of resource clusters    
 RESOURCE_QUALITY = 1.0                # Quality of resources    
-THRESHOLD = 1
+THRESHOLD = 1                         # Time threshold for moving onto next patch if resource not collected
+NUM_TRIALS       = 100                  # Number of trials  
+
 
 
 def objective(trial):
@@ -110,15 +112,15 @@ def objective(trial):
 
 if __name__ == "__main__":
     # Create the Optuna study and optimize the objective function
-    study_name = "foraging-db"  # Unique identifier of the study
-    storage_name = "sqlite:///{}.db".format(study_name)
+    study_name = "experiment-rw-filtering"  # Unique identifier of the study
+    storage_name = "sqlite:///foraging.db"
     study = optuna.create_study(
         direction="maximize",
         sampler=optuna.samplers.CmaEsSampler(),
         storage=storage_name,
     )
 
-    study.optimize(objective, n_trials=50, n_jobs=1)
+    study.optimize(objective, n_trials=NUM_TRIALS, n_jobs=1)
 
     # Print the best trial results
     trial = study.best_trial
@@ -129,10 +131,10 @@ if __name__ == "__main__":
     # Save the best model parameters and results
     best_params = {
         'mu': trial.params["mu"],
-        'threshold': trial.params["threshold"],
+        'threshold': THRESHOLD,
         'dmin': D_MIN,
         'L': MAX_L,
-        'alpha': ALPHA,
+        'alpha': trial.params["alpha"],
         'grid_size': GRID_SIZE,
         'num_agents': NUM_AGENTS,
         'n_resource_clusters': NUM_RESOURCE_CLUSTERS,
@@ -142,7 +144,7 @@ if __name__ == "__main__":
 
     # Save the best model parameters in a JSON file
 
-    with open('best_params.json', 'w') as f:
+    with open(f'best_params_{study_name}.json', 'w') as f:
         json.dump(best_params, f)
 
     

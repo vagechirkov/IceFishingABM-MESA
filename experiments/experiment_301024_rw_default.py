@@ -4,7 +4,6 @@ import mesa
 from abm.model import Model as RandomWalkerModel
 from abm.exploration_strategy import RandomWalkerExplorationStrategy
 from abm.exploitation_strategy import ExploitationStrategy
-from visualization.visualize_agent_movement import save_agent_movement_gif
 import json
 
 
@@ -24,6 +23,7 @@ ALPHA          = 1e-5                 # Parameter for social cue coupling
 NUM_RESOURCE_CLUSTERS = 5             # Number of resource clusters
 RESOURCE_CLUSTER_RADIUS = 2           # Radius of resource clusters    
 RESOURCE_QUALITY = 1.0                # Quality of resources    
+NUM_TRIALS =  2                       # Number of trials 
 
 
 def objective(trial):
@@ -117,7 +117,7 @@ if __name__ == "__main__":
         load_if_exists=True,
     )
 
-    study.optimize(objective, n_trials=2, n_jobs=1)
+    study.optimize(objective, n_trials=NUM_TRIALS, n_jobs=1)
  
     # Print the best trial results
     trial = study.best_trial
@@ -141,7 +141,6 @@ if __name__ == "__main__":
 
     # Save the best model parameters in a JSON file
 
-    with open('best_params.json', 'w') as f:
+    with open(f'best_params_{study_name}.json', 'w') as f:
         json.dump(best_params, f)
-
     

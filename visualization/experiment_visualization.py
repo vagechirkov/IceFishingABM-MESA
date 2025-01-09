@@ -7,21 +7,21 @@ import json
 from abm.model import Model as RandomWalkerModel
 from abm.exploration_strategy import RandomWalkerExplorationStrategy
 from abm.exploitation_strategy import ExploitationStrategy
-from visualization.visualize_agent_movement import save_agent_movement_gif
 
-def load_study_and_params(study_name="foraging-db"):
+
+def load_study_and_params(study_name="foraging"):
     """Load the saved study and best parameters"""
     # Load the study
     storage_name = f"sqlite:///{study_name}.db"
     study = optuna.load_study(study_name=study_name, storage=storage_name)
     
     # Load best parameters
-    with open('best_params.json', 'r') as f:
+    with open(f'best_params_{study_name}.json', 'r') as f:
         best_params = json.load(f)
     
     return study, best_params
 
-def create_visualization(study_name="foraging-db"):
+def create_visualization(study_name="foraging"):
     # Load study and parameters
     study, best_params = load_study_and_params(study_name)
     
