@@ -35,22 +35,22 @@ def create_visualization(study_name="foraging"):
     # Optimization history
     fig = optuna.visualization.plot_optimization_history(study)
     fig.update_layout(height=400, width=1200)
-    fig.write_html("visualizations/optimization_history_1.html")
+    fig.write_html(f"visualizations/optimization_history_1_{study_name}.html")
 
     # Slice plot
     params = ["mu", "threshold"]
     fig = optuna.visualization.plot_slice(study, params=params)
-    fig.write_html("visualizations/optimization_history_2.html")
+    fig.write_html(f"visualizations/optimization_history_2_{study_name}.html")
 
     # Contour plot
     fig = optuna.visualization.plot_contour(study, params=params)
     fig.update_layout(height=800, width=1200)
-    fig.write_html("visualizations/optimization_history_3.html")
+    fig.write_html(f"visualizations/optimization_history_3_{study_name}.html")
 
     # Parameter importances
     fig = optuna.visualization.plot_param_importances(study)
     fig.update_layout(height=400, width=1200)
-    fig.write_html("visualizations/optimization_history_4.html")
+    fig.write_html(f"visualizations/optimization_history_4_{study_name}.html")
 
     # Create best model with loaded parameters
     best_exploration_strategy = RandomWalkerExplorationStrategy(
@@ -112,7 +112,7 @@ def create_visualization(study_name="foraging"):
     plt.ylabel("Count")
     plt.title("Distribution of Agent Travel Distances (Best Parameters)")
     plt.legend()
-    plt.savefig("visualizations/distance_distribution_best.png")
+    plt.savefig(f"visualizations/distance_distribution_{study_name}.png")
     plt.close()
 
     # Plot time to first catch distribution
@@ -128,18 +128,20 @@ def create_visualization(study_name="foraging"):
     plt.ylabel("Count")
     plt.title("Distribution of Time to First Catch (Best Parameters)")
     plt.legend()
-    plt.savefig("visualizations/first_catch_distribution_best.png")
+    plt.savefig(f"visualizations/first_catch_distribution_{study_name}.png")
     plt.close()
 
     # Save a GIF of the agent movement
     save_agent_movement_gif(
         best_model,
         steps=1000,  # You might want to make this configurable
-        filename="visualizations/agent_movement.gif",
+        filename=f"visualizations/agent_movement_{study_name}.gif",
         resource_cluster_radius=best_params["resource_cluster_radius"],
     )
     print("All visualizations have been saved in the 'visualizations' directory")
     print("Visualization process completed successfully...")
 
 if __name__ == "__main__":
-    create_visualization()
+    create_visualization(study_name="rw-default-no-coupling")
+    create_visualization(study_name="rw-default-all-agents")
+    create_visualization(study_name="rw-default-filtering")
