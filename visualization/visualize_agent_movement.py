@@ -43,7 +43,7 @@ def save_agent_movement_gif(
         zorder=2,
     )
     destination_marker = ax.scatter(
-        [], [], s=100, color="black", marker="x", label="Destination", zorder=1
+        [], [], s=0, color="black", marker="x", label="Destination", zorder=1 # Set marker size to 0 for final figures but keeping it as legacy
     )
 
     # Add legends with fixed sizes

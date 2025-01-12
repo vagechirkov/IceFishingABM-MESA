@@ -7,12 +7,13 @@ import json
 from abm.model import Model as RandomWalkerModel
 from abm.exploration_strategy import RandomWalkerExplorationStrategy
 from abm.exploitation_strategy import ExploitationStrategy
+from visualization.visualize_agent_movement import save_agent_movement_gif
 
 
-def load_study_and_params(study_name="foraging"):
+def load_study_and_params(study_name, storage_name="foraging"):
     """Load the saved study and best parameters"""
     # Load the study
-    storage_name = f"sqlite:///{study_name}.db"
+    storage_name = f"sqlite:///{storage_name}.db"
     study = optuna.load_study(study_name=study_name, storage=storage_name)
     
     # Load best parameters
@@ -21,10 +22,12 @@ def load_study_and_params(study_name="foraging"):
     
     return study, best_params
 
-def create_visualization(study_name="foraging"):
+def create_visualization(study_name):
     # Load study and parameters
+    
     study, best_params = load_study_and_params(study_name)
     
+    print("Best hyperparams loaded for study:")
     # Set plotly template
     pio.templates["plotly"].layout["autosize"] = False
 
@@ -142,6 +145,6 @@ def create_visualization(study_name="foraging"):
     print("Visualization process completed successfully...")
 
 if __name__ == "__main__":
-    create_visualization(study_name="rw-default-no-coupling")
-    create_visualization(study_name="rw-default-all-agents")
-    create_visualization(study_name="rw-default-filtering")
+    create_visualization("rw-default-no-coupling")
+    #create_visualization(study_name="rw-default-all-agents")
+    #create_visualization(study_name="rw-default-filtering")
