@@ -8,6 +8,7 @@ from abm.model import Model as RandomWalkerModel
 from abm.exploration_strategy import RandomWalkerExplorationStrategy
 from abm.exploitation_strategy import ExploitationStrategy
 from visualization.visualize_agent_movement import save_agent_movement_gif
+import numpy as np
 
 
 def load_study_and_params(study_name, storage_name="foraging"):
@@ -132,6 +133,52 @@ def create_visualization(study_name):
     plt.title("Distribution of Time to First Catch (Best Parameters)")
     plt.legend()
     plt.savefig(f"visualizations/first_catch_distribution_{study_name}.png")
+    plt.close()
+
+
+    # Create scatter plot of distance vs time to first catch
+    plt.figure(figsize=(10, 6))
+    
+    # Clean data - remove NaN values
+    plot_data = agent_results[["traveled_distance", "time_to_first_catch"]].dropna()
+    
+    # Plot the basic scatter
+    plt.scatter(
+        plot_data["traveled_distance"],
+        plot_data["time_to_first_catch"],
+        alpha=0.6,
+        c='blue',
+        label='Agents'
+    )
+    
+    # Add trend line and correlation only if we have enough valid points
+    if len(plot_data) > 2:  # Need at least 3 points for meaningful statistics
+        try:
+            # Add trend line
+            z = np.polyfit(plot_data["traveled_distance"], 
+                          plot_data["time_to_first_catch"], 1)
+            p = np.poly1d(z)
+            plt.plot(plot_data["traveled_distance"], 
+                    p(plot_data["traveled_distance"]), 
+                    "r--", alpha=0.8,
+                    label=f'Trend line (slope: {z[0]:.2f})')
+            
+            # Add correlation coefficient
+            corr = plot_data["traveled_distance"].corr(plot_data["time_to_first_catch"])
+            plt.text(0.05, 0.95, f'Correlation: {corr:.2f}', 
+                    transform=plt.gca().transAxes,
+                    bbox=dict(facecolor='white', alpha=0.8))
+        except np.linalg.LinAlgError:
+            print("Could not compute trend line - numerical instability")
+        except Exception as e:
+            print(f"Could not add statistical analysis: {str(e)}")
+    
+    plt.xlabel("Distance Traveled")
+    plt.ylabel("Time to First Catch")
+    plt.title("Distance Traveled vs Time to First Catch")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(f"visualizations/distance_vs_time_{study_name}.png")
     plt.close()
 
     # Save a GIF of the agent movement

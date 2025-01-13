@@ -18,12 +18,12 @@ D_MIN          = 1                    # Minimum distance for Lévy flight
 max_sim_steps  = 1000                 # Maximum number of steps
 GRID_SIZE      = 100                  # Grid size for simulation
 MAX_L          = GRID_SIZE            # Maximum distance for Lévy flight
-NUM_ITERATIONS = 50                   # Number of iterations
+NUM_ITERATIONS = 100                   # Number of iterations
 ALPHA          = 1e-5                 # Parameter for social cue coupling 
 NUM_RESOURCE_CLUSTERS = 5             # Number of resource clusters
 RESOURCE_CLUSTER_RADIUS = 2           # Radius of resource clusters    
 RESOURCE_QUALITY = 1.0                # Quality of resources   
-NUM_TRIALS       = 100                  # Number of trials  
+NUM_TRIALS       = 200                  # Number of trials  
 
 
 def objective(trial):
