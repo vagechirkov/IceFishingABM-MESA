@@ -18,13 +18,13 @@ D_MIN          = 1                    # Minimum distance for Levy flight
 max_sim_steps  = 1000                  # Maximum number of steps
 GRID_SIZE      = 100                  # Grid size for simulation
 MAX_L          = GRID_SIZE            # Maximum distance for Levy flight
-NUM_ITERATIONS = 10                    # Number of iterations
+NUM_ITERATIONS = 100                    # Number of iterations
 #ALPHA          = 1e-5                # Parameter for social cue coupling 
 NUM_RESOURCE_CLUSTERS = 5             # Number of resource clusters
 RESOURCE_CLUSTER_RADIUS = 2           # Radius of resource clusters    
 RESOURCE_QUALITY = 1.0                # Quality of resources    
 THRESHOLD = 1                         # Time threshold for moving onto next patch if resource not collected
-NUM_TRIALS = 10                       # Number of trials  
+NUM_TRIALS = 100                       # Number of trials  
 NUM_JOBS =  1                         # Number of parallel jobs? 
 
 def objective(trial):
@@ -152,4 +152,4 @@ if __name__ == "__main__":
     # Save the best model parameters in a JSON file
 
     with open(f'best_params_{study_name}.json', 'w') as f:
-        json.dump(best_params, f)
+        json.dump(best_params, f) 

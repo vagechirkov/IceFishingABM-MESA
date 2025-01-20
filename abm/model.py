@@ -101,7 +101,10 @@ class Model(mesa.Model):
                 "is_sampling": "is_sampling",
                 "is_moving": "is_moving",
                 "step_sizes": lambda a: a._step_sizes if hasattr(a, '_step_sizes') else None,
-                "time_to_first_catch": lambda a: a._time_to_first_catch if hasattr(a, '_time_to_first_catch') else None
+                "time_to_first_catch": lambda a: a._time_to_first_catch if hasattr(a, '_time_to_first_catch') else None,
+                "total_sampling_time": "total_sampling_time",
+                "total_consuming_time": "total_consuming_time",
+                "cluster_catches": "cluster_catches"
             },
             model_reporters={},
         )

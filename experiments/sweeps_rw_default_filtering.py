@@ -7,7 +7,7 @@ from abm.model import Model as RandomWalkerModel
 from abm.exploration_strategy import RandomWalkerExplorationStrategy
 from abm.exploitation_strategy import ExploitationStrategy
 
-def run_parameter_sweep(study_name="rw-default_filtering"):
+def run_parameter_sweep(study_name="rw-default_all_agents"):
     # Define parameter ranges
     mu_values = [1.1, 2.0, 3.1]
     alpha_values = np.logspace(-5, 0, num=5)  # 20 points from 10^-5 to 1
@@ -57,13 +57,11 @@ def run_parameter_sweep(study_name="rw-default_filtering"):
                     "resource_quality": RESOURCE_QUALITY,
                     "resource_cluster_radius": RESOURCE_CLUSTER_RADIUS,
                     "keep_overall_abundance": True,
-                    "social_info_quality": "sampling",
+                    "social_info_quality": "consuming",
                 },
                 iterations=NUM_ITERATIONS,
                 max_steps=max_sim_steps,
                 data_collection_period=-1,
-                number_processes=None,
-                display_progress=True,
             )
             
             # Process results
@@ -109,7 +107,7 @@ def run_parameter_sweep(study_name="rw-default_filtering"):
         "NUM_ITERATIONS": NUM_ITERATIONS,
         "max_steps": max_sim_steps,
         "threshold": threshold,
-        'resource_quality': RESOURCE_QUALITY,
+         'resource_quality': RESOURCE_QUALITY,
 
     }
     

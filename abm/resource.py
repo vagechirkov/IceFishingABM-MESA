@@ -23,6 +23,7 @@ class Resource(mesa.Agent):
         self.is_resource = True
         self.const_resource: bool = False 
         self.const_catch_probability: bool = True
+        self.is_depleted = False                                    # Note by DJ: New addition as we want to now also random add resources, thereby keeping overall abundace 
 
     @property
     def catch_probability(self):
@@ -33,20 +34,72 @@ class Resource(mesa.Agent):
             return self.current_value / self.max_value
 
     def catch(self):
-        if (
-            self.model.random.random() < self.catch_probability
-            and self.current_value > 0
-        ):
-            if self.const_resource:  # Constant resource doesnt deplet.
-                pass
-            elif self.current_value > 0:
-                self.current_value -= 1
-            if self.keep_overall_abundance:
-                self._add_resource_to_neighbour()
+        if (self.model.random.random() < self.catch_probability
+            and self.current_value > 0):
+            
+            if self.const_resource:  # Constant resource doesn't deplete
+                return True
+            
+            self.current_value -= 1
+            
+            # Check if resource is depleted
+            if self.current_value <= 0:
+                if self.keep_overall_abundance:
+                    # Instead of adding to neighbor, relocate this resource
+                    self.relocate_resource()
+                self.is_depleted = True
+            
             return True
         else:
             return False
+        
+    def find_new_location(self):
+        """Find a new location that doesn't overlap with existing resources."""
+        max_attempts = 100  # Prevent infinite loops
+        attempts = 0
+        
+        while attempts < max_attempts:
+            # Generate random coordinates
+            x = self.model.random.randint(self.radius, self.model.grid.width - self.radius)
+            y = self.model.random.randint(self.radius, self.model.grid.height - self.radius)
+            
+            # Get all nearby cells within twice the resource radius
+            nearby_cells = self.model.grid.get_neighborhood(
+                (x, y), 
+                moore=True, 
+                include_center=True, 
+                radius=self.radius * 2
+            )
+            
+            # Check if any nearby cells contain resources
+            has_nearby_resource = False
+            for cell in nearby_cells:
+                cell_contents = self.model.grid.get_cell_list_contents(cell)
+                if any(isinstance(agent, Resource) for agent in cell_contents):
+                    has_nearby_resource = True
+                    break
+            
+            if not has_nearby_resource:
+                return (x, y)
+            
+            attempts += 1
+        
+        return None  # Return None if no valid location found
 
+    def relocate_resource(self):
+        """Relocate the resource to a new valid location."""
+        new_pos = self.find_new_location()
+        if new_pos:
+            self.model.grid.move_agent(self, new_pos)
+            self.current_value = self.max_value  # Reset resource value
+            self.is_depleted = False
+            return True
+        return False
+
+
+    
+    # We no longer use this method to add resource 
+    '''
     def _add_resource_to_neighbour(self):
         """Add one resource to the closest neighbor."""
         # Comment : Need to update this so that the resource is added to a new randomly created resource
@@ -60,6 +113,7 @@ class Resource(mesa.Agent):
                 resources, key=lambda x: self.model.grid.get_distance(self.pos, x.pos)
             )
             closest_resource.current_value += 1
+    '''
 
     def resource_map(self) -> np.ndarray:
         # Generate resource map based on resource radius

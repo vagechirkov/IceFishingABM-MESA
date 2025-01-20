@@ -11,7 +11,7 @@ from visualization.visualize_agent_movement import save_agent_movement_gif
 import numpy as np
 
 
-def load_study_and_params(study_name, storage_name="foraging"):
+def load_study_and_params(study_name, storage_name="foraging_cloud"):
     """Load the saved study and best parameters"""
     # Load the study
     storage_name = f"sqlite:///{storage_name}.db"
@@ -42,7 +42,11 @@ def create_visualization(study_name):
     fig.write_html(f"visualizations/optimization_history_1_{study_name}.html")
 
     # Slice plot
-    params = ["mu", "threshold"]
+    
+    if study_name == 'rw-default-no-coupling': 
+        params = ["mu", "threshold"]
+    else: 
+        params = ["alpha" ,"mu"]
     fig = optuna.visualization.plot_slice(study, params=params)
     fig.write_html(f"visualizations/optimization_history_2_{study_name}.html")
 
@@ -93,19 +97,23 @@ def create_visualization(study_name):
             "resource_cluster_radius": best_params["resource_cluster_radius"],
             "keep_overall_abundance": True,
         },
-        iterations=1,
+        iterations=1_000,
         max_steps=1000,  # You might want to make this configurable
-        data_collection_period=1,
+        data_collection_period=-1,
     )
 
     # Convert to DataFrame and analyze
     results_df = pd.DataFrame(results)
     agent_mask = results_df["AgentID"] != 0
-    agent_results = results_df[agent_mask]
+    agent_results = results_df[agent_mask] 
+
+    # print values
+    print(np.array(agent_results["time_to_first_catch"]))
+    print(np.array(agent_results["traveled_distance"]))
 
     # Plot distance distribution
     plt.figure(figsize=(10, 6))
-    plt.hist(agent_results["traveled_distance"], bins=20)
+    plt.hist(agent_results["traveled_distance"], bins='auto')
     plt.axvline(
         agent_results["traveled_distance"].mean(),
         color="r",
@@ -132,7 +140,7 @@ def create_visualization(study_name):
     plt.ylabel("Count")
     plt.title("Distribution of Time to First Catch (Best Parameters)")
     plt.legend()
-    plt.savefig(f"visualizations/first_catch_distribution_{study_name}.png")
+    #plt.savefig(f"visualizations/first_catch_distribution_{study_name}.png")
     plt.close()
 
 
@@ -181,6 +189,108 @@ def create_visualization(study_name):
     plt.savefig(f"visualizations/distance_vs_time_{study_name}.png")
     plt.close()
 
+
+    # Plot sampling time distribution
+    plt.figure(figsize=(10, 6))
+    plt.hist(agent_results["total_sampling_time"], bins=20)
+    plt.axvline(
+        agent_results["total_sampling_time"].mean(),
+        color="r",
+        linestyle="--",
+        label=f'Mean: {agent_results["total_sampling_time"].mean():.2f}',
+    )
+    plt.xlabel("Total Sampling Time")
+    plt.ylabel("Count")
+    plt.title("Distribution of Agent Sampling Times")
+    plt.legend()
+    plt.savefig(f"visualizations/sampling_time_distribution_{study_name}.png")
+    plt.close()
+
+    # Plot consuming time distribution
+    plt.figure(figsize=(10, 6))
+    plt.hist(agent_results["total_consuming_time"], bins=20)
+    plt.axvline(
+        agent_results["total_consuming_time"].mean(),
+        color="r",
+        linestyle="--",
+        label=f'Mean: {agent_results["total_consuming_time"].mean():.2f}',
+    )
+    plt.xlabel("Total Consuming Time")
+    plt.ylabel("Count")
+    plt.title("Distribution of Agent Consuming Times")
+    plt.legend()
+    plt.savefig(f"visualizations/consuming_time_distribution_{study_name}.png")
+    plt.close()
+
+    # Plot cluster catches distribution
+    plt.figure(figsize=(10, 6))
+    plt.hist(agent_results["cluster_catches"], bins=20)
+    plt.axvline(
+        agent_results["cluster_catches"].mean(),
+        color="r",
+        linestyle="--",
+        label=f'Mean: {agent_results["cluster_catches"].mean():.2f}',
+    )
+    plt.xlabel("Number of Cluster Catches")
+    plt.ylabel("Count")
+    plt.title("Distribution of Cluster Catches per Agent")
+    plt.legend()
+    plt.savefig(f"visualizations/cluster_catches_distribution_{study_name}.png")
+    plt.close()
+
+    # Create scatter plots comparing metrics
+    metrics_pairs = [
+        ("traveled_distance", "collected_resource", "Distance vs Resources"),
+        ("total_sampling_time", "collected_resource", "Sampling Time vs Resources"),
+        ("total_consuming_time", "collected_resource", "Consuming Time vs Resources"),
+        ("cluster_catches", "collected_resource", "Cluster Catches vs Resources")
+    ]
+
+    for x_metric, y_metric, title in metrics_pairs:
+        plt.figure(figsize=(10, 6))
+        plot_data = agent_results[[x_metric, y_metric]].dropna()
+        
+        if len(plot_data) > 0:
+            plt.scatter(
+                plot_data[x_metric],
+                plot_data[y_metric],
+                alpha=0.6,
+                c='blue',
+                label='Agents'
+            )
+            
+            # Add trend line if enough points
+            if len(plot_data) > 2:
+                try:
+                    z = np.polyfit(plot_data[x_metric], plot_data[y_metric], 1)
+                    p = np.poly1d(z)
+                    plt.plot(
+                        plot_data[x_metric],
+                        p(plot_data[x_metric]),
+                        "r--",
+                        alpha=0.8,
+                        label=f'Trend (slope: {z[0]:.2f})'
+                    )
+                    
+                    # Add correlation coefficient
+                    corr = plot_data[x_metric].corr(plot_data[y_metric])
+                    plt.text(
+                        0.05, 0.95,
+                        f'Correlation: {corr:.2f}',
+                        transform=plt.gca().transAxes,
+                        bbox=dict(facecolor='white', alpha=0.8)
+                    )
+                except Exception as e:
+                    print(f"Could not add trend line for {title}: {str(e)}")
+        
+        plt.xlabel(x_metric.replace('_', ' ').title())
+        plt.ylabel(y_metric.replace('_', ' ').title())
+        plt.title(title)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(f"visualizations/{x_metric}_vs_{y_metric}_{study_name}.png")
+        plt.close()
+
     # Save a GIF of the agent movement
     save_agent_movement_gif(
         best_model,
@@ -192,6 +302,6 @@ def create_visualization(study_name):
     print("Visualization process completed successfully...")
 
 if __name__ == "__main__":
-    create_visualization("rw-default-no-coupling")
+    #create_visualization("rw-default-no-coupling")
     #create_visualization(study_name="rw-default-all-agents")
-    #create_visualization(study_name="rw-default-filtering")
+    create_visualization(study_name="rw-default-filtering")

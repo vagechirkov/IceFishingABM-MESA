@@ -46,6 +46,12 @@ class Agent(mesa.Agent):
         self._traveled_distance_manhattan: int = 0
         self._step_sizes = []  # Track movement distances
         self._time_to_first_catch = None  # Track time to first catch
+        self._total_sampling_time: int = 0    # Total time spent sampling
+        self._total_consuming_time: int = 0    # Total time spent consuming
+        self._cluster_catches: int = 0  # Number of successful catches in clusters
+        self._last_catch_pos = None     # Track last catch position
+
+        
 
     @property
     def is_moving(self):
@@ -74,6 +80,19 @@ class Agent(mesa.Agent):
     @property
     def traveled_distance_manhattan(self):
         return self._traveled_distance_manhattan
+
+    @property
+    def total_sampling_time(self):
+        return self._total_sampling_time
+
+    @property
+    def total_consuming_time(self):
+        return self._total_consuming_time
+
+
+    @property
+    def cluster_catches(self):
+        return self._cluster_catches
 
     def move(self):
         """
@@ -107,12 +126,27 @@ class Agent(mesa.Agent):
         self._time_on_patch += 1
         self._is_consuming = False
 
+        # if not consuming then sampling:
+        self._total_sampling_time += 1
+
         for neighbor in neighbors:
             if isinstance(neighbor, Resource) and neighbor.catch():
                 self._collected_resource += 1
                 self._collected_resource_last_spot += 1
                 _is_resource_collected = True
                 self._is_consuming = True
+                self._total_consuming_time += 1
+
+                # Track cluster catches
+                if self._last_catch_pos is None:
+                    self._cluster_catches += 1
+                    self._last_catch_pos = self.pos
+                else:
+                    # If catch is in same cluster (within radius)
+                    distance = np.linalg.norm(np.array(self.pos) - np.array(self._last_catch_pos))
+                    if distance > self.resource_cluster_radius * 2:  # New cluster
+                        self._cluster_catches += 1
+                    self._last_catch_pos = self.pos
 
         # Save time to first catch
         if _is_resource_collected and self._time_to_first_catch is None:

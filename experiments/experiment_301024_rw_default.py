@@ -13,15 +13,15 @@ import json
 RUN HYPERPARAMETERS GO HERE:
 """
 
-NUM_AGENTS     = 3                    # Number of agents
+NUM_AGENTS     = 10                   # Number of agents
 D_MIN          = 1                    # Minimum distance for Levy flight
-max_sim_steps  = 100                  # Maximum number of steps
+max_sim_steps  = 1000                  # Maximum number of steps
 GRID_SIZE      = 20                   # Grid size for simulation
 MAX_L          = GRID_SIZE / 2        # Maximum distance for Levy flight
-NUM_ITERATIONS = 10                   # Number of iterations
+NUM_ITERATIONS = 2                  # Number of iterations
 ALPHA          = 1e-5                 # Parameter for social cue coupling 
-NUM_RESOURCE_CLUSTERS = 5             # Number of resource clusters
-RESOURCE_CLUSTER_RADIUS = 2           # Radius of resource clusters    
+NUM_RESOURCE_CLUSTERS = 10             # Number of resource clusters
+RESOURCE_CLUSTER_RADIUS = 2          # Radius of resource clusters    
 RESOURCE_QUALITY = 1.0                # Quality of resources    
 NUM_TRIALS =  2                       # Number of trials 
 
@@ -100,9 +100,9 @@ def objective(trial):
     )
 
     # Use mean efficiency as objective
-    avg_efficiency = agent_metrics["efficiency"].mean()
+    median_agent_collected_resource = agent_metrics["collected_resource"].median()
 
-    return avg_efficiency
+    return median_agent_collected_resource
 
 
 if __name__ == "__main__":
