@@ -118,5 +118,5 @@ def run_parameter_sweep(study_name="rw-default_all_agents"):
     return save_dir
 
 if __name__ == "__main__":
-    save_dir = run_parameter_sweep("rw_default_all_agents")
+    save_dir = run_parameter_sweep("rw_default_filtering")
     print(f"Results saved in: {save_dir}")

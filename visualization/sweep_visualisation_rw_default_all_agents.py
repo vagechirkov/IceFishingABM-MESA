@@ -4,12 +4,14 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import json
 
+
+# CHANGING KEY ALWAYS HERE FOR NOW : later make one unique file
 def plot_sweep_results(sweep_dir):
     # Load results
-    results_df = pd.read_csv(sweep_dir / 'rw_default_all_agents_sweep_results.csv')
+    results_df = pd.read_csv(sweep_dir / 'rw_default_filtering_sweep_results.csv')
     
     # Load parameters
-    with open(sweep_dir / 'parameters.json', 'r') as f:
+    with open(sweep_dir / 'rw_default_filtering_parameters.json', 'r') as f:
         params = json.load(f)
     
     # Create visualizations directory
@@ -19,7 +21,7 @@ def plot_sweep_results(sweep_dir):
     # Set up the plotting style
     sns.set_style("whitegrid")
     
-    # Plot metrics vs alpha for different mu values
+    # Plot metrics vs alpha for dxifferent mu values
     metrics = [
         ("avg_efficiency", "Average Efficiency"),
         ("avg_resources", "Average Resources Collected"),

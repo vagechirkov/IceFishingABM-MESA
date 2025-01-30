@@ -14,7 +14,7 @@
     "GRID_SIZE": 100,
     "NUM_RESOURCE_CLUSTERS": 5,
     "RESOURCE_RADIUS": 2,
-    "NUM_ITERATIONS": 5,
+    "NUM_ITERATIONS": 100,
     "max_steps": 1000,
     "threshold": 1,
     "resource_quality": 1.0

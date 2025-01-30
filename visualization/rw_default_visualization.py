@@ -9,9 +9,9 @@ from abm.exploration_strategy import RandomWalkerExplorationStrategy
 from abm.exploitation_strategy import ExploitationStrategy
 from visualization.visualize_agent_movement import save_agent_movement_gif
 import numpy as np
+import seaborn as sns 
 
-
-def load_study_and_params(study_name, storage_name="foraging_cloud"):
+def load_study_and_params(study_name, storage_name="foraging"):
     """Load the saved study and best parameters"""
     # Load the study
     storage_name = f"sqlite:///{storage_name}.db"
@@ -140,7 +140,7 @@ def create_visualization(study_name):
     plt.ylabel("Count")
     plt.title("Distribution of Time to First Catch (Best Parameters)")
     plt.legend()
-    #plt.savefig(f"visualizations/first_catch_distribution_{study_name}.png")
+    plt.savefig(f"visualizations/first_catch_distribution_{study_name}.png")
     plt.close()
 
 
@@ -290,6 +290,8 @@ def create_visualization(study_name):
         plt.tight_layout()
         plt.savefig(f"visualizations/{x_metric}_vs_{y_metric}_{study_name}.png")
         plt.close()
+
+    
 
     # Save a GIF of the agent movement
     save_agent_movement_gif(
