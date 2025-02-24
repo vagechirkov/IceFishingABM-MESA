@@ -9,7 +9,7 @@ class Resource(mesa.Agent):
         model,
         radius: int = 5,
         max_value: int = 100,
-        current_value: int = 50,
+        current_value: int = 50, 
         keep_overall_abundance: bool = True,
         neighborhood_radius: int = 20,
     ):
@@ -23,7 +23,7 @@ class Resource(mesa.Agent):
         self.is_resource = True
         self.const_resource: bool = False 
         self.const_catch_probability: bool = True
-        self.is_depleted = False                                    # Note by DJ: New addition as we want to now also random add resources, thereby keeping overall abundace 
+        self.is_depleted = False
 
     @property
     def catch_probability(self):
@@ -41,6 +41,7 @@ class Resource(mesa.Agent):
                 return True
             
             self.current_value -= 1
+            self.model.total_consumed_resource += 1 
             
             # Check if resource is depleted
             if self.current_value <= 0:
@@ -96,25 +97,6 @@ class Resource(mesa.Agent):
             return True
         return False
 
-
-    
-    # We no longer use this method to add resource 
-    '''
-    def _add_resource_to_neighbour(self):
-        """Add one resource to the closest neighbor."""
-        # Comment : Need to update this so that the resource is added to a new randomly created resource
-        neighbors = self.model.grid.get_neighbors(
-            self.pos, moore=True, include_center=False
-        )
-        resources = [n for n in neighbors if isinstance(n, Resource)]
-
-        if len(resources) > 0:
-            closest_resource = min(
-                resources, key=lambda x: self.model.grid.get_distance(self.pos, x.pos)
-            )
-            closest_resource.current_value += 1
-    '''
-
     def resource_map(self) -> np.ndarray:
         # Generate resource map based on resource radius
         _resource_map = np.zeros((self.model.grid.width, self.model.grid.height))
@@ -140,9 +122,7 @@ def make_resource_centers(
             centers.append((x, y))
             continue
 
-        # TODO: fix this to avoid infinite loop in the case when it is not possible to add a new center far enough
-        # TODO: from the existing centers
-        # check if the new center is not too close to any of the existing centers
+        # Check if the new center is not too close to any of the existing centers
         if np.all(
             np.linalg.norm(np.array(centers) - np.array((x, y)), axis=-1)
             > cluster_radius * 2

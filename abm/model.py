@@ -23,6 +23,7 @@ class Model(mesa.Model):
         resource_cluster_radius: int = 5,
         keep_overall_abundance: bool = True,
         social_info_quality = None,
+        resource_max_value: int = 100, 
     ):
         super().__init__()
         self.grid_size = grid_size
@@ -33,6 +34,11 @@ class Model(mesa.Model):
         self.keep_overall_abundance = keep_overall_abundance
         self.social_info_quality = social_info_quality
         
+        # Add resource tracking
+        self.total_initial_resource = n_resource_clusters * resource_max_value  # Total possible resource
+        self.total_consumed_resource = 0                                        # Track consumed resources
+        self.running = True  
+        self.consumption_criterion = 0.30
 
         self.schedule = mesa.time.RandomActivation(self)
         self.grid = mesa.space.MultiGrid(grid_size, grid_size, False)
@@ -54,8 +60,8 @@ class Model(mesa.Model):
                 self.next_id(),
                 self,
                 radius=self.resource_cluster_radius,
-                max_value=100,
-                current_value=int(quality * 100),
+                max_value=resource_max_value,
+                current_value=int(quality * resource_max_value),
                 keep_overall_abundance=self.keep_overall_abundance,
                 neighborhood_radius=40,
             )
@@ -86,28 +92,29 @@ class Model(mesa.Model):
             self.grid.place_agent(a, cell)
 
         self.datacollector = mesa.datacollection.DataCollector(
-            agent_reporters={
-                "collected_resource": lambda agent: (
-                    agent.collected_resource
-                    if hasattr(agent, "collected_resource")
-                    else None
-                ),  # Safeguard for non-agent objects
-                "traveled_distance": lambda agent: (
-                    agent.traveled_distance_euclidean
-                    if hasattr(agent, "traveled_distance_euclidean")
-                    else None
-                ),  # Safeguard for non-agent objects
-                "pos": "pos",
-                "is_sampling": "is_sampling",
-                "is_moving": "is_moving",
-                "step_sizes": lambda a: a._step_sizes if hasattr(a, '_step_sizes') else None,
-                "time_to_first_catch": lambda a: a._time_to_first_catch if hasattr(a, '_time_to_first_catch') else None,
-                "total_sampling_time": "total_sampling_time",
-                "total_consuming_time": "total_consuming_time",
-                "cluster_catches": "cluster_catches"
-            },
-            model_reporters={},
-        )
+        agent_reporters={
+            "collected_resource": lambda agent: (
+                agent.collected_resource
+                if hasattr(agent, "collected_resource")
+                else None
+            ),  # Safeguard for non-agent objects
+            "traveled_distance": lambda agent: (
+                agent.traveled_distance_euclidean
+                if hasattr(agent, "traveled_distance_euclidean")
+                else None
+            ),  # Safeguard for non-agent objects
+            "pos": "pos",
+            "is_sampling": "is_sampling",
+            "is_moving": "is_moving",
+            "step_sizes": lambda a: a._step_sizes if hasattr(a, '_step_sizes') else None,
+            "time_to_first_catch": lambda a: a._time_to_first_catch if hasattr(a, '_time_to_first_catch') else None,
+            "total_sampling_time": "total_sampling_time",
+            "total_consuming_time": "total_consuming_time",
+            "cluster_catches": "cluster_catches"
+        },
+        model_reporters={},
+       )
+        
 
     @property
     def resource_distribution(self) -> np.ndarray:
@@ -123,3 +130,8 @@ class Model(mesa.Model):
         """
         self.schedule.step()
         self.datacollector.collect(self)
+
+        # Check if 30% of total resource has been consumed
+        if self.total_consumed_resource >= self.consumption_criterion * self.total_initial_resource:
+            self.running = False
+            print("30% Resource Consumed")

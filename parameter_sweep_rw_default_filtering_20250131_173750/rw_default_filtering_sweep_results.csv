@@ -1,0 +1,5 @@
+mu,alpha,avg_efficiency,avg_resources,avg_time_to_first,std_efficiency,std_resources,std_time_to_first
+2.0,"    0.00001
+Name: 0, dtype: float64",0.035953851913304184,2.0,80.0,0.6356281530738923,6.324555320336758,
+2.0,"    1.0
+Name: 1, dtype: float64",0.0,0.0,,0.0,0.0,

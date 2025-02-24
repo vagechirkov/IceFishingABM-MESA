@@ -210,10 +210,13 @@ class Agent(mesa.Agent):
         # avoid searching for neighbors if social info is ignored
         if self.social_info_quality is None:
             return
-
-        other_agents = self.model.grid.get_neighbors(
-            self.pos, moore=True, include_center=False, radius=self.model.grid.width
-        )
+        
+        other_agents = self.model.schedule.agents
+        other_agents = [agent for agent in other_agents if
+                        isinstance(agent, Agent) and (agent.unique_id != self.unique_id)]
+        #other_agents = self.model.grid.get_neighbors(
+        #    self.pos, moore=True, include_center=False, radius=self.model.grid.width
+        #)
 
         agents = []
         if self.social_info_quality == "consuming":
@@ -221,14 +224,14 @@ class Agent(mesa.Agent):
             agents = [
                 np.array(xy2ij(*agent.pos))[np.newaxis, :]
                 for agent in other_agents
-                if isinstance(agent, Agent) and agent.is_sampling and agent.is_consuming
+                if agent.is_sampling and agent.is_consuming
             ]
         elif self.social_info_quality == "sampling":
             # Get positions of all sampling agents
             agents = [
                 np.array(xy2ij(*agent.pos))[np.newaxis, :]
                 for agent in other_agents
-                if isinstance(agent, Agent) and agent.is_sampling
+                if agent.is_sampling
             ]
         else:
             raise ValueError(
