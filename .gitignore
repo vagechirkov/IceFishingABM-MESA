@@ -1,6 +1,8 @@
 # cloud files 
 
 .nfs000000000000fdfb0000069e
+param*
+parameter_sweep_*
 
 ## TO DO 
 

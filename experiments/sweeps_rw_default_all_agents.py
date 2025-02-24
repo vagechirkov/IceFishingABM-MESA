@@ -1,4 +1,4 @@
-import numpy as np  scipy.stats as st
+import numpy as np ,  scipy.stats as st
 import pandas as pd
 import mesa
 from datetime import datetime
@@ -8,7 +8,7 @@ from abm.exploration_strategy import RandomWalkerExplorationStrategy
 from abm.exploitation_strategy import ExploitationStrategy
 from visualization.visualize_agent_movement import save_agent_movement_gif
 
-def run_parameter_sweep(social_info,study_name, num_resource_clusters = 5,  max_sim_steps=1_000): 
+def run_parameter_sweep(social_info,study_name, num_resource_clusters = 5,  max_sim_steps=1_000, resource_radius = 2): 
     # Define parameter ranges
     
     mu_values = [2.0]
@@ -18,7 +18,7 @@ def run_parameter_sweep(social_info,study_name, num_resource_clusters = 5,  max_
     NUM_AGENTS = 10
     GRID_SIZE =  100
     NUM_RESOURCE_CLUSTERS = num_resource_clusters 
-    RESOURCE_CLUSTER_RADIUS = 2
+    RESOURCE_CLUSTER_RADIUS =  resource_radius 
     RESOURCE_QUALITY = 1.0
     D_MIN = 1
     NUM_ITERATIONS = 10_000
@@ -208,24 +208,25 @@ def run_parameter_sweep(social_info,study_name, num_resource_clusters = 5,  max_
 
 if __name__ == "__main__":
     social_info = "filtering"  
-    NUMBER_CLUSTERS_LIST = [1, 5, 10,  15, 20, 30]  
+    RESOURCE_RADIUS_PARAMS = [1,2,5] 
+    NUMBER_CLUSTERS_LIST = [1, 5 , 10, 20]  
     STEPS_LIST = [100_000]
     #social_info = "all-agents"
+    for RESOURCE_RADIUS_PARAM in RESOURCE_RADIUS_PARAMS:
+        for NUMBER_CLUSTERS in NUMBER_CLUSTERS_LIST: 
+            for STEPS in STEPS_LIST:
 
-    for NUMBER_CLUSTERS in NUMBER_CLUSTERS_LIST: 
-        for STEPS in STEPS_LIST:
+                print(f"\nRunning simulation with:")
+                print(f"- Number of clusters: {NUMBER_CLUSTERS}")
+                print(f"- Time steps: {STEPS:,}")
+                print(f"- Social info: {social_info}")
+                print("-" * 50)
 
-            print(f"\nRunning simulation with:")
-            print(f"- Number of clusters: {NUMBER_CLUSTERS}")
-            print(f"- Time steps: {STEPS:,}")
-            print(f"- Social info: {social_info}")
-            print("-" * 50)
-
-            if social_info == "all-agents":
-                save_dir = run_parameter_sweep(social_info, "rw_default_all_agents", NUMBER_CLUSTERS, STEPS)
-            elif social_info == "filtering": 
-                save_dir = run_parameter_sweep(social_info, "rw_default_filtering", NUMBER_CLUSTERS, STEPS)
-            
-                print(f"\nResults saved in: {save_dir}")
-                print("=" * 50)
+                if social_info == "all-agents":
+                    save_dir = run_parameter_sweep(social_info, "rw_default_all_agents", NUMBER_CLUSTERS, STEPS)
+                elif social_info == "filtering": 
+                    save_dir = run_parameter_sweep(social_info, "rw_default_filtering", NUMBER_CLUSTERS, STEPS)
+                
+                    print(f"\nResults saved in: {save_dir}")
+                    print("=" * 50)
 
