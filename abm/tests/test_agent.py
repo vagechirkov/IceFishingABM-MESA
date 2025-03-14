@@ -93,12 +93,15 @@ def test_random_walk_agent_moves_to_other_agent(
 
     # Place another agent at a specific position
     other_agent = Mock(spec=Agent)
+    other_agent.unique_id = 2
     other_agent.pos = other_agent_pos
     other_agent.is_sampling = True
     other_agent.is_consuming = False
+    agent.model.schedule.agents = [other_agent, agent]
     agent.model.grid.place_agent(other_agent, other_agent.pos)
 
     # Add the other agent's position to the social locations
+
     agent.add_other_agent_locs()
 
     agent._is_moving = False

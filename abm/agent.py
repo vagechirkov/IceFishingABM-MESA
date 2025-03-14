@@ -214,11 +214,7 @@ class Agent(mesa.Agent):
         other_agents = self.model.schedule.agents
         other_agents = [agent for agent in other_agents if
                         isinstance(agent, Agent) and (agent.unique_id != self.unique_id)]
-        #other_agents = self.model.grid.get_neighbors(
-        #    self.pos, moore=True, include_center=False, radius=self.model.grid.width
-        #)
 
-        agents = []
         if self.social_info_quality == "consuming":
             # Only get positions of agents that are both sampling AND consuming
             agents = [
