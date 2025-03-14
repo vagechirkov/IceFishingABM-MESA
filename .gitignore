@@ -1011,3 +1011,5 @@ fabric.properties
 *.gif
 *.html
 *.db
+*.csv
+*.json

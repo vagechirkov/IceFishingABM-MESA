@@ -33,5 +33,6 @@ python -m experiments.experiment_experiment_name
 ## View optuna results
 
 ```bash
+# cd to the shared directory (e.g., cd /Volumes/share/Chirkov_Jana/)
 optuna-dashboard sqlite:///foraging-db.db
 ```
