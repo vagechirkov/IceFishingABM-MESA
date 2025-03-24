@@ -112,7 +112,11 @@ class Model(mesa.Model):
             "total_consuming_time": "total_consuming_time",
             "cluster_catches": "cluster_catches"
         },
-        model_reporters={},
+        model_reporters={
+            "steps_completed": lambda m: m.schedule.steps,
+            "resources_consumed": lambda m: m.total_consumed_resource,
+            "total_resources": lambda m: m.total_initial_resource,
+        },
        )
         
 
@@ -133,5 +137,8 @@ class Model(mesa.Model):
 
         # Check if 30% of total resource has been consumed
         if self.total_consumed_resource >= self.consumption_criterion * self.total_initial_resource:
+            print(f"\nSimulation stopped at step {self.schedule.steps}")
+            print(f"Total initial resource: {self.total_initial_resource}")
+            print(f"Resources consumed: {self.total_consumed_resource} ({(self.total_consumed_resource/self.total_initial_resource)*100:.1f}%)")
             self.running = False
-            print("30% Resource Consumed")
+            

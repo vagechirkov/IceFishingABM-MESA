@@ -3,109 +3,165 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from pathlib import Path
 import json
+import numpy as np
+import warnings
+from pandas.errors import SettingWithCopyWarning
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning, module="seaborn")
+
+def process_all_directories(base_dir, process_all=True):
+    # Get all subdirectories
+    sweep_dirs = [d for d in base_dir.iterdir() if d.is_dir()]
+    
+    if not sweep_dirs:
+        print("No directories found!")
+        return
+    
+    if process_all:
+        print(f"Found {len(sweep_dirs)} directories to process")
+        for sweep_dir in sweep_dirs:
+            try:
+                plot_sweep_results(sweep_dir)
+                print(f"Successfully processed: {sweep_dir.name}")
+            except Exception as e:
+                print(f"Error processing {sweep_dir.name}: {str(e)}")
+    else:
+        # Just the latest
+        latest_sweep = max(sweep_dirs, key=lambda x: x.stat().st_mtime)
+        try:
+            plot_sweep_results(latest_sweep)
+            print(f"Successfully processed latest: {latest_sweep.name}")
+        except Exception as e:
+            print(f"Error processing latest: {str(e)}")
 
 def plot_sweep_results(sweep_dir):
-    # Print all files in directory for debugging
-    print("Files in directory:", list(sweep_dir.glob('*')))
+    # Find any CSV and JSON files
+    csv_files = list(sweep_dir.glob('*.csv'))
+    json_files = list(sweep_dir.glob('*.json'))
     
-    # Extract study name correctly - simpler approach
-    study_name = "rw_default_filtering"  # Since we know the exact name
+    if not csv_files or not json_files:
+        raise FileNotFoundError(f"Missing required files in {sweep_dir}")
     
-    # Construct paths using exact filenames
-    results_path = sweep_dir / f'{study_name}_sweep_results.csv'
-    params_path = sweep_dir / f'{study_name}_parameters.json'
+    # Use the first files found
+    results_path = csv_files[0]
+    params_path = json_files[0]
     
-    print(f"Looking for results file at: {results_path}")
+    print(f"Found files in {sweep_dir.name}:")
+    print(f"  - Results: {results_path.name}")
+    print(f"  - Parameters: {params_path.name}")
     
-    if not results_path.exists():
-        print(f"Results file not found at: {results_path}")
-        raise FileNotFoundError(f"Could not find results file: {results_path}")
-        
+    # Load data
     results_df = pd.read_csv(results_path)
     with open(params_path, 'r') as f:
         params = json.load(f)
     
+    # Replace infinity values with NaN to avoid warnings
+    results_df = results_df.replace([np.inf, -np.inf], np.nan)
     
     # Create visualizations directory
     viz_dir = sweep_dir / 'visualizations'
     viz_dir.mkdir(exist_ok=True)
     
-    # Set up the plotting style
-    sns.set_style("whitegrid")
+    # Check if we have multiple mu values
+    has_multiple_mu = len(results_df['mu'].unique()) > 1 if 'mu' in results_df.columns else False
     
-    # Plot metrics vs alpha for different mu values
-    
+    # Plot metrics vs alpha
     metrics = [
-        ("avg_efficiency", "se_efficiency", "Average Efficiency"),
-        ("avg_resources", "se_resources", "Average Resources Collected"),
-        ("avg_time_to_first", "se_time_to_first", "Average Time to First Catch")
+        ("avg_efficiency", "ci_efficiency", "Average Efficiency"),
+        ("avg_resources", "ci_resources", "Average Resources Collected"),
+        ("avg_time_to_first", "ci_time", "Average Time to First Catch")
     ]
     
-    for metric, se_metric, title in metrics:
-        plt.figure(figsize=(10, 6))
+    flip_alpha = True
+    alpha_values = np.logspace(-5, 0, 6)  # Creates 6 points evenly spaced in log scale from 10^-5 to 10^0
 
+    for metric, ci_metric, title in metrics:
+        if metric not in results_df.columns:
+            print(f"Skipping {metric} - not found in results")
+            continue
+            
+        plt.figure(figsize=(10, 6))
         plt.xscale('log')
         
-        # Create line plot with error bands
-        sns.lineplot(
-            data=results_df,
-            x="alpha",
-            y=metric,
-            hue="mu",
-            marker='o',
-            palette="viridis"
-        )
 
-
+        plot_df = results_df.copy()
         
-        # Add error bands manually for each mu value
-        for mu_val in results_df['mu'].unique():
-            mu_data = results_df[results_df['mu'] == mu_val]
-            plt.fill_between(
-                mu_data['alpha'],
-                mu_data[metric] - mu_data[se_metric],
-                mu_data[metric] + mu_data[se_metric],
-                alpha=0.2
+        # Create plot with or without hue based on mu values
+        if has_multiple_mu:
+            sns.lineplot(
+                data=plot_df,
+                x=alpha_values , 
+                y=metric,
+                hue="mu",
+                marker='o',
+                palette="viridis",
+                errorbar=("ci", 95)
             )
-
-        # Format x-axis ticks to show scientific notation
-        plt.gca().xaxis.set_major_formatter(plt.ScalarFormatter(useMathText=True))
-        plt.gca().xaxis.set_major_locator(plt.LogLocator(base=10))
-        plt.minorticks_off()
+        else:
+            sns.lineplot(
+                data=plot_df,
+                x="alpha",
+                y=metric,
+                marker='o',
+                color="blue",
+                errorbar=("ci", 95)
+            )
         
+        plt.xticks(np.logspace(-5, 0, 6))
+            
+        # Labels and title
         plt.xlabel('Alpha values (log scale)')
         plt.ylabel(title)
-        plt.title(f'{title} vs Alpha for Different μ Values\n'
-                 f'(Clusters: {params["simulation"]["num_resource_clusters"]}, '
-                 f'Steps: {params["simulation"]["max_steps"]})')
+        
+        # Get parameters for title if available
+        clusters = params.get("simulation", {}).get("num_resource_clusters", "?")
+        steps = params.get("simulation", {}).get("max_steps", "?")
+        
+        plt.title(f'{title} vs Alpha\n(Clusters: {clusters}, Steps: {steps})')
         plt.tight_layout()
-        plt.savefig(viz_dir / f'{metric}_vs_alpha.png', dpi=300, bbox_inches='tight')
+        
+        # Save figure
+        output_file = viz_dir / f'{metric}_vs_alpha.png'
+        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        print(f"  Saved: {output_file.name}")
         plt.close()
-   
+    
+    print(f"Visualizations saved to {viz_dir}")
+    return viz_dir
+    
 
 if __name__ == "__main__":
     # Base directory for all parameter sweeps
     base_dir = Path('parameter_sweep_results')
+    process_all = True  # Toggle between processing all runs (True) or just latest (False)
     
     if not base_dir.exists():
         print(f"Base directory {base_dir} not found!")
         exit(1)
     
-    # Get all sweep directories
-    sweep_dirs = list(base_dir.glob('parameter_sweep_*'))
+    # Get all subdirectories
+    sweep_dirs = [d for d in base_dir.iterdir() if d.is_dir()]
     
     if not sweep_dirs:
-        print("No parameter sweep directories found!")
+        print("No directories found!")
         exit(1)
     
-    print(f"Found {len(sweep_dirs)} sweep directories to process")
-    
-    # Process each sweep directory
-    for sweep_dir in sweep_dirs:
+    if process_all:
+        print(f"Found {len(sweep_dirs)} directories to process")
+        # Process each directory
+        for sweep_dir in sweep_dirs:
+            try:
+                plot_sweep_results(sweep_dir)
+                print(f"Successfully processed: {sweep_dir.name}")
+            except Exception as e:
+                print(f"Error processing {sweep_dir.name}: {str(e)}")
+        print("\nAll visualizations completed!")
+    else:
+        # Process only the latest directory
+        latest_sweep = max(sweep_dirs, key=lambda x: x.stat().st_mtime)
+        print(f"Processing latest run: {latest_sweep.name}")
         try:
-            plot_sweep_results(sweep_dir)
-            print(f"Successfully processed: {sweep_dir.name}")
+            plot_sweep_results(latest_sweep)
+            print(f"Successfully processed latest run")
         except Exception as e:
-            print(f"Error processing {sweep_dir.name}: {str(e)}")
-    
-    print("\nAll visualizations completed!")
+            print(f"Error processing latest run: {str(e)}")

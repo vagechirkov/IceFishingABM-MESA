@@ -21,7 +21,7 @@ def run_parameter_sweep(social_info,study_name, num_resource_clusters = 5,  max_
     RESOURCE_CLUSTER_RADIUS =  resource_radius 
     RESOURCE_QUALITY = 1.0
     D_MIN = 1
-    NUM_ITERATIONS = 10_000
+    NUM_ITERATIONS = 1_0000
     RESOURCE_UNITS  = int(500 / NUM_RESOURCE_CLUSTERS)
     max_sim_steps = max_sim_steps
     threshold = 1  # Or could be made variable if needed
@@ -35,7 +35,7 @@ def run_parameter_sweep(social_info,study_name, num_resource_clusters = 5,  max_
     
     # Create specific run directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    save_dir = base_dir / f'parameter_sweep_{study_name}_clusters{NUM_RESOURCE_CLUSTERS}_steps{max_sim_steps}_{timestamp}'
+    save_dir = base_dir / f'parameter_sweep_{study_name}_clusters{NUM_RESOURCE_CLUSTERS}_radius{RESOURCE_CLUSTER_RADIUS}_steps{max_sim_steps}_{timestamp}'
     save_dir.mkdir(exist_ok=True)
     
     
@@ -138,29 +138,41 @@ def run_parameter_sweep(social_info,study_name, num_resource_clusters = 5,  max_
 
             # Calculate group statistics
             results = agent_metrics.groupby("alpha").agg({
-                "collected_resource": ["mean", "std" , "ci"],
-                "traveled_distance": ["mean", "std", "ci"],
-                "time_to_first_catch": ["mean", "std", "ci"]
+                "collected_resource": ["mean", "std"],
+                "traveled_distance": ["mean", "std"],
+                "time_to_first_catch": ["mean", "std"]
             }).reset_index()
 
             # Append to results_list with proper format
             for _, row in results.iterrows():
                 # Get current alpha value
                 current_alpha = float(row['alpha'])  # Ensure alpha is a single float value
-                n = len(agent_metrics[agent_metrics['alpha'].astype(float) == current_alpha])
+                group_data = agent_metrics[agent_metrics['alpha'].astype(float) == current_alpha]
+                n = len(group_data)
+
+                # Calculate confidence intervals (95% - we can hard code this for now)
+                ci_factor = st.t.ppf(0.975, n-1)  # Two-tailed 95% CI calc. 
     
                 
-                # Calculate means and standard deviations
-                mean_efficiency = float(row["collected_resource"]["mean"] / (row["traveled_distance"]["mean"] + 1e-10))
-                mean_resources = float(row["collected_resource"]["mean"])
-                mean_time = float(row["time_to_first_catch"]["mean"])
+                # Calculate means
+                mean_efficiency = float(group_data['collected_resource'].mean() / (group_data['traveled_distance'].mean() + 1e-10))
+                mean_resources = float(group_data['collected_resource'].mean())
+                mean_time = float(group_data['time_to_first_catch'].mean())
                 
-                # Calcutae std 
+                # Calculate standard deviations
                 std_efficiency = float(row["collected_resource"]["std"] / (row["traveled_distance"]["std"] + 1e-10))
                 std_resources = float(row["collected_resource"]["std"])
                 std_time = float(row["time_to_first_catch"]["std"])
                 
-                # calcuate confidence interval 
+                # Calculate standard errors
+                se_efficiency = std_efficiency / np.sqrt(n)
+                se_resources = std_resources / np.sqrt(n)
+                se_time = std_time / np.sqrt(n)
+
+                # Calculate confidence intervals
+                ci_efficiency = se_efficiency * ci_factor
+                ci_resources = se_resources * ci_factor
+                ci_time = se_time * ci_factor
 
                 results_list.append({
                     "mu": float(mu),
@@ -171,9 +183,12 @@ def run_parameter_sweep(social_info,study_name, num_resource_clusters = 5,  max_
                     "std_efficiency": std_efficiency,
                     "std_resources": std_resources,
                     "std_time_to_first": std_time,
-                    "se_efficiency": std_efficiency / np.sqrt(n),
-                    "se_resources": std_resources / np.sqrt(n),
-                    "se_time_to_first": std_time / np.sqrt(n)
+                    "se_efficiency": se_efficiency,
+                    "se_resources": se_resources,
+                    "se_time_to_first": se_time,
+                    "ci_efficiency": ci_efficiency,
+                    "ci_resources": ci_resources,
+                    "ci_time": ci_timew
                 })
     # Save results
     results_df = pd.DataFrame(results_list)
@@ -208,8 +223,8 @@ def run_parameter_sweep(social_info,study_name, num_resource_clusters = 5,  max_
 
 if __name__ == "__main__":
     social_info = "filtering"  
-    RESOURCE_RADIUS_PARAMS = [1,2,5] 
-    NUMBER_CLUSTERS_LIST = [1, 5 , 10, 20]  
+    RESOURCE_RADIUS_PARAMS = [2, 5] 
+    NUMBER_CLUSTERS_LIST = [1, 5,10]  
     STEPS_LIST = [100_000]
     #social_info = "all-agents"
     for RESOURCE_RADIUS_PARAM in RESOURCE_RADIUS_PARAMS:
@@ -223,9 +238,9 @@ if __name__ == "__main__":
                 print("-" * 50)
 
                 if social_info == "all-agents":
-                    save_dir = run_parameter_sweep(social_info, "rw_default_all_agents", NUMBER_CLUSTERS, STEPS)
+                    save_dir = run_parameter_sweep(social_info, "rw_default_all_agents", NUMBER_CLUSTERS, STEPS, RESOURCE_RADIUS_PARAM)
                 elif social_info == "filtering": 
-                    save_dir = run_parameter_sweep(social_info, "rw_default_filtering", NUMBER_CLUSTERS, STEPS)
+                    save_dir = run_parameter_sweep(social_info, "rw_default_filtering", NUMBER_CLUSTERS, STEPS, RESOURCE_RADIUS_PARAM)
                 
                     print(f"\nResults saved in: {save_dir}")
                     print("=" * 50)

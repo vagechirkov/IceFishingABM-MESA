@@ -3,7 +3,7 @@
 .nfs000000000000fdfb0000069e
 param*
 parameter_sweep_*
-
+old_results/
 ## TO DO 
 
 TODO.txt
