@@ -1,6 +1,9 @@
 import mesa
 import numpy as np
-
+from scipy.spatial.distance import cdist
+from numpy.random import default_rng
+import matplotlib.pyplot as plt
+import imageio.v2 as imageio
 
 class Resource(mesa.Agent):
     def __init__(
@@ -129,3 +132,123 @@ def make_resource_centers(
         ):
             centers.append((x, y))
     return tuple(centers)
+
+
+def spatiotemporal_fish_density(
+    rng,
+    length_scale_time=15.0,
+    length_scale_space=1.0,
+    n_x=30,
+    n_y=30,
+    n_time=50,
+    sigma_noise=0.0,
+    n_samples=1,
+    bias=0.0,  # used for sigmoid; larger = less abundance
+    temperature=1.0,  # used for sigmoid; larger = flatter
+):
+    # grids
+    xs = np.linspace(0, n_x, n_x)
+    ys = np.linspace(0, n_y, n_y)
+    ts = np.linspace(0, n_time, n_time)
+
+    # kernels
+    def rbf(d, ell):
+        return np.exp(-0.5 * (d / ell) ** 2)
+
+    # pairwise distances
+    XY = np.array(np.meshgrid(xs, ys, indexing="ij")).reshape(2, -1).T
+    Dxy = cdist(XY, XY, "euclidean")
+    Dt = cdist(ts[:, None], ts[:, None], "euclidean")
+
+    # covariance matrices
+    K_space = rbf(Dxy, length_scale_space)
+    K_time = rbf(Dt, length_scale_time)
+
+    # choleskys
+    Ls = np.linalg.cholesky(K_space + 1e-9 * np.eye(K_space.shape[0]))
+    Lt = np.linalg.cholesky(K_time + 1e-9 * np.eye(K_time.shape[0]))
+
+    # sample fields
+    F = np.zeros((n_samples, n_x, n_y, n_time))
+    for i in range(n_samples):
+        Z = rng.standard_normal((n_x * n_y, n_time))
+        F_i = (Ls @ Z) @ Lt.T
+        if sigma_noise > 0:
+            F_i += sigma_noise * rng.standard_normal(F_i.size)
+
+        # squash to [0,1]
+        F_i = 1.0 / (1.0 + np.exp(-(F_i - bias) / temperature))
+        F[i] = F_i.reshape(n_x, n_y, n_time)
+    return F, xs, ys, ts
+
+
+def make_fish_density_gif(
+    F, xs, ys, ts, sample_idx=0, filename="fish_density.gif", fps=5
+):
+    frames = []
+    field = F[sample_idx]  # shape (n_x, n_y, n_time)
+    vmin, vmax = 0, 1  # field.min(), field.max()  # fix color scale
+
+    for ti, t in enumerate(ts):
+        fig, ax = plt.subplots(figsize=(4, 4))
+        im = ax.imshow(
+            field[:, :, ti].T,
+            origin="lower",
+            extent=[xs.min(), xs.max(), ys.min(), ys.max()],
+            vmin=vmin,
+            vmax=vmax,
+            cmap="viridis",
+        )
+        ax.set_title(f"t = {int(t)} [min]")
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        fig.colorbar(im, ax=ax, shrink=0.8, label="Fish density")
+
+        # save current frame as image buffer
+        fig.canvas.draw()
+        frame = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        frame = frame.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        frames.append(frame)
+
+        plt.close(fig)
+
+    # write gif
+    imageio.mimsave(filename, frames, fps=fps)
+    print(f"GIF saved to {filename}")
+
+
+def bias_for_target_mean(p, sigma=1.0, sigma_n=0.0, temperature=1.0):
+    """Approximate bias to achieve mean abundance p"""
+    if not (0 < p < 1):
+        raise ValueError("p must be in (0,1)")
+    s2 = sigma**2 + sigma_n**2
+    k2 = 1.0 + (np.pi**2 / 3.0) * (s2 / (temperature**2))
+    return -temperature * np.sqrt(k2) * np.log(p / (1.0 - p))
+
+
+if __name__ == "__main__":
+    rng = default_rng(42)
+
+    for t in [0.5, 2]:
+        for b in [0, 2, 4]:
+            fish_density, _xs, _ys, _ts = spatiotemporal_fish_density(
+                rng,
+                length_scale_time=15,
+                length_scale_space=6,
+                n_x=90,
+                n_y=90,
+                n_time=120,
+                n_samples=1,
+                temperature=t,
+                bias=b,
+            )
+            print(f"bias = {b}, abundance={fish_density.mean():.3f}")
+            make_fish_density_gif(
+                fish_density,
+                _xs,
+                _ys,
+                _ts,
+                sample_idx=0,
+                filename=f"fish_t_{t:.1f}_b_{int(b)}.gif",
+                fps=20,
+            )
