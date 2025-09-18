@@ -1,13 +1,6 @@
 import optuna
 import pandas as pd
 import mesa
-
-import sys
-import os
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-# Import SocialInfotaxis-specific models and strategies
 from abm.model import Model as SocialInfotaxisModel
 from abm.exploration_strategy import SocialInfotaxisExplorationStrategy
 from abm.exploitation_strategy import ExploitationStrategy

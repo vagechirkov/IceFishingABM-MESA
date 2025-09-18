@@ -1,6 +1,21 @@
+# cloud files 
+
+.nfs000000000000fdfb0000069e
+param*
+parameter_sweep_*
+old_results/
 ## TO DO 
 
 TODO.txt
+
+## Optuna Database
+best_params.json
+foraging.db
+
+
+## Visualizations from Optuna Study 
+visualizations 
+
 
 ### venv template
 
@@ -994,3 +1009,7 @@ fabric.properties
 *.png
 *_figures
 *.gif
+*.html
+*.db
+*.csv
+*.json

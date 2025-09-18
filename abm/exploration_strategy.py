@@ -226,9 +226,13 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
             delta_d = distances.min()
             self._prob_social = np.exp(-self.alpha * delta_d)
 
-            # With probability prob_social, move to the nearest social cue
-            # i think this should be > instead of < so changed it
-            if np.random.rand() > self._prob_social:
+            # MADE CONSISTENT WITH PAPER . DJ. 3.3.25. 
+            '''
+            We simulated the model for three
+            levels of social selectivity (α = 10−5, , 10−2 , 1 )
+            that correspond with high, intermediate, and no social learning, respectively.
+            '''
+            if np.random.rand() < self._prob_social: # FIXED 
                 self.destination = np.array(nearest_social_loc, dtype=int)
 
         return self.destination

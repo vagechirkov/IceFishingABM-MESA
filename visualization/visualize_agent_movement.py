@@ -18,6 +18,9 @@ def save_agent_movement_gif(
     # Add dotted grid lines
     ax.set_xticks(np.arange(0, model.grid.width + 1, 1))
     ax.set_yticks(np.arange(0, model.grid.height + 1, 1))
+    # remove labels
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
     ax.grid(color="gray", linestyle="--", linewidth=0.5, alpha=0.7)
 
     # Calculate marker size for resources
@@ -40,7 +43,7 @@ def save_agent_movement_gif(
         zorder=2,
     )
     destination_marker = ax.scatter(
-        [], [], s=100, color="black", marker="x", label="Destination", zorder=1
+        [], [], s=0, color="black", marker="x", label="Destination", zorder=1 # Set marker size to 0 for final figures but keeping it as legacy
     )
 
     # Add legends with fixed sizes
