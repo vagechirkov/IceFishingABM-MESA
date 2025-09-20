@@ -12,9 +12,8 @@ source venv/bin/activate
 # install dependencies
 pip install -r requirements.txt
 
-# install dependencies for development (optional)
-pip install -r dev_requirements.txt
-
+# freez only the explicitly installed dependencies
+ pip list --not-required --format=freeze > requirements.txt
 ```
 
 ## Running the Model
