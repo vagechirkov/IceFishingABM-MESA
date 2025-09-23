@@ -206,8 +206,8 @@ def make_fish_density_gif(
 
         # save current frame as image buffer
         fig.canvas.draw()
-        frame = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        frame = frame.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        h, w = fig.canvas.get_width_height()[1], fig.canvas.get_width_height()[0]
+        frame = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8).reshape((h, w, 4))
         frames.append(frame)
 
         plt.close(fig)
@@ -230,7 +230,7 @@ if __name__ == "__main__":
     rng = default_rng(42)
 
     for t in [0.5, 2]:
-        for b in [0, 2, 4]:
+        for b in [0, 1, 2, 4]:
             fish_density, _xs, _ys, _ts = spatiotemporal_fish_density(
                 rng,
                 length_scale_time=15,
