@@ -218,15 +218,16 @@ class Agent(mesa.Agent):
             self._collected_resource_last_spot = 0
             self._time_on_patch = 0
 
-
     def sample_fish_density(self):
         self._total_sampling_time += 1
+        self._is_consuming = False
         j, i = self.pos[0], self.pos[1]
 
         # if catch
         if self.model.sample_fish_density(i, j):
             self._collected_resource += 1
             self._collected_resource_last_spot += 1
+            self._is_consuming = True
         else:
             self._time_since_last_catch += 1
 
@@ -240,7 +241,6 @@ class Agent(mesa.Agent):
                 self.add_failure_loc(self.pos)
 
             self._collected_resource_last_spot = 0
-
 
     def step(self):
         # Update social information at the beginning of each step except the very first
