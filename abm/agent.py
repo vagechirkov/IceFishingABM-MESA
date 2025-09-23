@@ -125,7 +125,7 @@ class Agent(mesa.Agent):
                 self.other_agent_locs - np.array([dx, dy]), axis=1
             )
 
-            if np.any(dists_to_dest <= self._margin_from_others):
+            if dists_to_dest.min() <= self._margin_from_others:
                 for r in [5, 10, 20, 40, 100]:
                     # create a meshgrid around self._destination within distance r
                     xs = np.arange(dx - r, dx + r + 1)

@@ -99,7 +99,7 @@ def save_agent_movement_gif(model, steps, filename="ice_fishing_abm.gif", fps=10
 
         # Update scatter plots
         agent_scatter.set_offsets(np.c_[agent_x, agent_y])
-        agent_scatter.set_color(agent_colors)  # Set individual colors for each agent
+        agent_scatter.set_facecolors(agent_colors)  # Set individual colors for each agent
 
         destination_marker.set_offsets(np.c_[destination_x, destination_y])
 
