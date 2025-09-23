@@ -1013,3 +1013,4 @@ fabric.properties
 *.db
 *.csv
 *.json
+*.svg

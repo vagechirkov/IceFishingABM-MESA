@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF
-from .belief import generate_belief_mean_matrix
+from abm.belief import generate_belief_mean_matrix
 
 
 ### ALGORITHM 1: DEAFULT EXPLORATION STRATEGY
@@ -268,7 +268,7 @@ class GPExplorationStrategy(ExplorationStrategy):
         # Social
         self.social_gpr = GaussianProcessRegressor(
             kernel=RBF(self.social_length_scale),
-            random_state=self.rng,
+            random_state=None,
             optimizer=None,
         )
         self.social_feature_m = np.zeros(grid_shape)
@@ -276,7 +276,7 @@ class GPExplorationStrategy(ExplorationStrategy):
         # Success
         self.success_gpr = GaussianProcessRegressor(
             kernel=RBF(self.success_length_scale),
-            random_state=self.rng,
+            random_state=None,
             optimizer=None,
         )
         self.success_feature_m = np.zeros(grid_shape)
@@ -284,7 +284,7 @@ class GPExplorationStrategy(ExplorationStrategy):
         # Failure
         self.failure_gpr = GaussianProcessRegressor(
             kernel=RBF(self.failure_length_scale),
-            random_state=self.rng,
+            random_state=None,
             optimizer=None,
         )
         self.failure_feature_m = np.zeros(grid_shape)

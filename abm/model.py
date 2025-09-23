@@ -3,10 +3,10 @@ from typing import Union
 import mesa
 import numpy as np
 
-from .exploitation_strategy import ExploitationStrategy, IceFishingExploitationStrategy
-from .exploration_strategy import ExplorationStrategy, GPExplorationStrategy
-from .resource import Resource, make_resource_centers
-from .agent import Agent
+from abm.exploitation_strategy import ExploitationStrategy, IceFishingExploitationStrategy
+from abm.exploration_strategy import ExplorationStrategy, GPExplorationStrategy
+from abm.resource import Resource, make_resource_centers
+from abm.agent import Agent
 
 
 class Model(mesa.Model):
@@ -148,12 +148,12 @@ class IceFishingModel(mesa.Model):
             self,
             grid_size: int = 100,
             number_of_agents: int = 5,
-            fish_densities: np.ndarray = None,
+            fish_density: np.ndarray = None,
     ):
         super().__init__()
         self.grid_size = grid_size
         self.num_agents = number_of_agents
-        self.fish_densities = fish_densities
+        self.fish_density = fish_density
 
         # initialize exploration and exploitation models
         exploration_strategy = GPExplorationStrategy(
@@ -175,15 +175,12 @@ class IceFishingModel(mesa.Model):
             # rng
         )
 
-        self.grid = mesa.discrete_space.OrthogonalMooreGrid((grid_size, grid_size), torus=False)
-        self.datacollector = mesa.datacollection.DataCollector()
+        self.grid = mesa.space.MultiGrid(grid_size, grid_size, False)
 
         Agent.create_agents(
             self,
             self.num_agents,
-            cell=self.rng.choice(
-                self.grid.all_cells, replace=False, size=self.num_agents
-            ),
+            initial_position=(grid_size // 2, grid_size// 2),
             exploration_strategy=exploration_strategy,
             exploitation_strategy=exploitation_strategy,
             speed_m_per_min=15.0,
@@ -192,10 +189,16 @@ class IceFishingModel(mesa.Model):
             resource_cluster_radius=None
         )
 
+        self.datacollector = mesa.datacollection.DataCollector(
+            model_reporters={
+                "avg_catch_rate": lambda m: np.mean([a.collected_resource for a in m.agents]) / m.steps,
+            }
+        )
+
     def sample_fish_density(self, i, j):
         """Return True if a fish is caught, False otherwise."""
         # TODO: implement constant depletion rate
-        p_catch = self.fish_densities[int(i), int(j), self.steps - 1]
+        p_catch = self.fish_density[int(i), int(j), self.steps - 1]
         return np.random.random() < p_catch
 
     def step(self):

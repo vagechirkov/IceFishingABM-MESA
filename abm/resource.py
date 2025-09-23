@@ -1,7 +1,6 @@
 import mesa
 import numpy as np
 from scipy.spatial.distance import cdist
-from numpy.random import default_rng
 import matplotlib.pyplot as plt
 import imageio.v2 as imageio
 
@@ -227,7 +226,7 @@ def bias_for_target_mean(p, sigma=1.0, sigma_n=0.0, temperature=1.0):
 
 
 if __name__ == "__main__":
-    rng = default_rng(42)
+    rng = np.random.default_rng(42)
 
     for t in [0.5, 2]:
         for b in [0, 1, 2, 4]:

@@ -1,16 +1,17 @@
 from typing import Union
-import mesa
 import numpy as np
+import mesa
 from scipy.spatial.distance import pdist
 
-from .resource import Resource
-from .utils import ij2xy, xy2ij
+from abm.resource import Resource
+from abm.utils import ij2xy, xy2ij
 
 
 class Agent(mesa.Agent):
     def __init__(
         self,
         model,
+        initial_position: tuple,
         exploration_strategy,
         exploitation_strategy,
         speed_m_per_min: float = 1.0,  # 15.0,
@@ -19,6 +20,8 @@ class Agent(mesa.Agent):
         resource_cluster_radius = None
     ):
         super().__init__(model)
+        self.model.grid.place_agent(self, initial_position)
+
         # Parameters
         self.exploitation_strategy = exploitation_strategy
         self.exploration_strategy = exploration_strategy
@@ -52,8 +55,6 @@ class Agent(mesa.Agent):
         self._total_consuming_time: int = 0    # Total time spent consuming
         self._cluster_catches: int = 0  # Number of successful catches in clusters
         self._last_catch_pos = None     # Track last catch position
-
-        
 
     @property
     def is_moving(self):
@@ -242,8 +243,9 @@ class Agent(mesa.Agent):
 
 
     def step(self):
-        # Update social information at the beginning of each step
-        self.add_other_agent_locs()
+        # Update social information at the beginning of each step except the very first
+        if self.model.steps > 1:
+            self.add_other_agent_locs()
 
         if self._is_moving and not self._is_sampling:
             self.move()
@@ -281,7 +283,7 @@ class Agent(mesa.Agent):
         if self.social_info_quality is None:
             return
         
-        other_agents = self.model.schedule.agents
+        other_agents = self.model.agents
         other_agents = [agent for agent in other_agents if
                         isinstance(agent, Agent) and (agent.unique_id != self.unique_id)]
 
