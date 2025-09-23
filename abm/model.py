@@ -3,8 +3,8 @@ from typing import Union
 import mesa
 import numpy as np
 
-from .exploitation_strategy import ExploitationStrategy
-from .exploration_strategy import ExplorationStrategy
+from .exploitation_strategy import ExploitationStrategy, IceFishingExploitationStrategy
+from .exploration_strategy import ExplorationStrategy, GPExplorationStrategy
 from .resource import Resource, make_resource_centers
 from .agent import Agent
 
@@ -142,3 +142,39 @@ class Model(mesa.Model):
             print(f"Resources consumed: {self.total_consumed_resource} ({(self.total_consumed_resource/self.total_initial_resource)*100:.1f}%)")
             self.running = False
             
+
+class IceFishingModel(mesa.Model):
+    def __init__(
+            self,
+            grid_size: int = 100,
+            number_of_agents: int = 5,
+            fish_densities: np.ndarray = None,
+    ):
+        super().__init__()
+        self.grid_size = grid_size
+        self.num_agents = number_of_agents
+        self.fish_densities = fish_densities
+        exploration_strategy = GPExplorationStrategy()
+        exploitation_strategy = IceFishingExploitationStrategy(step_minutes=1.0)
+
+        self.grid = mesa.discrete_space.OrthogonalMooreGrid((grid_size, grid_size), torus=False)
+        self.datacollector = mesa.datacollection.DataCollector()
+
+        Agent.create_agents(
+            self,
+            self.num_agents,
+            cell=self.rng.choice(
+                self.grid.all_cells, replace=False, size=self.num_agents
+            ),
+            exploration_strategy=exploration_strategy,
+            exploitation_strategy=exploitation_strategy,
+        )
+
+    def sample_fish_density(self, i, j):
+        """Return True if a fish is caught, False otherwise."""
+        p_catch = self.fish_densities[int(i), int(j), self.steps - 1]
+        return np.random.random() < p_catch
+
+    def step(self):
+        self.agents.shuffle_do("step")
+        self.datacollector.collect(self)

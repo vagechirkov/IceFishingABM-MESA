@@ -15,8 +15,8 @@ class Agent(mesa.Agent):
         model,
         resource_cluster_radius,
         social_info_quality,
-        exploration_strategy: ExplorationStrategy,
-        exploitation_strategy: ExploitationStrategy,
+        exploration_strategy,
+        exploitation_strategy,
         speed_m_per_min: float = 1.0,  # 15.0,
         margin_from_others: float = 0.0,  # 5.0
     ):
@@ -218,6 +218,30 @@ class Agent(mesa.Agent):
 
             self._collected_resource_last_spot = 0
             self._time_on_patch = 0
+
+
+    def sample_fish_density(self):
+        self._total_sampling_time += 1
+        j, i = self.pos[0], self.pos[1]
+
+        # if catch
+        if self.model.sample_fish_density(i, j):
+            self._collected_resource += 1
+            self._collected_resource_last_spot += 1
+        else:
+            self._time_since_last_catch += 1
+
+        # if decided to leave (not to stay)
+        # NOTE: IceFishingExploitationStrategy
+        if not self.exploitation_strategy.stay_on_patch(self._time_since_last_catch):
+            self._is_sampling = False
+            self._time_since_last_catch = 0
+
+            if self._collected_resource_last_spot == 0:
+                self.add_failure_loc(self.pos)
+
+            self._collected_resource_last_spot = 0
+
 
     def step(self):
         # Update social information at the beginning of each step
