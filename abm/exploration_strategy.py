@@ -248,8 +248,9 @@ class GPExplorationStrategy(ExplorationStrategy):
         w_social: float = 0.4,
         w_success: float = 0.3,
         w_failure: float = 0.3,
-        random_state: int = 0,
-        **kwargs
+        compute_ucb=False,
+        rng=None,
+        **kwargs,
     ):
         super().__init__(**kwargs)
         # parameters for the Gaussian Process Regressors
@@ -259,14 +260,15 @@ class GPExplorationStrategy(ExplorationStrategy):
         self.w_social = w_social
         self.w_success = w_success
         self.w_failure = w_failure
-        self.random_state = random_state
+        self.compute_ucb = compute_ucb
+        self.rng = rng if rng is not None else np.random.default_rng()
 
         # initialize Gaussian Process Regressors
         grid_shape = (self.grid_size, self.grid_size)
         # Social
         self.social_gpr = GaussianProcessRegressor(
             kernel=RBF(self.social_length_scale),
-            random_state=self.random_state,
+            random_state=self.rng,
             optimizer=None,
         )
         self.social_feature_m = np.zeros(grid_shape)
@@ -274,7 +276,7 @@ class GPExplorationStrategy(ExplorationStrategy):
         # Success
         self.success_gpr = GaussianProcessRegressor(
             kernel=RBF(self.success_length_scale),
-            random_state=self.random_state,
+            random_state=self.rng,
             optimizer=None,
         )
         self.success_feature_m = np.zeros(grid_shape)
@@ -282,7 +284,7 @@ class GPExplorationStrategy(ExplorationStrategy):
         # Failure
         self.failure_gpr = GaussianProcessRegressor(
             kernel=RBF(self.failure_length_scale),
-            random_state=self.random_state,
+            random_state=self.rng,
             optimizer=None,
         )
         self.failure_feature_m = np.zeros(grid_shape)
@@ -309,19 +311,22 @@ class GPExplorationStrategy(ExplorationStrategy):
         self.belief_m = (
             self.w_social * self.social_feature_m
             + self.w_success * self.success_feature_m
-            - self.w_failure * self.failure_feature_m
+            + self.w_failure * self.failure_feature_m
         )
 
-        self.belief_std = np.sqrt(
-            self.w_social**2 * self.social_feature_std**2
-            + self.w_success**2 * self.success_feature_std**2
-            + self.w_failure**2 * self.failure_feature_std**2
-        )
+        if self.compute_ucb:
+            self.belief_std = np.sqrt(
+                self.w_social**2 * self.social_feature_std**2
+                + self.w_success**2 * self.success_feature_std**2
+                + self.w_failure**2 * self.failure_feature_std**2
+            )
+            belief = self.belief_m + self.ucb_beta * self.belief_std
+            self.belief_ucb = belief
+        else:
+            belief = self.belief_m
 
-        self.belief_ucb = self.belief_m + self.ucb_beta * self.belief_std
-
-        self.belief_softmax = np.exp(self.belief_ucb / self.softmax_tau) / np.sum(
-            np.exp(self.belief_ucb / self.softmax_tau)
+        self.belief_softmax = np.exp(belief / self.softmax_tau) / np.sum(
+            np.exp(belief / self.softmax_tau)
         )
 
     def choose_destination(
@@ -372,14 +377,12 @@ class GPExplorationStrategy(ExplorationStrategy):
         self._compute_beliefs()
 
         self.destination = self.mesh[
-            np.random.choice(self.mesh_indices, p=self.belief_softmax.reshape(-1)), :
+            self.rng.choice(self.mesh_indices, p=self.belief_softmax.reshape(-1)), :
         ]
         return self.destination
 
 
 # ALGORITHM 4: SOCIAL INFOTAXIS EXPLORATION STRATEGY
-
-
 class SocialInfotaxisExplorationStrategy(ExplorationStrategy):
     """
     Implementation of the Social Infotaxis Exploration Strategy.

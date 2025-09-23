@@ -154,8 +154,26 @@ class IceFishingModel(mesa.Model):
         self.grid_size = grid_size
         self.num_agents = number_of_agents
         self.fish_densities = fish_densities
-        exploration_strategy = GPExplorationStrategy()
-        exploitation_strategy = IceFishingExploitationStrategy(step_minutes=1.0)
+
+        # initialize exploration and exploitation models
+        exploration_strategy = GPExplorationStrategy(
+            grid_size=self.grid_size,
+            tau=1.0,
+            social_length_scale=25.0,
+            success_length_scale=10.0,
+            failure_length_scale=10.0,
+            w_social=0.5,  # 1
+            w_success=1,  # 2
+            w_failure=-0.5,  # -1
+            compute_ucb=False
+            # rng
+        )
+        exploitation_strategy = IceFishingExploitationStrategy(
+            step_minutes=1.0,
+            time_weight=0.8,
+            baseline_weight=-5
+            # rng
+        )
 
         self.grid = mesa.discrete_space.OrthogonalMooreGrid((grid_size, grid_size), torus=False)
         self.datacollector = mesa.datacollection.DataCollector()
@@ -168,10 +186,15 @@ class IceFishingModel(mesa.Model):
             ),
             exploration_strategy=exploration_strategy,
             exploitation_strategy=exploitation_strategy,
+            speed_m_per_min=15.0,
+            margin_from_others=5.0,
+            social_info_quality="sampling",
+            resource_cluster_radius=None
         )
 
     def sample_fish_density(self, i, j):
         """Return True if a fish is caught, False otherwise."""
+        # TODO: implement constant depletion rate
         p_catch = self.fish_densities[int(i), int(j), self.steps - 1]
         return np.random.random() < p_catch
 

@@ -3,8 +3,6 @@ import mesa
 import numpy as np
 from scipy.spatial.distance import pdist
 
-from .exploration_strategy import ExplorationStrategy
-from .exploitation_strategy import ExploitationStrategy
 from .resource import Resource
 from .utils import ij2xy, xy2ij
 
@@ -13,12 +11,12 @@ class Agent(mesa.Agent):
     def __init__(
         self,
         model,
-        resource_cluster_radius,
-        social_info_quality,
         exploration_strategy,
         exploitation_strategy,
         speed_m_per_min: float = 1.0,  # 15.0,
         margin_from_others: float = 0.0,  # 5.0
+        social_info_quality = "sampling",
+        resource_cluster_radius = None
     ):
         super().__init__(model)
         # Parameters
@@ -38,6 +36,7 @@ class Agent(mesa.Agent):
         self._collected_resource_last_spot: int = 0
 
         self.resource_cluster_radius = resource_cluster_radius
+
         self.success_locs = np.empty((0, 2))
         self.failure_locs = np.empty((0, 2))
         self.other_agent_locs = np.empty((0, 2))
@@ -91,7 +90,6 @@ class Agent(mesa.Agent):
     @property
     def total_consuming_time(self):
         return self._total_consuming_time
-
 
     @property
     def cluster_catches(self):
@@ -250,7 +248,10 @@ class Agent(mesa.Agent):
         if self._is_moving and not self._is_sampling:
             self.move()
         elif self._is_sampling and not self._is_moving:
-            self.sample()
+            if self.resource_cluster_radius is None:
+                self.sample_fish_density()
+            else:
+                self.sample()
         else:
             # Select a new destination
             self._destination = self.exploration_strategy.choose_destination(
@@ -260,16 +261,8 @@ class Agent(mesa.Agent):
                 other_agent_locs=self.other_agent_locs,
             )
             self._is_moving = True
-
-            # convert destination back to x,y
             self._destination = ij2xy(*self._destination)
-
-            # Calculate euclidean distance to destination using scipy pdist
-            step_size = pdist(np.array([self.pos, self._destination]), "euclidean")[0]
-            self._step_sizes.append(step_size)
-            self._traveled_distance_euclidean += step_size
-            self._traveled_distance_manhattan += pdist(np.array([self.pos, self._destination]), "cityblock")[0]
-
+            self.calculate_step_size()
 
     def add_success_loc(self, loc: tuple):
         self.success_locs = np.vstack(
@@ -314,3 +307,10 @@ class Agent(mesa.Agent):
         # Stack positions if any agents were found
         if len(agents) > 0:
             self.other_agent_locs = np.vstack(agents)
+
+    def calculate_step_size(self):
+        # Calculate euclidean distance to destination using scipy pdist
+        step_size = pdist(np.array([self.pos, self._destination]), "euclidean")[0]
+        self._step_sizes.append(step_size)
+        self._traveled_distance_euclidean += step_size
+        self._traveled_distance_manhattan += pdist(np.array([self.pos, self._destination]), "cityblock")[0]

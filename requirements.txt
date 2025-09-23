@@ -2,9 +2,12 @@ black==24.10.0
 imageio==2.37.0
 jupyter==1.0.0
 Mesa[all]>=2.4
+numpy
+optuna
 plotly==6.3.0
 pytest==8.4.2
 seaborn==0.13.2
+scipy
+sklearn
 svgpath2mpl==1.0.0
 svgpathtools==1.7.1
-optuna
