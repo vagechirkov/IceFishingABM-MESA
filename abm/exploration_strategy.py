@@ -1,6 +1,9 @@
 import numpy as np
+from scipy.special import softmax
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF
+from sklearn.neighbors import KernelDensity
+
 from abm.belief import generate_belief_mean_matrix
 
 
@@ -49,6 +52,19 @@ class ExplorationStrategy:
             assert (
                 input_data.shape[1] == 2
             ), "Input data must have shape (n data points, 2)"
+
+    @staticmethod
+    def _zscore(M):
+        mu = M.mean()
+        sd = M.std()
+        return (M - mu) / sd if sd > 0 else (M - mu)
+
+    @staticmethod
+    def _softmax(logits_flat, tau=1.0):
+        probs = softmax(logits_flat / max(tau, 1e-8))
+        if not np.all(np.isfinite(probs)) or probs.sum() <= 0:
+            probs = np.full_like(probs, 1.0 / probs.size)
+        return probs
 
 
 ### ALGORITHM 2:  RANDOM WALKER EXPLORATION STRATEGY
@@ -239,7 +255,7 @@ class RandomWalkerExplorationStrategy(ExplorationStrategy):
 
 
 ###  ALGORITHM 3: GP EXPLORATION STRATEGY
-class GPExplorationStrategy(ExplorationStrategy):
+class KernelBeliefExploration(ExplorationStrategy):
     def __init__(
         self,
         social_length_scale: float = 12,
@@ -248,7 +264,9 @@ class GPExplorationStrategy(ExplorationStrategy):
         w_social: float = 0.4,
         w_success: float = 0.3,
         w_failure: float = 0.3,
-        compute_ucb=False,
+        model_type="kde",
+        normalize_features=False,
+        w_as_attention_shares=False,
         rng=None,
         **kwargs,
     ):
@@ -260,126 +278,150 @@ class GPExplorationStrategy(ExplorationStrategy):
         self.w_social = w_social
         self.w_success = w_success
         self.w_failure = w_failure
-        self.compute_ucb = compute_ucb
+        self.model_type = model_type.lower()
+        self.normalize_features = normalize_features
         self.rng = rng if rng is not None else np.random.default_rng()
+        if w_as_attention_shares:
+            assert np.allclose(np.sum([self.w_social, self.w_failure, self.w_success]), 1.0)
 
         # initialize Gaussian Process Regressors
         grid_shape = (self.grid_size, self.grid_size)
-        # Social
-        self.social_gpr = GaussianProcessRegressor(
-            kernel=RBF(self.social_length_scale),
-            random_state=None,
-            optimizer=None,
-        )
-        self.social_feature_m = np.zeros(grid_shape)
-        self.social_feature_std = np.zeros(grid_shape)
-        # Success
-        self.success_gpr = GaussianProcessRegressor(
-            kernel=RBF(self.success_length_scale),
-            random_state=None,
-            optimizer=None,
-        )
-        self.success_feature_m = np.zeros(grid_shape)
-        self.success_feature_std = np.zeros((self.grid_size, self.grid_size))
-        # Failure
-        self.failure_gpr = GaussianProcessRegressor(
-            kernel=RBF(self.failure_length_scale),
-            random_state=None,
-            optimizer=None,
-        )
-        self.failure_feature_m = np.zeros(grid_shape)
-        self.failure_feature_std = np.zeros(grid_shape)
 
-        # initialize beliefs
-        self.belief_ucb = None
-        self.belief_m = np.zeros(grid_shape)
-        self.belief_std = np.zeros(grid_shape)
-
-    def _calculate_gp_feature(self, locations, gpr, grid_size):
-
-        if locations.size == 0:
-            feature_m = np.zeros((grid_size, grid_size))
-            feature_std = np.zeros((grid_size, grid_size))
-        else:
-            gpr.fit(locations, np.ones(locations.shape[0]))
-            feature_m, feature_std = generate_belief_mean_matrix(
-                grid_size, gpr, return_std=True
+        if self.model_type == "ucb":
+            # Social
+            self.social_gpr = GaussianProcessRegressor(
+                kernel=RBF(self.social_length_scale),
+                random_state=None,
+                optimizer=None,
             )
-        return feature_m.T, feature_std.T
-
-    def _compute_beliefs(self):
-        self.belief_m = (
-            self.w_social * self.social_feature_m
-            + self.w_success * self.success_feature_m
-            + self.w_failure * self.failure_feature_m
-        )
-
-        if self.compute_ucb:
-            self.belief_std = np.sqrt(
-                self.w_social**2 * self.social_feature_std**2
-                + self.w_success**2 * self.success_feature_std**2
-                + self.w_failure**2 * self.failure_feature_std**2
+            self.social_feature_m = np.zeros(grid_shape)
+            self.social_feature_std = np.zeros(grid_shape)
+            # Success
+            self.success_gpr = GaussianProcessRegressor(
+                kernel=RBF(self.success_length_scale),
+                random_state=None,
+                optimizer=None,
             )
-            belief = self.belief_m + self.ucb_beta * self.belief_std
-            self.belief_ucb = belief
+            self.success_feature_m = np.zeros(grid_shape)
+            self.success_feature_std = np.zeros((self.grid_size, self.grid_size))
+            # Failure
+            self.failure_gpr = GaussianProcessRegressor(
+                kernel=RBF(self.failure_length_scale),
+                random_state=None,
+                optimizer=None,
+            )
+            self.failure_feature_m = np.zeros(grid_shape)
+            self.failure_feature_std = np.zeros(grid_shape)
+        elif self.model_type == "kde":
+            self.social_feature_kde = np.zeros(grid_shape)
+            self.success_feature_kde = np.zeros(grid_shape)
+            self.failure_feature_kde = np.zeros(grid_shape)
         else:
-            belief = self.belief_m
-
-        self.belief_softmax = np.exp(belief / self.softmax_tau) / np.sum(
-            np.exp(belief / self.softmax_tau)
-        )
+            raise NotImplementedError
 
     def choose_destination(
-        self, *,
+        self,
+        *,
         current_position=np.empty((0, 2)),
         success_locs=np.empty((0, 2)),
         failure_locs=np.empty((0, 2)),
         other_agent_locs=np.empty((0, 2)),
     ):
-        """
-
-        Choose exploration destination using the GP model.
-
-        Parameters:
-        ----------
-        current_position : tuple
-            Current position of the agent (x, y).
-        success_locs : np.ndarray
-            Array of successful resource locations visited by the agent.
-        failure_locs : np.ndarray
-            Array of failed resource locations visited by the agent.
-        other_agent_locs : np.ndarray
-            Array of locations of other agents.
-
-        Returns:
-        -------
-        np.ndarray
-            Selected destination (x, y).
-        """
+        """Choose an exploration destination based on KDE or GP-UCB beliefs."""
 
         # make sure all inputs are in the correct format
         self._check_input(success_locs)
         self._check_input(failure_locs)
         self._check_input(other_agent_locs)
 
+        if self.model_type == "kde":
+            belief = self._compute_kde_beliefs(
+                other_agent_locs, success_locs, failure_locs
+            )
+        elif self.model_type == "ucb":
+            belief = self._compute_ucb_beliefs(
+                other_agent_locs, success_locs, failure_locs
+            )
+        else:
+            raise NotImplementedError
+
+        self.belief_softmax = self._softmax(belief, tau=self.softmax_tau)
+        idx = self.rng.choice(self.mesh_indices, p=self.belief_softmax.reshape(-1))
+        self.destination = self.mesh[idx, :]
+        return self.destination
+
+    def _compute_ucb_beliefs(self, _social_locs, _success_locs, _failure_locs):
         self.social_feature_m, self.social_feature_std = self._calculate_gp_feature(
-            other_agent_locs, self.social_gpr, self.grid_size
+            _social_locs, self.social_gpr, self.grid_size
         )
 
         self.success_feature_m, self.success_feature_std = self._calculate_gp_feature(
-            success_locs, self.success_gpr, self.grid_size
+            _success_locs, self.success_gpr, self.grid_size
         )
 
         self.failure_feature_m, self.failure_feature_std = self._calculate_gp_feature(
-            failure_locs, self.failure_gpr, self.grid_size
+            _failure_locs, self.failure_gpr, self.grid_size
         )
 
-        self._compute_beliefs()
+        # optional per-feature standardization
+        if self.normalize_features:
+            self.social_feature_m  = self._zscore(self.social_feature_m)
+            self.success_feature_m = self._zscore(self.success_feature_m)
+            self.failure_feature_m = self._zscore(self.failure_feature_m)
 
-        self.destination = self.mesh[
-            self.rng.choice(self.mesh_indices, p=self.belief_softmax.reshape(-1)), :
-        ]
-        return self.destination
+        self.belief_m = (
+                self.w_social * self.social_feature_m
+                + self.w_success * self.success_feature_m
+                + self.w_failure * self.failure_feature_m
+        )
+
+        self.belief_std = np.sqrt(
+            self.w_social**2 * self.social_feature_std**2
+            + self.w_success**2 * self.success_feature_std**2
+            + self.w_failure**2 * self.failure_feature_std**2
+        )
+
+        return self.belief_m + self.ucb_beta * self.belief_std
+
+    def _calculate_gp_feature(self, locations, gpr, grid_size):
+        if locations.size == 0:
+            feature_m = np.zeros((grid_size, grid_size))
+            feature_std = np.zeros((grid_size, grid_size))
+            return feature_m.T, feature_std.T
+
+        gpr.fit(locations, np.ones(locations.shape[0]))
+        feature_m, feature_std = gpr.predict(self.mesh, return_std=True)
+
+        feature_m  = feature_m.reshape(grid_size, grid_size)
+        feature_std =  feature_std.reshape(grid_size, grid_size)
+
+        return feature_m.T, feature_std.T
+
+    def _compute_kde_beliefs(self, _social_locs, _success_locs, _failure_locs):
+        self.social_feature_kde  = self._calculate_kde_feature(_social_locs,  self.social_length_scale)
+        self.success_feature_kde = self._calculate_kde_feature(_success_locs, self.success_length_scale)
+        self.failure_feature_kde = self._calculate_kde_feature(_failure_locs, self.failure_length_scale)
+
+        if self.normalize_features:
+            self.social_feature_kde  = self._zscore(self.social_feature_kde)
+            self.success_feature_kde = self._zscore(self.success_feature_kde)
+            self.failure_feature_kde = self._zscore(self.failure_feature_kde)
+
+        belief = (
+                self.w_social  * self.social_feature_kde
+                + self.w_success * self.success_feature_kde
+                - self.w_failure * self.failure_feature_kde
+        )
+        return belief
+
+    def _calculate_kde_feature(self, locations, length_scale):
+        if locations.size == 0:
+            return np.zeros((self.grid_size, self.grid_size))
+
+        kde = KernelDensity(kernel="gaussian", bandwidth=length_scale)
+        kde.fit(locations)
+        log_dens = kde.score_samples(self.mesh)
+        return np.exp(log_dens).reshape(self.grid_size, self.grid_size).T
 
 
 # ALGORITHM 4: SOCIAL INFOTAXIS EXPLORATION STRATEGY
@@ -545,3 +587,104 @@ class SocialInfotaxisExplorationStrategy(ExplorationStrategy):
                 x, y = loc
                 self.belief[x, y] += 1  # Boost belief at other agents' locations
             self.belief /= np.sum(self.belief)  # Normalize the belief distribution
+
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    _rng = np.random.default_rng(42)
+
+    grid_size = 90
+    exploration_strategy = KernelBeliefExploration(
+        grid_size=grid_size,
+        tau=0.5,
+        social_length_scale=25.0,
+        success_length_scale=10.0,
+        failure_length_scale=10.0,
+        w_social=0.25,  # 1
+        w_success=0.5,  # 2
+        w_failure=0.25,  # -1
+        w_as_attention_shares=True,
+        model_type="kde",
+        normalize_features=True,
+        rng=_rng
+    )
+
+    current_position = np.array([[grid_size/2, grid_size/2]], dtype=float)
+
+    def rand_locs(n):
+        return _rng.integers(0, grid_size, size=(n, 2), endpoint=False, dtype=np.int64).astype(float)
+
+    other_agent_locs = rand_locs(5)
+    success_locs = rand_locs(5)
+    failure_locs = rand_locs(5)
+
+    exploration_strategy.softmax_tau = 0.1
+    dest = exploration_strategy.choose_destination(
+        current_position=current_position,
+        success_locs=success_locs,
+        failure_locs=failure_locs,
+        other_agent_locs=other_agent_locs,
+    )
+
+    exploration_strategy.softmax_tau = 1.0
+    _ = exploration_strategy.choose_destination(
+        current_position=current_position,
+        success_locs=success_locs,
+        failure_locs=failure_locs,
+        other_agent_locs=other_agent_locs,
+    )
+
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10), constrained_layout=True)
+    extent = (0, grid_size, 0, grid_size)
+
+    panels = [
+        (
+            "Social feature (others)",
+            exploration_strategy.social_feature_kde,
+            other_agent_locs,
+        ),
+        ("Success feature", exploration_strategy.success_feature_kde, success_locs),
+        ("Failure feature", exploration_strategy.failure_feature_kde, failure_locs),
+        ("Softmax (weighted sum)", exploration_strategy.belief_softmax, None),
+    ]
+
+    for n, (ax, (title, field, pts)) in enumerate(zip(axes.flat, panels)):
+        if n != 3:
+            im = ax.imshow(
+                field,
+                origin="lower",
+                extent=extent,
+                interpolation="nearest",
+                vmin=-5,
+                vmax=5,
+                cmap="PuOr"
+            )
+        else:
+            im = ax.imshow(
+                field, origin="lower", extent=extent, interpolation="nearest",
+                cmap="cividis"
+            )
+        ax.set_title(title)
+        ax.set_xlim(0, grid_size); ax.set_ylim(0, grid_size)
+        ax.set_xlabel("x"); ax.set_ylabel("y")
+
+        if pts is not None and pts.size:
+            ax.scatter(
+                pts[:, 1], pts[:, 0],
+                s=36, facecolors="none",
+                edgecolors="#1b9e77",  # "white",
+                linewidths=1.2,
+                label="obs"
+            )
+
+        ax.scatter(current_position[0, 1], current_position[0, 0],
+                   s=60, marker="o", facecolors="none", edgecolors="black",
+                   linewidths=1.2, label="agent")
+        ax.scatter(dest[0], dest[1],
+                   s=90, marker="*", facecolors="red", edgecolors="black",
+                   linewidths=1.0, label="destination")
+
+        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+        ax.legend(loc="upper right", frameon=True, fontsize=9)
+
+    plt.show()
