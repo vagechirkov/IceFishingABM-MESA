@@ -55,6 +55,9 @@ class Agent(mesa.Agent):
         self._total_consuming_time: int = 0    # Total time spent consuming
         self._cluster_catches: int = 0  # Number of successful catches in clusters
         self._last_catch_pos = None     # Track last catch position
+        self._sampling_time_current_spot: int = 0
+        self._time_sampling_successful_spots: int = 0
+        self._time_sampling_failure_spots: int = 0
 
     @property
     def is_moving(self):
@@ -95,6 +98,22 @@ class Agent(mesa.Agent):
     @property
     def cluster_catches(self):
         return self._cluster_catches
+
+    @property
+    def n_successful_locations(self):
+        return self.success_locs.shape[0]
+
+    @property
+    def n_failure_locations(self):
+        return self.failure_locs.shape[0]
+
+    @property
+    def time_sampling_successful_spots(self):
+        return self._time_sampling_successful_spots
+
+    @property
+    def time_sampling_failure_spots(self):
+        return self._time_sampling_failure_spots
 
     def move(self):
         """
@@ -220,6 +239,7 @@ class Agent(mesa.Agent):
 
     def sample_fish_density(self):
         self._total_sampling_time += 1
+        self._sampling_time_current_spot += 1
         self._is_consuming = False
         j, i = self.pos[0], self.pos[1]
 
@@ -239,8 +259,13 @@ class Agent(mesa.Agent):
 
             if self._collected_resource_last_spot == 0:
                 self.add_failure_loc(self.pos)
+                self._time_sampling_failure_spots += self._sampling_time_current_spot
+            else:
+                self.add_success_loc(self.pos)
+                self._time_sampling_successful_spots += self._sampling_time_current_spot
 
             self._collected_resource_last_spot = 0
+            self._sampling_time_current_spot = 0
 
     def step(self):
         # Update social information at the beginning of each step except the very first
@@ -263,7 +288,7 @@ class Agent(mesa.Agent):
                 other_agent_locs=self.other_agent_locs,
             )
             self._is_moving = True
-            self._destination = ij2xy(*self._destination)
+            # self._destination = ij2xy(*self._destination)
             self.calculate_step_size()
 
     def add_success_loc(self, loc: tuple):

@@ -4,8 +4,8 @@ import mesa
 import numpy as np
 
 from abm.exploitation_strategy import ExploitationStrategy, IceFishingExploitationStrategy
-from abm.exploration_strategy import ExplorationStrategy, GPExplorationStrategy
-from abm.resource import Resource, make_resource_centers
+from abm.exploration_strategy import ExplorationStrategy, KernelBeliefExploration
+from abm.resource import Resource, make_resource_centers, spatiotemporal_fish_density
 from abm.agent import Agent
 
 
@@ -145,34 +145,84 @@ class Model(mesa.Model):
 
 class IceFishingModel(mesa.Model):
     def __init__(
-            self,
-            grid_size: int = 100,
-            number_of_agents: int = 5,
-            fish_density: np.ndarray = None,
+        self,
+        grid_size: int = 100,
+        number_of_agents: int = 5,
+        simulation_length: int = 120,
+        steps_per_minute: int = 6,
+        fish_length_scale_minutes: float = 15.0,
+        fish_length_scale_meters: float = 15.0,
+        fish_abundance: float = 1.0,
+        fish_density_sharpness: float = 0.5,
+        spot_leaving_time_weight: float = 0.8,
+        spot_selection_tau: float = 1.0,
+        spot_selection_social_length_scale: float = 25.0,
+        spot_selection_success_length_scale: float = 10.0,
+        spot_selection_failure_length_scale: float = 10.0,
+        spot_selection_w_social: float = 0.25,
+        spot_selection_w_success: float = 0.5,
+        spot_selection_w_failure: float = 0.25,
+        agent_speed_m_per_min: float = 15.0,
+        agent_margin_from_others: float = 5.0,
     ):
         super().__init__()
         self.grid_size = grid_size
+        self.simulation_length = simulation_length
         self.num_agents = number_of_agents
-        self.fish_density = fish_density
+        self.steps_per_minute = steps_per_minute
+
+        self.fish_length_scale_minutes = fish_length_scale_minutes
+        self.fish_length_scale_meters = fish_length_scale_meters
+        self.fish_abundance = fish_abundance
+        self.fish_density_sharpness = fish_density_sharpness
+
+        self.spot_leaving_time_weight = spot_leaving_time_weight
+
+        self.spot_selection_tau = spot_selection_tau
+        self.spot_selection_social_length_scale = spot_selection_social_length_scale
+        self.spot_selection_success_length_scale = spot_selection_success_length_scale
+        self.spot_selection_failure_length_scale = spot_selection_failure_length_scale
+        self.spot_selection_w_social = spot_selection_w_social
+        self.spot_selection_w_success = spot_selection_w_success
+        self.spot_selection_w_failure = spot_selection_w_failure
+
+        self.agent_speed_m_per_min = agent_speed_m_per_min
+        self.agent_margin_from_others = agent_margin_from_others
+
+        fish_density, _, _, _ = spatiotemporal_fish_density(
+            length_scale_time=self.fish_length_scale_minutes,
+            length_scale_space=self.fish_length_scale_meters,
+            n_x=self.grid_size,
+            n_y=self.grid_size,
+            n_time=simulation_length,
+            n_samples=1,
+            temperature=self.fish_density_sharpness,
+            bias=self.fish_abundance,
+            # rng=self.rng
+        )
+        self.fish_density = fish_density[0]
 
         # initialize exploration and exploitation models
-        exploration_strategy = GPExplorationStrategy(
-            grid_size=self.grid_size,
-            tau=1.0,
-            social_length_scale=25.0,
-            success_length_scale=10.0,
-            failure_length_scale=10.0,
-            w_social=0.5,  # 1
-            w_success=1,  # 2
-            w_failure=-0.5,  # -1
-            compute_ucb=False
-            # rng
-        )
         exploitation_strategy = IceFishingExploitationStrategy(
-            step_minutes=1.0,
+            step_minutes=1 / self.steps_per_minute,
             time_weight=0.8,
-            baseline_weight=-5
-            # rng
+            baseline_weight=-5,
+            # rng=self.rng
+        )
+
+        exploration_strategy = KernelBeliefExploration(
+            grid_size=self.grid_size,
+            tau=self.spot_selection_tau,
+            social_length_scale=self.spot_selection_social_length_scale,
+            success_length_scale=self.spot_selection_success_length_scale,
+            failure_length_scale=self.spot_selection_failure_length_scale,
+            w_social=self.spot_selection_w_social,
+            w_success=self.spot_selection_w_success,
+            w_failure=self.spot_selection_w_failure,
+            w_as_attention_shares=True,
+            model_type="kde",
+            normalize_features=True,
+            # rng=self.rng
         )
 
         self.grid = mesa.space.MultiGrid(grid_size, grid_size, False)
@@ -183,15 +233,30 @@ class IceFishingModel(mesa.Model):
             initial_position=(grid_size // 2, grid_size// 2),
             exploration_strategy=exploration_strategy,
             exploitation_strategy=exploitation_strategy,
-            speed_m_per_min=15.0,
-            margin_from_others=5.0,
+            speed_m_per_min=self.agent_speed_m_per_min,
+            margin_from_others=self.agent_margin_from_others,
             social_info_quality="sampling",
             resource_cluster_radius=None
         )
 
         self.datacollector = mesa.datacollection.DataCollector(
             model_reporters={
-                "avg_catch_rate": lambda m: np.mean([a.collected_resource for a in m.agents]) / m.steps,
+                "catch": lambda m: np.mean([a.collected_resource for a in m.agents]),
+                "travel_distance": lambda m: np.mean(
+                    [a.traveled_distance_euclidean for a in m.agents]
+                ),
+                "successful_locations": lambda m: np.mean(
+                    [a.n_successful_locations for a in m.agents]
+                ),
+                "failure_locations": lambda m: np.mean(
+                    [a.n_failure_locations for a in m.agents]
+                ),
+                "sampling_time_successful_spot": lambda m: np.mean(
+                    [a.time_sampling_successful_spots for a in m.agents]
+                ) / self.steps_per_minute,
+                "sampling_time_failure_spot": lambda m: np.mean(
+                    [a.time_sampling_failure_spots for a in m.agents]
+                ) / self.steps_per_minute,
             }
         )
 
@@ -202,5 +267,6 @@ class IceFishingModel(mesa.Model):
         return np.random.random() < p_catch
 
     def step(self):
+        assert self.steps <= self.simulation_length
         self.agents.shuffle_do("step")
         self.datacollector.collect(self)
