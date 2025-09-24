@@ -14,7 +14,7 @@ class Agent(mesa.Agent):
         initial_position: tuple,
         exploration_strategy,
         exploitation_strategy,
-        speed_m_per_min: float = 1.0,  # 15.0,
+        speed_m_per_step: float = 1.0,  # 15.0,
         margin_from_others: float = 0.0,  # 5.0
         social_info_quality = "sampling",
         resource_cluster_radius = None
@@ -26,7 +26,7 @@ class Agent(mesa.Agent):
         self.exploitation_strategy = exploitation_strategy
         self.exploration_strategy = exploration_strategy
         self.social_info_quality = social_info_quality
-        self._move_budget = speed_m_per_min
+        self._move_budget = speed_m_per_step
         self._margin_from_others = margin_from_others
 
         # State variables

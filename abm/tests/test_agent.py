@@ -54,7 +54,7 @@ def setup_random_walk_agent():
         social_info_quality="sampling",
         exploration_strategy=exploration_strategy,
         exploitation_strategy=exploitation_strategy,
-        speed_m_per_min=1,
+        speed_m_per_step=1,
         margin_from_others=0,
     )
 

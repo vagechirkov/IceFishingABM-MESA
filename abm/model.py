@@ -148,10 +148,10 @@ class IceFishingModel(mesa.Model):
         self,
         grid_size: int = 100,
         number_of_agents: int = 5,
-        simulation_length: int = 120,
+        simulation_length_minutes: int = 120,  # minutes
         steps_per_minute: int = 6,
         fish_length_scale_minutes: float = 15.0,
-        fish_length_scale_meters: float = 15.0,
+        fish_length_scale_meters: float = 6.0,
         fish_abundance: float = 1.0,
         fish_density_sharpness: float = 0.5,
         spot_leaving_time_weight: float = 0.8,
@@ -167,9 +167,10 @@ class IceFishingModel(mesa.Model):
     ):
         super().__init__()
         self.grid_size = grid_size
-        self.simulation_length = simulation_length
+        self.simulation_length_minutes = simulation_length_minutes
         self.num_agents = number_of_agents
         self.steps_per_minute = steps_per_minute
+        self.steps_min = 0
 
         self.fish_length_scale_minutes = fish_length_scale_minutes
         self.fish_length_scale_meters = fish_length_scale_meters
@@ -194,7 +195,7 @@ class IceFishingModel(mesa.Model):
             length_scale_space=self.fish_length_scale_meters,
             n_x=self.grid_size,
             n_y=self.grid_size,
-            n_time=simulation_length,
+            n_time=self.simulation_length_minutes,
             n_samples=1,
             temperature=self.fish_density_sharpness,
             bias=self.fish_abundance,
@@ -233,7 +234,7 @@ class IceFishingModel(mesa.Model):
             initial_position=(grid_size // 2, grid_size// 2),
             exploration_strategy=exploration_strategy,
             exploitation_strategy=exploitation_strategy,
-            speed_m_per_min=self.agent_speed_m_per_min,
+            speed_m_per_step=self.agent_speed_m_per_min / self.steps_per_minute,
             margin_from_others=self.agent_margin_from_others,
             social_info_quality="sampling",
             resource_cluster_radius=None
@@ -263,10 +264,11 @@ class IceFishingModel(mesa.Model):
     def sample_fish_density(self, i, j):
         """Return True if a fish is caught, False otherwise."""
         # TODO: implement constant depletion rate
-        p_catch = self.fish_density[int(i), int(j), self.steps - 1]
+        p_catch = self.fish_density[int(i), int(j), self.steps_min]
         return np.random.random() < p_catch
 
     def step(self):
-        assert self.steps <= self.simulation_length
+        self.steps_min = self.steps // self.steps_per_minute
+        assert self.steps_min <= self.simulation_length_minutes
         self.agents.shuffle_do("step")
         self.datacollector.collect(self)

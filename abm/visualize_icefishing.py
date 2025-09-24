@@ -103,9 +103,10 @@ def save_agent_movement_gif(model, steps, filename="ice_fishing_abm.gif", fps=10
 
         destination_marker.set_offsets(np.c_[destination_x, destination_y])
 
-        fish_im.set_data(model.fish_density[:, :, frame])
+        if (model.steps_min != 0) and (model.steps % model.steps_min == 0):
+            fish_im.set_data(model.fish_density[:, :, model.steps_min])
 
-        ax.set_title(f"Minutes: {frame+1}")
+        ax.set_title(f"Minutes: {model.steps_min}")
         return agent_scatter, destination_marker, fish_im
 
     ani = animation.FuncAnimation(fig, update, frames=steps - 1, interval=200)
@@ -116,12 +117,13 @@ def save_agent_movement_gif(model, steps, filename="ice_fishing_abm.gif", fps=10
 
 if __name__ == "__main__":
     grid_size = 90
-    n_time = 120
+    n_time = (120 - 1) * 6
     rng = np.random.default_rng(42)
 
     _model = IceFishingModel(
         grid_size=grid_size,
         number_of_agents=5,
+        spot_selection_tau=0.1
     )
 
-    save_agent_movement_gif(_model, n_time, fps=5)
+    save_agent_movement_gif(_model, n_time, fps=10)
