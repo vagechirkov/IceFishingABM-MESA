@@ -24,7 +24,7 @@ def save_agent_movement_gif(model, steps, filename="ice_fishing_abm.gif", fps=10
     ax.set_yticklabels([])
     # ax.grid(color="gray", linestyle="-", linewidth=0.1, alpha=0.2)
 
-    # Initialize background heatmap (fish density) # NEW
+    # Initialize background heatmap (fish density)
     fish_im = ax.imshow(
         model.fish_density[:, :, 0],  # first time slice
         origin="lower",
@@ -115,27 +115,13 @@ def save_agent_movement_gif(model, steps, filename="ice_fishing_abm.gif", fps=10
 
 
 if __name__ == "__main__":
-    grid_size=90
-    n_time=120
+    grid_size = 90
+    n_time = 120
     rng = np.random.default_rng(42)
 
-
-    fish_density, _, _, _ = spatiotemporal_fish_density(
-    rng,
-    length_scale_time=15,
-    length_scale_space=6,
-    n_x=grid_size,
-    n_y=grid_size,
-    n_time=n_time,
-    n_samples=1,
-    temperature=0.5,
-    bias=1,
-    )
-
     _model = IceFishingModel(
-    grid_size=grid_size,
-    number_of_agents=10,
-    fish_density=fish_density[0],
+        grid_size=grid_size,
+        number_of_agents=5,
     )
 
     save_agent_movement_gif(_model, n_time, fps=5)

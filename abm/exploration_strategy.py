@@ -9,7 +9,9 @@ from abm.belief import generate_belief_mean_matrix
 
 ### ALGORITHM 1: DEAFULT EXPLORATION STRATEGY
 class ExplorationStrategy:
-    def __init__(self, grid_size: int = 100, ucb_beta=0.2, tau=0.01):
+    def __init__(self, grid_size: int = 100, ucb_beta=0.2, tau=0.01, rng=None):
+        self.rng = rng if rng is not None else np.random.default_rng()
+
         self.grid_size = grid_size
         self.ucb_beta = ucb_beta
         self.softmax_tau = tau
@@ -267,7 +269,6 @@ class KernelBeliefExploration(ExplorationStrategy):
         model_type="kde",
         normalize_features=False,
         w_as_attention_shares=False,
-        rng=None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -280,7 +281,6 @@ class KernelBeliefExploration(ExplorationStrategy):
         self.w_failure = w_failure
         self.model_type = model_type.lower()
         self.normalize_features = normalize_features
-        self.rng = rng if rng is not None else np.random.default_rng()
         if w_as_attention_shares:
             assert np.allclose(np.sum([self.w_social, self.w_failure, self.w_success]), 1.0)
 
