@@ -134,7 +134,6 @@ def make_resource_centers(
 
 
 def spatiotemporal_fish_density(
-    rng,
     length_scale_time=15.0,
     length_scale_space=1.0,
     n_x=30,
@@ -144,7 +143,9 @@ def spatiotemporal_fish_density(
     n_samples=1,
     bias=0.0,  # used for sigmoid; larger = less abundance
     temperature=1.0,  # used for sigmoid; larger = flatter
+    rng=None
 ):
+    rng = rng if rng is not None else np.random.default_rng()
     # grids
     xs = np.linspace(0, n_x, n_x)
     ys = np.linspace(0, n_y, n_y)
