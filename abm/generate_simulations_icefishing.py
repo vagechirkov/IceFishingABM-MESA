@@ -72,6 +72,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     df = generate_sbi_simulations(args.n_simulations)
+    if not isinstance(df, pd.DataFrame):
+        df = pd.DataFrame(df)
 
     args.outdir.mkdir(parents=True, exist_ok=True)
     today_str = datetime.now().strftime("%d.%m.%Y")
