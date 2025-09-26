@@ -248,6 +248,7 @@ class Agent(mesa.Agent):
             self._collected_resource += 1
             self._collected_resource_last_spot += 1
             self._is_consuming = True
+            self._time_since_last_catch = 0
         else:
             self._time_since_last_catch += 1
 
@@ -256,6 +257,7 @@ class Agent(mesa.Agent):
         if not self.exploitation_strategy.stay_on_patch(self._time_since_last_catch):
             self._is_sampling = False
             self._time_since_last_catch = 0
+            self.exploitation_strategy.reset_p_leave()
 
             if self._collected_resource_last_spot == 0:
                 self.add_failure_loc(self.pos)
