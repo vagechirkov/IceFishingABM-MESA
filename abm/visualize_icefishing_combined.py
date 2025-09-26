@@ -4,7 +4,6 @@ import numpy as np
 
 from abm.model import IceFishingModel
 
-FIGSIZE = (18, 10)
 FPS = 10
 INTERVAL = 1000 // FPS
 CMAP_DENSITY = "viridis"
@@ -14,15 +13,12 @@ CMAP_SOFTMAX = "cividis"
 
 def new_figure_and_axes():
     """
-    Mosaic (bigger panels):
+    Mosaic (fixed):
       sim | explore
       sim | explore
       ts  | ts
     """
-    fig = plt.figure(
-        figsize=FIGSIZE,
-        layout="constrained"
-    )
+    fig = plt.figure(figsize=(15, 12), layout="constrained")
     mosaic = [
         ["sim", "explore"],
         ["sim", "explore"],
@@ -30,16 +26,19 @@ def new_figure_and_axes():
     ]
     axes = fig.subplot_mosaic(
         mosaic,
-        gridspec_kw=dict(width_ratios=[1.5, 1.2], height_ratios=[1.0, 1.0, 0.75])
+        gridspec_kw=dict(
+            width_ratios=[2.5, 2.5],
+            height_ratios=[1.5/4, 1.5/4, 1/4]
+        )
     )
-    # 2x2 inside 'explore'
+
     sp = axes["explore"].get_subplotspec()
-    sg = sp.subgridspec(2, 2, wspace=0.08, hspace=0.18)
+    sg = sp.subgridspec(2, 2, wspace=0.01, hspace=0.01)
     explore_axes = np.array([
-        fig.add_subplot(sg[0,0]),
-        fig.add_subplot(sg[0,1]),
-        fig.add_subplot(sg[1,0]),
-        fig.add_subplot(sg[1,1]),
+        fig.add_subplot(sg[0, 0]),
+        fig.add_subplot(sg[0, 1]),
+        fig.add_subplot(sg[1, 0]),
+        fig.add_subplot(sg[1, 1]),
     ])
     axes["explore"].remove()
     return fig, axes, explore_axes
@@ -175,9 +174,12 @@ def build_dynamic_dashboard(model, steps, outfile_gif="combined_dynamic.gif", ag
             data, origin="lower", extent=extent, interpolation="nearest",
             cmap=cmap, **({} if vmin is None else dict(vmin=vmin, vmax=vmax))
         )
-        ax.set_title(title, fontsize=12)
+        # maximize drawable area: no ticks/labels on right panels
+        ax.set_xlabel(""); ax.set_ylabel("")
+        ax.set_xticks([]); ax.set_yticks([])
+        # keep titles readable
+        ax.set_title(title, fontsize=14, pad=2)
         ax.set_xlim(0, grid_size); ax.set_ylim(0, grid_size)
-        ax.set_xlabel("x"); ax.set_ylabel("y")
 
 
         obs_sc = ax.scatter(-1, -1, s=32, facecolors="none", edgecolors="#1b9e77", linewidths=1.1)
