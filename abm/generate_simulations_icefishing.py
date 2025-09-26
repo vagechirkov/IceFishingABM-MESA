@@ -1,36 +1,81 @@
+import argparse
+from datetime import datetime
+from pathlib import Path
 import numpy as np
-
+import pandas as pd
 from abm.model import IceFishingModel
-from abm.resource import spatiotemporal_fish_density
+from mesa.batchrunner import batch_run
 
 
-def generate_simulations(grid_size=90, n_time=120):
-    rng = np.random.default_rng(42)
-    fish_density, _, _, _ = spatiotemporal_fish_density(
-        rng,
-        length_scale_time=15,
-        length_scale_space=6,
-        n_x=grid_size,
-        n_y=grid_size,
-        n_time=n_time,
-        n_samples=1,
-        temperature=0.5,
-        bias=1,
+def make_prior(seed: int | None = None):
+    """
+    Returns a zero-arg callable that samples a full parameter set from the prior.
+    - Weights ~ Dirichlet(alpha=[1,1,1])  -> sum to 1
+    - spot_selection_tau ~ Uniform(0.01, 1.0)
+    - spot_leaving_time_weight ~ Uniform(0.1, 1.0)
+    - fish_abundance ~ Uniform(2.0, 4.0)
+    """
+    rng = np.random.default_rng(seed)
+
+    def sample():
+        w_social, w_success, w_failure = rng.dirichlet([1.0, 1.0, 1.0])
+        return {
+            "spot_selection_w_social": float(w_social),
+            "spot_selection_w_success": float(w_success),
+            "spot_selection_w_failure": float(w_failure),
+            "spot_selection_tau": float(rng.uniform(0.01, 1.0)),
+            "spot_leaving_time_weight": float(rng.uniform(0.1, 1.0)),
+            "fish_abundance": float(rng.uniform(2.0, 4.0)),
+        }
+
+    return sample
+
+def generate_sbi_simulations(n_simulations: int):
+    prior = make_prior(seed=None)
+
+    all_priors = [prior() for _ in range(n_simulations)]
+
+    params = {
+        "grid_size": 90,
+        "number_of_agents": 6,
+        "simulation_length_minutes": 180,
+        "sample_from_prior": all_priors,
+    }
+
+    max_steps = params["simulation_length_minutes"] * 6
+
+    results = batch_run(
+        IceFishingModel,
+        parameters=params,
+        iterations=1,
+        max_steps=max_steps,
+        number_processes=None,
+        data_collection_period=-1,
+        display_progress=True,
     )
-
-    _model = IceFishingModel(
-        grid_size=grid_size,
-        number_of_agents=5,
-        fish_density=fish_density[0],
-    )
-
-    for _ in range(n_time):
-        _model.step()
-    results = _model.datacollector.get_model_vars_dataframe()
-    print(results)
-
-
+    return results
 
 
 if __name__ == "__main__":
-    generate_simulations()
+    parser = argparse.ArgumentParser(description="Run ice fishing simulations and save results.")
+    parser.add_argument(
+        "n_simulations",
+        nargs="?",
+        type=int,
+        default=10,
+    )
+    parser.add_argument(
+        "--outdir",
+        type=Path,
+        default=Path(".")
+    )
+    args = parser.parse_args()
+
+    df = generate_sbi_simulations(args.n_simulations)
+
+    args.outdir.mkdir(parents=True, exist_ok=True)
+    today_str = datetime.now().strftime("%d.%m.%Y")
+    fname = args.outdir / f"ice_fishing_simulations_{today_str}.csv"
+    df.to_csv(fname, index=False)
+
+    print(f"Saved {len(df)} rows to: {fname}")

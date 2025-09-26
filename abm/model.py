@@ -164,6 +164,7 @@ class IceFishingModel(mesa.Model):
         spot_selection_w_failure: float = 0.25,
         agent_speed_m_per_min: float = 15.0,
         agent_margin_from_others: float = 5.0,
+        sample_from_prior = None,
     ):
         super().__init__()
         self.grid_size = grid_size
@@ -189,6 +190,17 @@ class IceFishingModel(mesa.Model):
 
         self.agent_speed_m_per_min = agent_speed_m_per_min
         self.agent_margin_from_others = agent_margin_from_others
+
+        if sample_from_prior is not None:
+            prior_vals = sample_from_prior() if callable(sample_from_prior) else dict(sample_from_prior)
+
+            # Map any provided keys to attributes (only those present will override)
+            for k, v in prior_vals.items():
+                if hasattr(self, k):
+                    setattr(self, k, v)
+
+            # (optional) keep a copy for logging/analysis
+            self.sampled_prior = prior_vals
 
         fish_density, _, _, _ = spatiotemporal_fish_density(
             length_scale_time=self.fish_length_scale_minutes,
@@ -258,6 +270,14 @@ class IceFishingModel(mesa.Model):
                 "sampling_time_failure_spot": lambda m: np.mean(
                     [a.time_sampling_failure_spots for a in m.agents]
                 ) / self.steps_per_minute,
+
+                # parameters
+                "spot_selection_w_social": lambda m: m.spot_selection_w_social,
+                "spot_selection_w_success": lambda m: m.spot_selection_w_success,
+                "spot_selection_w_failure": lambda m: m.spot_selection_w_failure,
+                "spot_selection_tau": lambda m: m.spot_selection_tau,
+                "spot_leaving_time_weight": lambda m: m.spot_leaving_time_weight,
+                "fish_abundance": lambda m: m.fish_abundance,
             }
         )
 
