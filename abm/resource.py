@@ -187,7 +187,7 @@ def make_fish_density_gif(
 ):
     frames = []
     field = F[sample_idx]  # shape (n_x, n_y, n_time)
-    vmin, vmax = 0, 1  # field.min(), field.max()  # fix color scale
+    vmin, vmax = field.min(), field.max()  # None, None #  0, 1  # field.min(), field.max()  # fix color scale
 
     for ti, t in enumerate(ts):
         fig, ax = plt.subplots(figsize=(4, 4))
@@ -229,10 +229,9 @@ def bias_for_target_mean(p, sigma=1.0, sigma_n=0.0, temperature=1.0):
 if __name__ == "__main__":
     rng = np.random.default_rng(42)
 
-    for t in [0.5, 2]:
-        for b in [0, 1, 2, 4]:
+    for t in [0.5]:  # , 2
+        for b in [1, 2, 3, 3.5, 4]:
             fish_density, _xs, _ys, _ts = spatiotemporal_fish_density(
-                rng,
                 length_scale_time=15,
                 length_scale_space=6,
                 n_x=90,
@@ -241,6 +240,7 @@ if __name__ == "__main__":
                 n_samples=1,
                 temperature=t,
                 bias=b,
+                rng=rng
             )
             print(f"bias = {b}, abundance={fish_density.mean():.3f}")
             make_fish_density_gif(
@@ -249,6 +249,6 @@ if __name__ == "__main__":
                 _ys,
                 _ts,
                 sample_idx=0,
-                filename=f"fish_t_{t:.1f}_b_{int(b)}.gif",
+                filename=f"fish_t_{t:.1f}_b_{b:.1f}.gif",
                 fps=20,
             )
