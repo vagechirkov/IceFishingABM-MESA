@@ -127,61 +127,66 @@ class Agent(mesa.Agent):
         vx, vy = dx - x, dy - y
         dist = float(np.hypot(vx, vy))
 
-        if dist <= self._move_budget:
-            new_pos = (dx, dy)
+        # unit direction (handle zero-length safely)
+        if dist > 0:
+            ux, uy = vx / dist, vy / dist
         else:
-            ux, uy = vx / dist, vy / dist  # unit direction
-            sx_f, sy_f = ux * self._move_budget, uy * self._move_budget  # continuous step
-            # round the float step to the nearest integer; clip it so we don’t overshoot the remaining distance
-            sx = int(np.clip(np.rint(sx_f), -abs(vx), abs(vx)))
-            sy = int(np.clip(np.rint(sy_f), -abs(vy), abs(vy)))
-            new_pos = (x + sx, y + sy)
+            ux, uy = 0.0, 0.0
 
-        # enforce spacing between agents
-        if np.array_equal(new_pos, self._destination) and len(self.other_agent_locs) > 0:
-            # distance from destination to all others
-            dists_to_dest = np.linalg.norm(
-                self.other_agent_locs - np.array([dx, dy]), axis=1
-            )
+        s_max = min(self._move_budget, dist)
 
-            if dists_to_dest.min() <= self._margin_from_others:
-                for r in [5, 10, 20, 40, 100]:
-                    # create a meshgrid around self._destination within distance r
-                    xs = np.arange(dx - r, dx + r + 1)
-                    ys = np.arange(dy - r, dy + r + 1)
-                    XX, YY = np.meshgrid(xs, ys, indexing="xy")
-                    cand = np.stack([XX.ravel(), YY.ravel()], axis=1)  # shape (Nc, 2)
+        # propose the usual step (rounded to nearest grid cell)
+        sx = int(np.rint(ux * s_max))
+        sy = int(np.rint(uy * s_max))
+        new_pos = (x + sx, y + sy)
 
-                    # inbound cells
-                    inb = (
-                        (cand[:, 0] >= 0)
-                        & (cand[:, 0] < self.model.grid.width)
-                        & (cand[:, 1] >= 0)
-                        & (cand[:, 1] < self.model.grid.height)
-                    )
-                    cand = cand[inb]
+        # gather other agents' positions (No, 2)
+        others = self.other_agent_locs.copy()
+        margin = float(self._margin_from_others)
 
-                    if cand.size == 0:
-                        continue
+        def in_bounds(p):
+            return (0 <= p[0] < self.model.grid.width) and (0 <= p[1] < self.model.grid.height)
 
-                    # keep only candidates far enough from all others
-                    diffs = cand[:, None, :] - self.other_agent_locs[None, :, :]
-                    dists = np.linalg.norm(diffs, axis=-1)  # (Nc, No)
-                    min_dist = dists.min(axis=1)  # (Nc,)
-                    valid_cand = cand[min_dist > self._margin_from_others]
+        def ok_spacing(p):
+            if others.size == 0:
+                return True
+            d = np.linalg.norm(others - np.array(p), axis=1)
+            return np.all(d >= margin)
 
-                    if valid_cand.size > 0:
-                        # find nearest candidate to self._destination
-                        best_idx = np.argmin(np.linalg.norm(valid_cand - np.array([dx, dy]), axis=1))
-                        new_pos = tuple(valid_cand[int(best_idx)])
-                        # original destination is not available anymore => update it
-                        # TODO: possible teleport beyond budget after arrival
-                        self._destination = new_pos
+        if (dist < self._move_budget) and not ok_spacing(new_pos):
+            chosen = None
+            max_radius = int(np.ceil(self._move_budget)) + 5  # modest expansion beyond margin
+            found = False
+            for r in range(0, max_radius + 1):
+                for i in range(-r, r + 1):
+                    for j in range(-r, r + 1):
+                        cx = int(dx + i)
+                        cy = int(dy + j)
+                        cand = (cx, cy)
+                        if not in_bounds(cand):
+                            continue
+                        # must be within this tick's movement budget from current pos
+                        # if np.hypot(cx - x, cy - y) > s_max + 1e-9:
+                        #     continue
+                        # only accept if spacing is OK (since we're in the bubble)
+                        if ok_spacing(cand):
+                            chosen = cand
+                            found = True
+                            break
+                    if found:
                         break
+                if found:
+                    break
 
+            new_pos = chosen if chosen is not None else (x, y)
+            # record actual per-tick destination you targeted
+            self._destination = new_pos
+
+        # Move on the grid
         self.model.grid.move_agent(self, new_pos)
 
-        if np.array_equal(self.pos, self._destination):
+        # Only mark arrived if we exactly hit the destination
+        if new_pos == (dx, dy):
             self._is_moving = False
             self._is_sampling = True
 
