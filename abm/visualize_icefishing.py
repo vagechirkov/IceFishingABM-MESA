@@ -1,8 +1,6 @@
 import matplotlib
 
-from abm.resource import spatiotemporal_fish_density
 from abm.model import IceFishingModel
-from utils import xy2ij
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -117,7 +115,7 @@ def save_agent_movement_gif(model, steps, filename="ice_fishing_abm.gif", fps=10
 
 if __name__ == "__main__":
     grid_size = 90
-    n_time = (120 - 1) * 6
+    n_time = (120 - 1) * 6  # 30 * 6  #
     rng = np.random.default_rng(42)
 
     _model = IceFishingModel(
