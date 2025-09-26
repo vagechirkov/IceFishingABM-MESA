@@ -152,7 +152,7 @@ class IceFishingModel(mesa.Model):
         steps_per_minute: int = 6,
         fish_length_scale_minutes: float = 15.0,
         fish_length_scale_meters: float = 6.0,
-        fish_abundance: float = 1.0,
+        fish_abundance: float = 3.5,  # 0.008/10s -> 0.15/200s
         fish_density_sharpness: float = 0.5,
         spot_leaving_time_weight: float = 0.8,
         spot_selection_tau: float = 1.0,
@@ -195,7 +195,7 @@ class IceFishingModel(mesa.Model):
             length_scale_space=self.fish_length_scale_meters,
             n_x=self.grid_size,
             n_y=self.grid_size,
-            n_time=self.simulation_length_minutes,
+            n_time=self.simulation_length_minutes + 1,
             n_samples=1,
             temperature=self.fish_density_sharpness,
             bias=self.fish_abundance,
@@ -204,14 +204,14 @@ class IceFishingModel(mesa.Model):
         self.fish_density = fish_density[0]
 
         # initialize exploration and exploitation models
-        exploitation_strategy = IceFishingExploitationStrategy(
+        exploitation_strategy_list = [IceFishingExploitationStrategy(
             step_minutes=1 / self.steps_per_minute,
             time_weight=0.8,
             baseline_weight=-5,
             # rng=self.rng
-        )
+        ) for _ in range(number_of_agents)]
 
-        exploration_strategy = KernelBeliefExploration(
+        exploration_strategy_list = [KernelBeliefExploration(
             grid_size=self.grid_size,
             tau=self.spot_selection_tau,
             social_length_scale=self.spot_selection_social_length_scale,
@@ -224,7 +224,7 @@ class IceFishingModel(mesa.Model):
             model_type="kde",
             normalize_features=True,
             # rng=self.rng
-        )
+        ) for _ in range(self.num_agents)]
 
         self.grid = mesa.space.MultiGrid(grid_size, grid_size, False)
 
@@ -232,8 +232,8 @@ class IceFishingModel(mesa.Model):
             self,
             self.num_agents,
             initial_position=(grid_size // 2, grid_size// 2),
-            exploration_strategy=exploration_strategy,
-            exploitation_strategy=exploitation_strategy,
+            exploration_strategy=exploration_strategy_list,
+            exploitation_strategy=exploitation_strategy_list,
             speed_m_per_step=self.agent_speed_m_per_min / self.steps_per_minute,
             margin_from_others=self.agent_margin_from_others,
             social_info_quality="sampling",
