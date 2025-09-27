@@ -24,9 +24,12 @@ source venv/bin/activate
 
 # add python path
 export PYTHONPATH=absolute/path/to/IceFishingABM-MESA:$PYTHONPATH
+export PYTHONPATH=$(pwd):$PYTHONPATH
 
 # run experiment
 python -m experiments.experiment_experiment_name
+
+python generate_simulations_icefishing.py  10000 --outdir results
 ```
 
 ## View optuna results
