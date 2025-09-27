@@ -17,13 +17,14 @@ def setup_agent():
     # Create a mock model with a grid
     model = Mock()
     model.grid = mesa.space.MultiGrid(10, 10, torus=False)
-
+    model.steps = 2
     # Create mock strategies
     exploration_strategy = Mock(spec=ExplorationStrategy)
     exploitation_strategy = Mock(spec=ExploitationStrategy)
 
     # Create an agent
     agent = Agent(
+        initial_position=(0, 0),
         model=model,
         resource_cluster_radius=1,
         social_info_quality=None,
@@ -42,6 +43,7 @@ def setup_random_walk_agent():
     # Create a mock model with a grid
     model = Mock()
     model.grid = mesa.space.MultiGrid(10, 10, torus=False)
+    model.steps = 2
 
     # Create mock strategies
     exploration_strategy = RandomWalkerExplorationStrategy(alpha=0.001, grid_size=10)
@@ -49,6 +51,7 @@ def setup_random_walk_agent():
 
     # Create an agent
     agent = Agent(
+        initial_position=(0, 0),
         model=model,
         resource_cluster_radius=1,
         social_info_quality="sampling",
@@ -75,14 +78,14 @@ def test_agent_moves_to_correct_destination(setup_agent, destination: tuple[int,
     agent.step()
 
     # Check if the agent's destination is set correctly
-    assert agent.destination == ij2xy(*destination)
+    assert agent.destination == destination  # ij2xy(*destination)
 
     # Move the agent towards the destination
     while agent.is_moving:
         agent.move()
 
     # Check if the agent has arrived at the correct destination
-    assert agent.pos == ij2xy(*destination)
+    assert agent.pos == destination  # ij2xy(*destination)
 
 
 @pytest.mark.xfail
