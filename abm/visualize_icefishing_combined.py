@@ -3,6 +3,7 @@ import matplotlib.animation as animation
 import numpy as np
 
 from abm.model import IceFishingModel
+from utils import xy2ij
 
 FPS = 10
 INTERVAL = 1000 // FPS
@@ -92,6 +93,8 @@ def get_exploration_fields_for_agent(agent, grid_size):
     success = getattr(strat, "success_feature_kde")
     failure = getattr(strat, "failure_feature_kde")
     softmax = getattr(strat, "belief_softmax")
+
+    # print(social[xy2ij(*agent.pos)])
 
     current_position = np.asarray(
         getattr(agent, "pos", (grid_size / 2, grid_size / 2)), dtype=float
@@ -258,19 +261,19 @@ def build_dynamic_dashboard(model, steps, save_format="gif", agent_idx=0):
         return (agent_scat, fish_im, *exp_images, ts_line, *move_fill)
 
     ani = animation.FuncAnimation(fig, update, frames=steps, interval=INTERVAL, blit=False)
-    fig.savefig("combined_dashboard_last_frame.png", dpi=150, bbox_inches="tight")
-
-    if save_format.lower() == "git" or save_format.lower() == "both":
-        writer = animation.PillowWriter(fps=FPS)
-        ani.save("combined_dynamic.gif", writer=writer)
 
     if save_format.lower() == "gif" or save_format.lower() == "both":
+        writer = animation.PillowWriter(fps=FPS)
+        ani.save("combined_dynamic2.gif", writer=writer)
+
+    if save_format.lower() == "mp4" or save_format.lower() == "both":
         writer = animation.FFMpegWriter(fps=FPS, metadata=dict(artist='Me'), bitrate=1800)
         ani.save("combined_dynamic.mp4", writer=writer)
 
+    fig.savefig("combined_dashboard_last_frame.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
 
 if __name__ == "__main__":
     model = IceFishingModel(grid_size=90, number_of_agents=6, spot_selection_tau=0.1, fish_abundance=3.0)
-    build_dynamic_dashboard(model, steps=120*6, save_format="gif", agent_idx=0)
+    build_dynamic_dashboard(model, steps=20*6, save_format="gif", agent_idx=0)

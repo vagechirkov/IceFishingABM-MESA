@@ -329,19 +329,17 @@ class KernelBeliefExploration(ExplorationStrategy):
     ):
         """Choose an exploration destination based on KDE or GP-UCB beliefs."""
 
-        # make sure all inputs are in the correct format
-        self._check_input(success_locs)
-        self._check_input(failure_locs)
-        self._check_input(other_agent_locs)
+        self.update_features(
+            current_position=current_position,
+            success_locs=success_locs,
+            failure_locs=failure_locs,
+            other_agent_locs=other_agent_locs
+        )
 
         if self.model_type == "kde":
-            belief = self._compute_kde_beliefs(
-                other_agent_locs, success_locs, failure_locs
-            )
+            belief = self._compute_kde_beliefs()
         elif self.model_type == "ucb":
-            belief = self._compute_ucb_beliefs(
-                other_agent_locs, success_locs, failure_locs
-            )
+            belief = self._compute_ucb_beliefs()
         else:
             raise NotImplementedError
 
@@ -350,7 +348,30 @@ class KernelBeliefExploration(ExplorationStrategy):
         self.destination = self.mesh[idx, :]
         return self.destination
 
-    def _compute_ucb_beliefs(self, _social_locs, _success_locs, _failure_locs):
+    def update_features(
+        self,
+        current_position=np.empty((0, 2)),
+        success_locs=np.empty((0, 2)),
+        failure_locs=np.empty((0, 2)),
+        other_agent_locs=np.empty((0, 2)),
+    ):
+        # make sure all inputs are in the correct format
+        self._check_input(success_locs)
+        self._check_input(failure_locs)
+        self._check_input(other_agent_locs)
+
+        if self.model_type == "kde":
+            self._compute_kde_features(
+                other_agent_locs, success_locs, failure_locs
+            )
+        elif self.model_type == "ucb":
+            self._compute_ucb_features(
+                other_agent_locs, success_locs, failure_locs
+            )
+        else:
+            raise NotImplementedError
+
+    def _compute_ucb_features(self, _social_locs, _success_locs, _failure_locs):
         self.social_feature_m, self.social_feature_std = self._calculate_gp_feature(
             _social_locs, self.social_gpr, self.grid_size
         )
@@ -369,6 +390,7 @@ class KernelBeliefExploration(ExplorationStrategy):
             self.success_feature_m = self._zscore(self.success_feature_m)
             self.failure_feature_m = self._zscore(self.failure_feature_m)
 
+    def _compute_ucb_beliefs(self):
         self.belief_m = (
                 self.w_social * self.social_feature_m
                 + self.w_success * self.success_feature_m
@@ -397,7 +419,7 @@ class KernelBeliefExploration(ExplorationStrategy):
 
         return feature_m.T, feature_std.T
 
-    def _compute_kde_beliefs(self, _social_locs, _success_locs, _failure_locs):
+    def _compute_kde_features(self, _social_locs, _success_locs, _failure_locs):
         self.social_feature_kde  = self._calculate_kde_feature(_social_locs,  self.social_length_scale)
         self.success_feature_kde = self._calculate_kde_feature(_success_locs, self.success_length_scale)
         self.failure_feature_kde = self._calculate_kde_feature(_failure_locs, self.failure_length_scale)
@@ -407,6 +429,7 @@ class KernelBeliefExploration(ExplorationStrategy):
             self.success_feature_kde = self._zscore(self.success_feature_kde)
             self.failure_feature_kde = self._zscore(self.failure_feature_kde)
 
+    def _compute_kde_beliefs(self):
         belief = (
                 self.w_social  * self.social_feature_kde
                 + self.w_success * self.success_feature_kde

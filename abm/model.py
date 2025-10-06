@@ -155,6 +155,7 @@ class IceFishingModel(mesa.Model):
         fish_abundance: float = 3.5,  # 0.008/10s -> 0.15/200s
         fish_density_sharpness: float = 0.5,
         spot_leaving_time_weight: float = 0.8,
+        spot_leaving_social_weight: float = -0.33,
         spot_selection_tau: float = 1.0,
         spot_selection_social_length_scale: float = 25.0,
         spot_selection_success_length_scale: float = 10.0,
@@ -179,6 +180,7 @@ class IceFishingModel(mesa.Model):
         self.fish_density_sharpness = fish_density_sharpness
 
         self.spot_leaving_time_weight = spot_leaving_time_weight
+        self.spot_leaving_social_weight = spot_leaving_social_weight
 
         self.spot_selection_tau = spot_selection_tau
         self.spot_selection_social_length_scale = spot_selection_social_length_scale
@@ -218,8 +220,9 @@ class IceFishingModel(mesa.Model):
         # initialize exploration and exploitation models
         exploitation_strategy_list = [IceFishingExploitationStrategy(
             step_minutes=1 / self.steps_per_minute,
-            time_weight=0.8,
             baseline_weight=-5,
+            time_weight=self.spot_leaving_time_weight,
+            social_feature_weight=self.spot_leaving_social_weight
             # rng=self.rng
         ) for _ in range(number_of_agents)]
 

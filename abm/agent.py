@@ -5,6 +5,8 @@ from scipy.spatial.distance import pdist
 
 from abm.resource import Resource
 from abm.utils import ij2xy, xy2ij
+from abm.exploitation_strategy import IceFishingExploitationStrategy
+from abm.exploration_strategy import KernelBeliefExploration
 
 
 class Agent(mesa.Agent):
@@ -12,8 +14,8 @@ class Agent(mesa.Agent):
         self,
         model,
         initial_position: tuple,
-        exploration_strategy,
-        exploitation_strategy,
+        exploration_strategy: KernelBeliefExploration,
+        exploitation_strategy: IceFishingExploitationStrategy,
         speed_m_per_step: float = 1.0,  # 15.0,
         margin_from_others: float = 0.0,  # 5.0
         social_info_quality = "sampling",
@@ -231,7 +233,8 @@ class Agent(mesa.Agent):
             self._time_since_last_catch += 1
 
         if not self.exploitation_strategy.stay_on_patch(
-            self._time_on_patch, self._time_since_last_catch
+                time_since_last_catch=self._time_since_last_catch,
+                z_social_feature=self.exploration_strategy.social_feature_kde[xy2ij(*self.pos)]
         ):
             self._is_sampling = False
             self._time_since_last_catch = 0
@@ -278,6 +281,14 @@ class Agent(mesa.Agent):
         # Update social information at the beginning of each step except the very first
         if self.model.steps > 1:
             self.add_other_agent_locs()
+
+            # update features
+            self.exploration_strategy.update_features(
+                current_position=xy2ij(*self.pos),
+                success_locs=self.success_locs,
+                failure_locs=self.failure_locs,
+                other_agent_locs=self.other_agent_locs
+            )
 
         if self._is_moving and not self._is_sampling:
             self.move()

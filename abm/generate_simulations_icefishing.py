@@ -24,8 +24,9 @@ def make_prior(seed: int | None = None):
             "spot_selection_w_success": float(w_success),
             "spot_selection_w_failure": float(w_failure),
             "spot_selection_tau": float(rng.uniform(0.01, 1.0)),
-            "spot_leaving_time_weight": float(rng.uniform(0.1, 1.0)),
-            "fish_abundance": float(rng.uniform(2.0, 4.0)),
+            "spot_leaving_time_weight": float(rng.uniform(0.1, 2.0)),
+            "spot_leaving_social_weight": float(rng.uniform(-2.0, 2.0)),
+            "fish_abundance": 3.5  # float(rng.uniform(2.0, 4.0)),
         }
 
     return sample
