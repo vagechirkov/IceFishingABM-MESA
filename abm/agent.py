@@ -262,7 +262,11 @@ class Agent(mesa.Agent):
 
         # if decided to leave (not to stay)
         # NOTE: IceFishingExploitationStrategy
-        if not self.exploitation_strategy.stay_on_patch(self._time_since_last_catch):
+        if not self.exploitation_strategy.stay_on_patch(
+                time_since_last_catch=self._time_since_last_catch,
+                is_spot_successful=float(self._collected_resource_last_spot > 0),
+                z_social_feature=self.exploration_strategy.social_feature_kde[xy2ij(*self.pos)]
+        ):
             self._is_sampling = False
             self._time_since_last_catch = 0
             self.exploitation_strategy.reset_p_leave()

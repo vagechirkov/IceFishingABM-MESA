@@ -275,5 +275,5 @@ def build_dynamic_dashboard(model, steps, save_format="gif", agent_idx=0):
 
 
 if __name__ == "__main__":
-    model = IceFishingModel(grid_size=90, number_of_agents=6, spot_selection_tau=0.1, fish_abundance=3.0)
-    build_dynamic_dashboard(model, steps=20*6, save_format="gif", agent_idx=0)
+    model = IceFishingModel(grid_size=90, number_of_agents=6, spot_selection_tau=0.1, fish_abundance=3.5)
+    build_dynamic_dashboard(model, steps=120*6, save_format="gif", agent_idx=0)

@@ -222,7 +222,8 @@ class IceFishingModel(mesa.Model):
         # initialize exploration and exploitation models
         exploitation_strategy_list = [IceFishingExploitationStrategy(
             step_minutes=1 / self.steps_per_minute,
-            baseline_weight=-5,
+            baseline_weight=-3,
+            fish_catch_weight=-1.7,
             time_weight=self.spot_leaving_time_weight,
             social_feature_weight=self.spot_leaving_social_weight
             # rng=self.rng
