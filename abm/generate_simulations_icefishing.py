@@ -18,11 +18,12 @@ def make_prior(seed: int | None = None):
     rng = np.random.default_rng(seed)
 
     def sample():
-        w_social, w_success, w_failure = rng.dirichlet([1.0, 1.0, 1.0])
+        w_social, w_success, w_failure, w_locality = rng.dirichlet([1.0, 1.0, 1.0, 1.0])
         return {
             "spot_selection_w_social": float(w_social),
             "spot_selection_w_success": float(w_success),
             "spot_selection_w_failure": float(w_failure),
+            "spot_selection_w_locality": float(w_locality),
             "spot_selection_tau": float(rng.uniform(0.01, 1.0)),
             "spot_leaving_time_weight": float(rng.uniform(0.1, 2.0)),
             "spot_leaving_social_weight": float(rng.uniform(-2.0, 2.0)),

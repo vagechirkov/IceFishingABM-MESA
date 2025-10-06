@@ -263,9 +263,10 @@ class KernelBeliefExploration(ExplorationStrategy):
         social_length_scale: float = 12,
         success_length_scale: float = 5,
         failure_length_scale: float = 5,
-        w_social: float = 0.4,
-        w_success: float = 0.3,
-        w_failure: float = 0.3,
+        w_social: float = 0.25,
+        w_success: float = 0.25,
+        w_failure: float = 0.25,
+        w_locality: float = 0.25,
         model_type="kde",
         normalize_features=False,
         w_as_attention_shares=False,
@@ -279,13 +280,15 @@ class KernelBeliefExploration(ExplorationStrategy):
         self.w_social = w_social
         self.w_success = w_success
         self.w_failure = w_failure
+        self.w_locality = w_locality
         self.model_type = model_type.lower()
         self.normalize_features = normalize_features
         if w_as_attention_shares:
-            assert np.allclose(np.sum([self.w_social, self.w_failure, self.w_success]), 1.0)
+            assert np.allclose(np.sum([self.w_social, self.w_failure, self.w_success, self.w_locality]), 1.0)
 
         # initialize Gaussian Process Regressors
         grid_shape = (self.grid_size, self.grid_size)
+        self.locality_feature = np.zeros(grid_shape)
 
         if self.model_type == "ucb":
             # Social
@@ -350,7 +353,7 @@ class KernelBeliefExploration(ExplorationStrategy):
 
     def update_features(
         self,
-        current_position=np.empty((0, 2)),
+        current_position,
         success_locs=np.empty((0, 2)),
         failure_locs=np.empty((0, 2)),
         other_agent_locs=np.empty((0, 2)),
@@ -359,6 +362,8 @@ class KernelBeliefExploration(ExplorationStrategy):
         self._check_input(success_locs)
         self._check_input(failure_locs)
         self._check_input(other_agent_locs)
+
+        self._compute_locality_feature(np.array(current_position))
 
         if self.model_type == "kde":
             self._compute_kde_features(
@@ -370,6 +375,27 @@ class KernelBeliefExploration(ExplorationStrategy):
             )
         else:
             raise NotImplementedError
+
+    def _compute_locality_feature(self, current_position):
+        # compute inverse distance from current_position (x, y) to all grid points
+
+        # Epsilon to prevent division by zero
+        epsilon = 1e-8
+
+        # Create coordinate grids
+        y_indices, x_indices = np.indices(self.locality_feature.shape)
+
+        # Extract the current x and y coordinates
+        current_x, current_y = current_position.flatten()
+
+        # Calculate the Euclidean distance
+        distance = np.sqrt((x_indices - current_x)**2 + (y_indices - current_y)**2)
+        max_distance = np.max(distance)
+        normalized_distance = distance / (max_distance + epsilon)
+        self.locality_feature = 1.0 - normalized_distance
+
+        if self.normalize_features:
+            self.locality_feature = self._zscore(self.locality_feature)
 
     def _compute_ucb_features(self, _social_locs, _success_locs, _failure_locs):
         self.social_feature_m, self.social_feature_std = self._calculate_gp_feature(
@@ -395,6 +421,7 @@ class KernelBeliefExploration(ExplorationStrategy):
                 self.w_social * self.social_feature_m
                 + self.w_success * self.success_feature_m
                 + self.w_failure * self.failure_feature_m
+                + self.w_locality * self.locality_feature
         )
 
         self.belief_std = np.sqrt(
@@ -431,9 +458,10 @@ class KernelBeliefExploration(ExplorationStrategy):
 
     def _compute_kde_beliefs(self):
         belief = (
-                self.w_social  * self.social_feature_kde
+                self.w_social * self.social_feature_kde
                 + self.w_success * self.success_feature_kde
                 - self.w_failure * self.failure_feature_kde
+                + self.w_locality * self.locality_feature
         )
         return belief
 
@@ -623,9 +651,10 @@ if __name__ == "__main__":
         social_length_scale=25.0,
         success_length_scale=10.0,
         failure_length_scale=10.0,
-        w_social=0.25,  # 1
-        w_success=0.5,  # 2
-        w_failure=0.25,  # -1
+        w_social=0.25,
+        w_success=0.25,
+        w_failure=0.25,
+        w_locality=0.25,
         w_as_attention_shares=True,
         model_type="kde",
         normalize_features=True,

@@ -161,8 +161,9 @@ class IceFishingModel(mesa.Model):
         spot_selection_success_length_scale: float = 10.0,
         spot_selection_failure_length_scale: float = 10.0,
         spot_selection_w_social: float = 0.25,
-        spot_selection_w_success: float = 0.5,
+        spot_selection_w_success: float = 0.25,
         spot_selection_w_failure: float = 0.25,
+        spot_selection_w_locality: float = 0.25,
         agent_speed_m_per_min: float = 15.0,
         agent_margin_from_others: float = 5.0,
         sample_from_prior = None,
@@ -189,6 +190,7 @@ class IceFishingModel(mesa.Model):
         self.spot_selection_w_social = spot_selection_w_social
         self.spot_selection_w_success = spot_selection_w_success
         self.spot_selection_w_failure = spot_selection_w_failure
+        self.spot_selection_w_locality = spot_selection_w_locality
 
         self.agent_speed_m_per_min = agent_speed_m_per_min
         self.agent_margin_from_others = agent_margin_from_others
@@ -235,6 +237,7 @@ class IceFishingModel(mesa.Model):
             w_social=self.spot_selection_w_social,
             w_success=self.spot_selection_w_success,
             w_failure=self.spot_selection_w_failure,
+            w_locality=self.spot_selection_w_locality,
             w_as_attention_shares=True,
             model_type="kde",
             normalize_features=True,
@@ -278,8 +281,10 @@ class IceFishingModel(mesa.Model):
                 "spot_selection_w_social": lambda m: m.spot_selection_w_social,
                 "spot_selection_w_success": lambda m: m.spot_selection_w_success,
                 "spot_selection_w_failure": lambda m: m.spot_selection_w_failure,
+                "spot_selection_w_locality": lambda m: m.spot_selection_w_locality,
                 "spot_selection_tau": lambda m: m.spot_selection_tau,
                 "spot_leaving_time_weight": lambda m: m.spot_leaving_time_weight,
+                "spot_leaving_social_weight": lambda m: m.spot_leaving_social_weight,
                 "fish_abundance": lambda m: m.fish_abundance,
             }
         )
