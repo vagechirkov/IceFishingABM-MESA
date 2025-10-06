@@ -127,7 +127,7 @@ def get_p_leave_and_sampling_for_agent(agent):
     s = bool(getattr(agent, "is_sampling")) or bool(getattr(agent, "is_consuming"))
     return p, s
 
-def build_dynamic_dashboard(model, steps, outfile_gif="combined_dynamic.gif", agent_idx=0):
+def build_dynamic_dashboard(model, steps, save_format="gif", agent_idx=0):
     # pick the focus agent
     if not get_agents(model):
         raise RuntimeError("No agents found in model.")
@@ -258,12 +258,19 @@ def build_dynamic_dashboard(model, steps, outfile_gif="combined_dynamic.gif", ag
         return (agent_scat, fish_im, *exp_images, ts_line, *move_fill)
 
     ani = animation.FuncAnimation(fig, update, frames=steps, interval=INTERVAL, blit=False)
-    writer = animation.PillowWriter(fps=FPS)
-    ani.save(outfile_gif, writer=writer)
     fig.savefig("combined_dashboard_last_frame.png", dpi=150, bbox_inches="tight")
+
+    if save_format.lower() == "git" or save_format.lower() == "both":
+        writer = animation.PillowWriter(fps=FPS)
+        ani.save("combined_dynamic.gif", writer=writer)
+
+    if save_format.lower() == "gif" or save_format.lower() == "both":
+        writer = animation.FFMpegWriter(fps=FPS, metadata=dict(artist='Me'), bitrate=1800)
+        ani.save("combined_dynamic.mp4", writer=writer)
+
     plt.close(fig)
 
 
 if __name__ == "__main__":
-    model = IceFishingModel(grid_size=90, number_of_agents=6, spot_selection_tau=0.1)
-    build_dynamic_dashboard(model, steps=120*6, outfile_gif="combined_dynamic.gif", agent_idx=0)
+    model = IceFishingModel(grid_size=90, number_of_agents=6, spot_selection_tau=0.1, fish_abundance=3.0)
+    build_dynamic_dashboard(model, steps=120*6, save_format="gif", agent_idx=0)

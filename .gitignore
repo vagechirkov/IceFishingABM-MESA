@@ -1014,4 +1014,5 @@ fabric.properties
 *.csv
 *.json
 *.svg
+*.mp4
 /sbi_inference/sbi-logs/*
