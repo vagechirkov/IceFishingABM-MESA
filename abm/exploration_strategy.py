@@ -392,7 +392,7 @@ class KernelBeliefExploration(ExplorationStrategy):
         distance = np.sqrt((x_indices - current_x)**2 + (y_indices - current_y)**2)
         max_distance = np.max(distance)
         normalized_distance = distance / (max_distance + epsilon)
-        self.locality_feature = 1.0 - normalized_distance
+        self.locality_feature = (1.0 - normalized_distance).T
 
         if self.normalize_features:
             self.locality_feature = self._zscore(self.locality_feature)
@@ -651,17 +651,17 @@ if __name__ == "__main__":
         social_length_scale=25.0,
         success_length_scale=10.0,
         failure_length_scale=10.0,
-        w_social=0.25,
-        w_success=0.25,
-        w_failure=0.25,
-        w_locality=0.25,
+        w_social=0.1,
+        w_success=0.2,
+        w_failure=0.1,
+        w_locality=0.6,
         w_as_attention_shares=True,
         model_type="kde",
         normalize_features=True,
         rng=_rng
     )
 
-    current_position = np.array([[grid_size/2, grid_size/2]], dtype=float)
+    current_position = np.array([[30, 20]], dtype=float)
 
     def rand_locs(n):
         return _rng.integers(0, grid_size, size=(n, 2), endpoint=False, dtype=np.int64).astype(float)

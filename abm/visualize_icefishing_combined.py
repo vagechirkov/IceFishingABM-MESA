@@ -262,11 +262,11 @@ def build_dynamic_dashboard(model, steps, save_format="gif", agent_idx=0):
 
     ani = animation.FuncAnimation(fig, update, frames=steps, interval=INTERVAL, blit=False)
 
-    if save_format.lower() == "gif" or save_format.lower() == "both":
+    if save_format.lower() == "gif":
         writer = animation.PillowWriter(fps=FPS)
         ani.save("combined_dynamic2.gif", writer=writer)
 
-    if save_format.lower() == "mp4" or save_format.lower() == "both":
+    if save_format.lower() == "mp4":
         writer = animation.FFMpegWriter(fps=FPS, metadata=dict(artist='Me'), bitrate=1800)
         ani.save("combined_dynamic.mp4", writer=writer)
 
@@ -275,5 +275,21 @@ def build_dynamic_dashboard(model, steps, save_format="gif", agent_idx=0):
 
 
 if __name__ == "__main__":
-    model = IceFishingModel(grid_size=90, number_of_agents=6, spot_selection_tau=0.1, fish_abundance=3.5)
-    build_dynamic_dashboard(model, steps=120*6, save_format="gif", agent_idx=0)
+    model = IceFishingModel(
+        grid_size=90,
+        number_of_agents=6,
+        spot_selection_tau=0.1,  # 0.1
+        fish_abundance=3.0,
+        spot_leaving_baseline_weight = -7,
+        spot_leaving_fish_catch_weight = -5,
+        spot_leaving_time_weight = 0.3,
+        spot_leaving_social_weight = -0.33,
+        spot_selection_social_length_scale = 25.0,
+        spot_selection_success_length_scale = 10.0,
+        spot_selection_failure_length_scale = 10.0,
+        spot_selection_w_social = 0.05,
+        spot_selection_w_success = 0.05,
+        spot_selection_w_failure = 0.1,
+        spot_selection_w_locality = 0.8
+    )
+    build_dynamic_dashboard(model, steps=20*6, save_format="gif", agent_idx=0)
