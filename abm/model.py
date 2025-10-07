@@ -154,6 +154,8 @@ class IceFishingModel(mesa.Model):
         fish_length_scale_meters: float = 6.0,
         fish_abundance: float = 3.5,  # 0.008/10s -> 0.15/200s
         fish_density_sharpness: float = 0.5,
+        spot_leaving_baseline_weight: float = -3,
+        spot_leaving_fish_catch_weight: float = -1.7,
         spot_leaving_time_weight: float = 0.8,
         spot_leaving_social_weight: float = -0.33,
         spot_selection_tau: float = 1.0,
@@ -180,6 +182,8 @@ class IceFishingModel(mesa.Model):
         self.fish_abundance = fish_abundance
         self.fish_density_sharpness = fish_density_sharpness
 
+        self.spot_leaving_baseline_weight = spot_leaving_baseline_weight
+        self.spot_leaving_fish_catch_weight = spot_leaving_fish_catch_weight
         self.spot_leaving_time_weight = spot_leaving_time_weight
         self.spot_leaving_social_weight = spot_leaving_social_weight
 
@@ -222,8 +226,8 @@ class IceFishingModel(mesa.Model):
         # initialize exploration and exploitation models
         exploitation_strategy_list = [IceFishingExploitationStrategy(
             step_minutes=1 / self.steps_per_minute,
-            baseline_weight=-3,
-            fish_catch_weight=-1.7,
+            baseline_weight=self.spot_leaving_baseline_weight,
+            fish_catch_weight=self.spot_leaving_fish_catch_weight,
             time_weight=self.spot_leaving_time_weight,
             social_feature_weight=self.spot_leaving_social_weight
             # rng=self.rng
@@ -284,6 +288,8 @@ class IceFishingModel(mesa.Model):
                 "spot_selection_w_failure": lambda m: m.spot_selection_w_failure,
                 "spot_selection_w_locality": lambda m: m.spot_selection_w_locality,
                 "spot_selection_tau": lambda m: m.spot_selection_tau,
+                "spot_leaving_baseline_weight": lambda m: m.spot_leaving_baseline_weight,
+                "spot_leaving_fish_catch_weight": lambda m: m.spot_leaving_fish_catch_weight,
                 "spot_leaving_time_weight": lambda m: m.spot_leaving_time_weight,
                 "spot_leaving_social_weight": lambda m: m.spot_leaving_social_weight,
                 "fish_abundance": lambda m: m.fish_abundance,
