@@ -73,6 +73,14 @@ if __name__ == "__main__":
         type=Path,
         default=Path(".")
     )
+
+    parser.add_argument(
+        "--suffix",
+        type=str,
+        default=""
+    )
+
+
     args = parser.parse_args()
 
     df = generate_sbi_simulations(args.n_simulations)
@@ -81,7 +89,7 @@ if __name__ == "__main__":
 
     args.outdir.mkdir(parents=True, exist_ok=True)
     today_str = datetime.now().strftime("%d.%m.%Y")
-    fname = args.outdir / f"ice_fishing_simulations_{today_str}.csv"
+    fname = args.outdir / f"ice_fishing_simulations_{today_str}_{args.suffix}.csv"
     df.to_csv(fname, index=False)
 
     print(f"Saved {len(df)} rows to: {fname}")
