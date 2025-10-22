@@ -162,10 +162,10 @@ class IceFishingModel(mesa.Model):
         spot_selection_social_length_scale: float = 25.0,
         spot_selection_success_length_scale: float = 10.0,
         spot_selection_failure_length_scale: float = 10.0,
-        spot_selection_w_social: float = 0.25,
-        spot_selection_w_success: float = 0.25,
-        spot_selection_w_failure: float = 0.25,
-        spot_selection_w_locality: float = 0.25,
+        spot_selection_w_social: float = 0.2,
+        spot_selection_w_success: float = 0.2,
+        spot_selection_w_failure: float = 0.4,
+        spot_selection_w_locality: float = 0.2,
         agent_speed_m_per_min: float = 15.0,
         agent_margin_from_others: float = 5.0,
         sample_from_prior = None,
@@ -191,10 +191,12 @@ class IceFishingModel(mesa.Model):
         self.spot_selection_social_length_scale = spot_selection_social_length_scale
         self.spot_selection_success_length_scale = spot_selection_success_length_scale
         self.spot_selection_failure_length_scale = spot_selection_failure_length_scale
+
         self.spot_selection_w_social = spot_selection_w_social
         self.spot_selection_w_success = spot_selection_w_success
         self.spot_selection_w_failure = spot_selection_w_failure
         self.spot_selection_w_locality = spot_selection_w_locality
+        self._normalize_spot_selection_weights()
 
         self.agent_speed_m_per_min = agent_speed_m_per_min
         self.agent_margin_from_others = agent_margin_from_others
@@ -307,3 +309,24 @@ class IceFishingModel(mesa.Model):
         assert self.steps_min <= self.simulation_length_minutes
         self.agents.shuffle_do("step")
         self.datacollector.collect(self)
+
+    def _normalize_spot_selection_weights(self):
+        """
+        Normalizes the spot selection weights (social, success, failure, locality)
+        to ensure they sum to 1.0.
+        """
+        weights = [
+            self.spot_selection_w_social,
+            self.spot_selection_w_success,
+            self.spot_selection_w_failure,
+            self.spot_selection_w_locality,
+        ]
+
+        total_weight = sum(weights)
+
+        if total_weight != 1.0:
+            # Normalize weights if they don't sum to 1
+            self.spot_selection_w_social = self.spot_selection_w_social / total_weight
+            self.spot_selection_w_success = self.spot_selection_w_success / total_weight
+            self.spot_selection_w_failure = self.spot_selection_w_failure / total_weight
+            self.spot_selection_w_locality = self.spot_selection_w_locality / total_weight
