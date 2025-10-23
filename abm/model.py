@@ -156,7 +156,7 @@ class IceFishingModel(mesa.Model):
         fish_density_sharpness: float = 0.5,
         spot_leaving_baseline_weight: float = -3,
         spot_leaving_fish_catch_weight: float = -1.7,
-        spot_leaving_time_weight: float = 0.8,
+        spot_leaving_time_weight: float = 0.13,  # 0.8 for 1-minute dt
         spot_leaving_social_weight: float = -0.33,
         spot_selection_tau: float = 1.0,
         spot_selection_social_length_scale: float = 25.0,

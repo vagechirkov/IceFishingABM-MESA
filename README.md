@@ -30,6 +30,8 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
 python -m experiments.experiment_experiment_name
 
 python generate_simulations_icefishing.py 10000 --outdir results --suffix 9_par_part_1
+
+python parameter_sweep_social_info.py 20 --outdir results_parameter_sweep --suffix part_1
 ```
 
 ## View optuna results
