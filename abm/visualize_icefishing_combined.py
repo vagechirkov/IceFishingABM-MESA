@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
@@ -262,34 +264,38 @@ def build_dynamic_dashboard(model, steps, save_format="gif", agent_idx=0):
 
     ani = animation.FuncAnimation(fig, update, frames=steps, interval=INTERVAL, blit=False)
 
+    date_now = datetime.now().strftime("%H-%M-%d-%m-%Y")
+
     if save_format.lower() == "gif":
         writer = animation.PillowWriter(fps=FPS)
-        ani.save("combined_dynamic2.gif", writer=writer)
+        ani.save(f"combined_dynamic_{date_now}.gif", writer=writer)
 
     if save_format.lower() == "mp4":
         writer = animation.FFMpegWriter(fps=FPS, metadata=dict(artist='Me'), bitrate=1800)
-        ani.save("combined_dynamic.mp4", writer=writer)
+        ani.save(f"combined_dynamic_{date_now}.mp4", writer=writer)
 
-    fig.savefig("combined_dashboard_last_frame.png", dpi=150, bbox_inches="tight")
+    fig.savefig(f"combined_dashboard_last_frame_{date_now}.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
 
 if __name__ == "__main__":
-    model = IceFishingModel(
-        grid_size=90,
-        number_of_agents=6,
-        spot_selection_tau=0.1,  # 0.1
-        fish_abundance=3.0,
-        spot_leaving_baseline_weight = -7,
-        spot_leaving_fish_catch_weight = -5,
-        spot_leaving_time_weight = 0.3,
-        spot_leaving_social_weight = -0.33,
-        spot_selection_social_length_scale = 25.0,
-        spot_selection_success_length_scale = 10.0,
-        spot_selection_failure_length_scale = 10.0,
-        spot_selection_w_social = 0.05,
-        spot_selection_w_success = 0.05,
-        spot_selection_w_failure = 0.1,
-        spot_selection_w_locality = 0.8
-    )
-    build_dynamic_dashboard(model, steps=20*6, save_format="gif", agent_idx=0)
+    for siq  in ["sampling", "consuming"]:
+        model = IceFishingModel(
+            grid_size=90,
+            number_of_agents=6,
+            spot_selection_tau=0.1,  # 0.1
+            fish_abundance=2.5,
+            spot_leaving_baseline_weight = -3.0,
+            spot_leaving_fish_catch_weight = -1.7,
+            spot_leaving_time_weight = 0.13,
+            spot_leaving_social_weight = -0.33,
+            spot_selection_social_length_scale = 25.0,
+            spot_selection_success_length_scale = 10.0,
+            spot_selection_failure_length_scale = 10.0,
+            spot_selection_w_social = 0.25,
+            spot_selection_w_success = 0.25,
+            spot_selection_w_failure = 0.25,
+            spot_selection_w_locality = 0.25,
+            spot_selection_social_info_quality=siq
+        )
+        build_dynamic_dashboard(model, steps=120*6, save_format="mp4", agent_idx=0)
