@@ -192,63 +192,9 @@ class Agent(mesa.Agent):
             self._is_moving = False
             self._is_sampling = True
 
-    def sample(self):
-        neighbors = self.model.grid.get_neighbors(
-            self.pos,
-            moore=False,
-            include_center=True,
-            radius=self.resource_cluster_radius,
-        )
-        _is_resource_collected = False
-        self._time_on_patch += 1
-        self._is_consuming = False
-
-        # if not consuming then sampling:
-        self._total_sampling_time += 1
-
-        for neighbor in neighbors:
-            if isinstance(neighbor, Resource) and neighbor.catch():
-                self._collected_resource += 1
-                self._collected_resource_last_spot += 1
-                _is_resource_collected = True
-                self._is_consuming = True
-                self._total_consuming_time += 1
-
-                # Track cluster catches
-                if self._last_catch_pos is None:
-                    self._cluster_catches += 1
-                    self._last_catch_pos = self.pos
-                else:
-                    # If catch is in same cluster (within radius)
-                    distance = np.linalg.norm(np.array(self.pos) - np.array(self._last_catch_pos))
-                    if distance > self.resource_cluster_radius * 2:  # New cluster
-                        self._cluster_catches += 1
-                    self._last_catch_pos = self.pos
-
-        # Save time to first catch
-        if _is_resource_collected and self._time_to_first_catch is None:
-            self._time_to_first_catch = self.model.schedule.steps
-
-        if not _is_resource_collected:
-            self._time_since_last_catch += 1
-
-        if not self.exploitation_strategy.stay_on_patch(
-                time_since_last_catch=self._time_since_last_catch,
-                z_social_feature=self.exploration_strategy.social_feature_kde[xy2ij(*self.pos)]
-        ):
-            self._is_sampling = False
-            self._time_since_last_catch = 0
-
-            if self._collected_resource_last_spot == 0:
-                self.add_failure_loc(self.pos)
-
-            self._collected_resource_last_spot = 0
-            self._time_on_patch = 0
-
     def sample_fish_density(self):
         self._total_sampling_time += 1
         self._sampling_time_current_spot += 1
-        self._is_consuming = False
         j, i = self.pos[0], self.pos[1]
 
         # if catch
@@ -268,6 +214,7 @@ class Agent(mesa.Agent):
                 z_social_feature=self.exploration_strategy.social_feature_kde[xy2ij(*self.pos)]
         ):
             self._is_sampling = False
+            self._is_consuming = False
             self._time_since_last_catch = 0
             self.exploitation_strategy.reset_p_leave()
 
@@ -297,10 +244,7 @@ class Agent(mesa.Agent):
         if self._is_moving and not self._is_sampling:
             self.move()
         elif self._is_sampling and not self._is_moving:
-            if self.resource_cluster_radius is None:
-                self.sample_fish_density()
-            else:
-                self.sample()
+            self.sample_fish_density()
         else:
             # Select a new destination
             self._destination = self.exploration_strategy.choose_destination(

@@ -166,6 +166,7 @@ class IceFishingModel(mesa.Model):
         spot_selection_w_success: float = 0.2,
         spot_selection_w_failure: float = 0.4,
         spot_selection_w_locality: float = 0.2,
+        spot_selection_social_info_quality: str = "sampling",  # "sampling" or "consuming"
         agent_speed_m_per_min: float = 15.0,
         agent_margin_from_others: float = 5.0,
         sample_from_prior = None,
@@ -191,6 +192,7 @@ class IceFishingModel(mesa.Model):
         self.spot_selection_social_length_scale = spot_selection_social_length_scale
         self.spot_selection_success_length_scale = spot_selection_success_length_scale
         self.spot_selection_failure_length_scale = spot_selection_failure_length_scale
+        self.spot_selection_social_info_quality = spot_selection_social_info_quality
 
         self.spot_selection_w_social = spot_selection_w_social
         self.spot_selection_w_success = spot_selection_w_success
@@ -261,7 +263,7 @@ class IceFishingModel(mesa.Model):
             exploitation_strategy=exploitation_strategy_list,
             speed_m_per_step=self.agent_speed_m_per_min / self.steps_per_minute,
             margin_from_others=self.agent_margin_from_others,
-            social_info_quality="sampling",
+            social_info_quality=self.spot_selection_social_info_quality,
             resource_cluster_radius=None
         )
 
