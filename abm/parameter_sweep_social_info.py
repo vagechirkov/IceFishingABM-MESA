@@ -10,8 +10,9 @@ def run_simulations_social_info_abundance(n_repetitions: int = 1):
         "grid_size": 90,
         "number_of_agents": 6,
         "simulation_length_minutes": 180,
-        "fish_abundance": [3.0, 3.5, 4.0],
-        "spot_selection_w_social": [0.042, 0.2, 0.8, 2.4]  # 1:4, 2:4, 3:4 ratio of soc to private weights
+        "fish_abundance": [2.5, 3.0, 3.5],
+        "spot_selection_w_social": [0.042, 0.2, 0.8, 2.4],  # 1:4, 2:4, 3:4 ratio of soc to private weights
+        "spot_selection_social_info_quality": ["sampling", "consuming"]
     }
 
     max_steps = params["simulation_length_minutes"] * 6
@@ -48,15 +49,20 @@ if __name__ == "__main__":
         default=""
     )
 
+    chunk_size = 200
     args = parser.parse_args()
-
-    df = run_simulations_social_info_abundance(args.n_repetitions)
-    if not isinstance(df, pd.DataFrame):
-        df = pd.DataFrame(df)
-
+    total_repetitions = args.n_repetitions
     args.outdir.mkdir(parents=True, exist_ok=True)
     today_str = datetime.now().strftime("%d.%m.%Y")
-    fname = args.outdir / f"ice_fishing_simulations_{today_str}_{args.suffix}.csv"
-    df.to_csv(fname, index=False)
+    file_counter = 1
 
-    print(f"Saved {len(df)} rows to: {fname}")
+    for start_rep in range(0, total_repetitions, chunk_size):
+        reps_in_this_chunk = min(chunk_size, total_repetitions - start_rep)
+        df = run_simulations_social_info_abundance(reps_in_this_chunk)
+
+        if not isinstance(df, pd.DataFrame):
+            df = pd.DataFrame(df)
+
+        fname = args.outdir / f"ice_fishing_simulations_{today_str}_{args.suffix}_{file_counter}.csv"
+        df.to_csv(fname, index=False)
+        file_counter += 1
