@@ -17,7 +17,7 @@ def objective(trial):
     Optuna objective function to optimize the IceFishingModel parameters.
     """
     fish_abundance=3.0
-    n_iterations=20
+    n_iterations=200
     trial.set_user_attr("n_iterations", n_iterations)
 
     # Spot Selection Weights
