@@ -115,10 +115,9 @@ def objective(trial, fish_abundance=3.0, tau=0.1):
 
 
 
-def run_optimization(db_name='ice_fishing_model_11_25', n_trials=100, fish_abundance=3.0, tau=0.1):
+def run_optimization(db_name, study_name, n_trials=100, fish_abundance=3.0, tau=0.1):
     optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
-    study_name = db_name  # Unique identifier of the study.
-    storage_name = "sqlite:///{}.db".format(study_name)
+    storage_name = "sqlite:///{}.db".format(db_name)
     study = optuna.create_study(
         study_name=study_name,
         storage=storage_name,
@@ -167,7 +166,8 @@ if __name__ == "__main__":
     print(f"Trials to run: {args.n_trials}")
     print(f"Storage: sqlite:///{args.db_name}.db")
 
-    run_optimization(db_name=f"{args.db_name}_{args.abundance}_{args.tau}",
+    run_optimization(db_name=f"{args.db_name}",
+                     study_name=f"{args.db_name}_{args.abundance}_{args.tau}",
                      n_trials=args.n_trials,
                      fish_abundance=args.abundance,
                      tau=args.tau)
