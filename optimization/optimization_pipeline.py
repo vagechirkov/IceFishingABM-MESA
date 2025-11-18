@@ -5,20 +5,17 @@ import optuna
 
 
 import argparse
-from datetime import datetime
-from pathlib import Path
 import pandas as pd
+from functools import partial
 from abm.model import IceFishingModel
 from mesa.batchrunner import batch_run
 
 
-def objective(trial):
+def objective(trial, fish_abundance=3.0, tau=0.1):
     """
     Optuna objective function to optimize the IceFishingModel parameters.
     """
-    fish_abundance=3.0
-    n_iterations=200
-    trial.set_user_attr("n_iterations", n_iterations)
+    n_iterations = 200
 
     # Spot Selection Weights
     _w_social = trial.suggest_float("_w_social", 0.0, 1.0)
@@ -34,29 +31,32 @@ def objective(trial):
     w_failure = _w_failure / total_w
     w_locality = _w_locality / total_w
 
-    # Store the normalized weights as user attributes
-    trial.set_user_attr("spot_selection_w_social", w_social)
-    trial.set_user_attr("spot_selection_w_success", w_success)
-    trial.set_user_attr("spot_selection_w_failure", w_failure)
-    trial.set_user_attr("spot_selection_w_locality", w_locality)
-    trial.set_user_attr("fish_abundance", fish_abundance)
-
-    tau = 1.0
-    trial.set_user_attr("spot_selection_tau", tau)
-
     # Spot Leaving Weights (Logistic regression on logit scale)
     # Default: -3
-    baseline_weight = trial.suggest_float("spot_leaving_baseline_weight", -7.0, -1.0)
+    baseline_weight = trial.suggest_float("spot_leaving_baseline_weight", -20.0, -1.0)
 
     # Default: -1.7 (Catching fish should make you less likely to leave)
-    fish_catch_weight = trial.suggest_float("spot_leaving_fish_catch_weight", -5.0, 0.0)
+    fish_catch_weight = trial.suggest_float("spot_leaving_fish_catch_weight", -15.0, 0.0)
 
     # Default: 0.13 (More time should make you more likely to leave)
-    time_weight = trial.suggest_float("spot_leaving_time_weight", 0.0, 0.5)
+    time_weight = trial.suggest_float("spot_leaving_time_weight", 0.0, 2.0)
 
     # Default: -0.33 (Social feature, range can be wider)
-    social_weight = trial.suggest_float("spot_leaving_social_weight", -2, 1.0)
+    social_weight = trial.suggest_float("spot_leaving_social_weight", -3, 3.0)
 
+    # Store the normalized weights as user attributes
+    trial.set_user_attr("n_iterations", n_iterations)
+    trial.set_user_attr("ssw_soc", w_social)
+    trial.set_user_attr("ssw_suc", w_success)
+    trial.set_user_attr("ssw_fail", w_failure)
+    trial.set_user_attr("ssw_loc", w_locality)
+    trial.set_user_attr("ss_tau", tau)
+    trial.set_user_attr("fish_abundance", fish_abundance)
+
+    trial.set_user_attr("slw_base", w_social)
+    trial.set_user_attr("slw_fish", w_success)
+    trial.set_user_attr("slw_time", w_failure)
+    trial.set_user_attr("slw_soc", w_locality)
 
     params = {
         "grid_size": 90,
@@ -115,7 +115,7 @@ def objective(trial):
 
 
 
-def run_optimization(db_name='ice_fishing_model_11_25', n_trials=100):
+def run_optimization(db_name='ice_fishing_model_11_25', n_trials=100, fish_abundance=3.0, tau=0.1):
     optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
     study_name = db_name  # Unique identifier of the study.
     storage_name = "sqlite:///{}.db".format(study_name)
@@ -126,7 +126,8 @@ def run_optimization(db_name='ice_fishing_model_11_25', n_trials=100):
         direction="maximize",
     )
 
-    study.optimize(objective, n_trials=n_trials, n_jobs=1)
+    objective_with_params = partial(objective, fish_abundance=fish_abundance, tau=tau)
+    study.optimize(objective_with_params, n_trials=n_trials, n_jobs=1)
 
 
 
@@ -147,11 +148,26 @@ if __name__ == "__main__":
         help="Name of the study (and .db file), e.g., 'ice_fishing_v1'"
     )
 
+    parser.add_argument(
+        "--abundance",
+        type=float,
+        default=3.0
+    )
+
+    parser.add_argument(
+        "--tau",
+        type=float,
+        default=0.1
+    )
+
     args = parser.parse_args()
 
-    print(f"--- Starting Optuna Optimization ---")
-    print(f"Study Name: {args.db_name}")
+    print("--- Starting Optuna Optimization ---")
+    print(f"Study Name: {args.db_name}_{args.abundance}_{args.tau}")
     print(f"Trials to run: {args.n_trials}")
     print(f"Storage: sqlite:///{args.db_name}.db")
 
-    run_optimization(db_name=args.db_name, n_trials=args.n_trials)
+    run_optimization(db_name=f"{args.db_name}_{args.abundance}_{args.tau}",
+                     n_trials=args.n_trials,
+                     fish_abundance=args.abundance,
+                     tau=args.tau)
