@@ -53,10 +53,10 @@ def objective(trial, fish_abundance=3.0, tau=0.1):
     trial.set_user_attr("ss_tau", tau)
     trial.set_user_attr("fish_abundance", fish_abundance)
 
-    trial.set_user_attr("slw_base", w_social)
-    trial.set_user_attr("slw_fish", w_success)
-    trial.set_user_attr("slw_time", w_failure)
-    trial.set_user_attr("slw_soc", w_locality)
+    trial.set_user_attr("slw_base", baseline_weight)
+    trial.set_user_attr("slw_fish", fish_catch_weight)
+    trial.set_user_attr("slw_time", time_weight)
+    trial.set_user_attr("slw_soc", social_weight)
 
     params = {
         "grid_size": 90,
