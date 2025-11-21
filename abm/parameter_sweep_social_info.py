@@ -10,7 +10,7 @@ def run_simulations_social_info_abundance(n_repetitions: int = 1):
         "grid_size": 90,
         "number_of_agents": 6,
         "simulation_length_minutes": 180,
-        "fish_abundance": [2.5, 3.0, 3.5],
+        "fish_abundance": [2.0, 2.5, 3.0],
         "spot_selection_tau": 0.1,
         "spot_selection_w_social": [0, 0.25, 0.75, 2.25],  # 1:4, 2:4, 3:4 ratio of soc to private weights
         "spot_selection_social_info_quality": ["sampling", "consuming"]
