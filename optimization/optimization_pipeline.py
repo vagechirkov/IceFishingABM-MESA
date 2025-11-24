@@ -31,19 +31,23 @@ def objective(trial, fish_abundance=3.0, tau=0.1, suggest_slw=True):
     w_failure = _w_failure / total_w
     w_locality = _w_locality / total_w
 
+    spot_selection_social_length_scale = trial.suggest_float("ssw_soc_ls", 0.5, 50.0)
+    spot_selection_success_length_scale = trial.suggest_float("ssw_suc_ls", 0.5, 50.0)
+    spot_selection_failure_length_scale = trial.suggest_float("ssw_fail_ls", 0.5, 50.0)
+
     # Spot Leaving Weights (Logistic regression on logit scale)
     if suggest_slw:
         # Default: -3
-        baseline_weight = trial.suggest_float("spot_leaving_baseline_weight", -20.0, -1.0)
+        baseline_weight = trial.suggest_float("slw_base", -20.0, -1.0)
 
         # Default: -1.7 (Catching fish should make you less likely to leave)
-        fish_catch_weight = trial.suggest_float("spot_leaving_fish_catch_weight", -15.0, 0.0)
+        fish_catch_weight = trial.suggest_float("slw_fish", -15.0, 0.0)
 
         # Default: 0.13 (More time should make you more likely to leave)
-        time_weight = trial.suggest_float("spot_leaving_time_weight", 0.0, 2.0)
+        time_weight = trial.suggest_float("slw_time", 0.0, 2.0)
 
         # Default: -0.33 (Social feature, range can be wider)
-        social_weight = trial.suggest_float("spot_leaving_social_weight", -3, 3.0)
+        social_weight = trial.suggest_float("slw_soc", -3, 3.0)
     else:
         baseline_weight = -3.0
         fish_catch_weight = -1.7
@@ -60,11 +64,6 @@ def objective(trial, fish_abundance=3.0, tau=0.1, suggest_slw=True):
     trial.set_user_attr("ssw_loc", w_locality)
     trial.set_user_attr("ss_tau", tau)
 
-    trial.set_user_attr("slw_base", baseline_weight)
-    trial.set_user_attr("slw_fish", fish_catch_weight)
-    trial.set_user_attr("slw_time", time_weight)
-    trial.set_user_attr("slw_soc", social_weight)
-
     params = {
         "grid_size": 90,
         "number_of_agents": 6,
@@ -75,6 +74,9 @@ def objective(trial, fish_abundance=3.0, tau=0.1, suggest_slw=True):
         "spot_selection_w_success": w_success,
         "spot_selection_w_failure": w_failure,
         "spot_selection_w_locality": w_locality,
+        "spot_selection_social_length_scale": spot_selection_social_length_scale,
+        "spot_selection_success_length_scale": spot_selection_success_length_scale,
+        "spot_selection_failure_length_scale": spot_selection_failure_length_scale,
 
         "spot_selection_tau": tau,
 
