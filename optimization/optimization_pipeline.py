@@ -186,4 +186,5 @@ if __name__ == "__main__":
                      study_name=study_name,
                      n_trials=args.n_trials,
                      fish_abundance=args.abundance,
-                     tau=args.tau)
+                     tau=args.tau,
+                     suggest_slw=args.suggest_slw)
