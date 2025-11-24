@@ -168,7 +168,7 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--suggest_slw",
-        type=bool,
+        action=argparse.BooleanOptionalAction,
         default=True
     )
 
