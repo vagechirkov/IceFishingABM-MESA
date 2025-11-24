@@ -270,6 +270,7 @@ class IceFishingModel(mesa.Model):
         self.datacollector = mesa.datacollection.DataCollector(
             model_reporters={
                 "catch": lambda m: np.mean([a.collected_resource for a in m.agents]),
+                "median_catch": lambda m: np.median([a.collected_resource for a in m.agents]),
                 "travel_distance": lambda m: np.mean(
                     [a.traveled_distance_euclidean for a in m.agents]
                 ),

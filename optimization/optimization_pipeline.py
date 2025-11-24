@@ -15,7 +15,7 @@ def objective(trial, fish_abundance=3.0, tau=0.1, suggest_slw=True):
     """
     Optuna objective function to optimize the IceFishingModel parameters.
     """
-    n_iterations = 200
+    n_iterations = 20
 
     # Spot Selection Weights
     _w_social = trial.suggest_float("_w_social", 0.0, 1.0)
@@ -96,7 +96,7 @@ def objective(trial, fish_abundance=3.0, tau=0.1, suggest_slw=True):
             parameters=params,
             iterations=n_iterations,  # Number of iterations per trial
             max_steps=max_steps,
-            number_processes=None,
+            number_processes=1,
             data_collection_period=-1,
             display_progress=False,
         )
@@ -109,7 +109,7 @@ def objective(trial, fish_abundance=3.0, tau=0.1, suggest_slw=True):
 
         # Objective Value
         # We want to maximize the median catch across iterations
-        median_catch = results_df['catch'].median()
+        median_catch = results_df['median_catch'].median()
 
         # Handle potential NaN or empty results
         if pd.isna(median_catch):
@@ -132,10 +132,13 @@ def run_optimization(db_name, study_name, n_trials=100, fish_abundance=3.0, tau=
         storage=storage_name,
         load_if_exists=True,
         direction="maximize",
+        # sampler=optuna.samplers.RandomSampler()
+        # sampler=optuna.samplers.TPESampler()
+        sampler=optuna.samplers.CmaEsSampler(n_startup_trials=500)
     )
 
     objective_with_params = partial(objective, fish_abundance=fish_abundance, tau=tau, suggest_slw=suggest_slw)
-    study.optimize(objective_with_params, n_trials=n_trials, n_jobs=1)
+    study.optimize(objective_with_params, n_trials=n_trials, n_jobs=-1)
 
 
 
@@ -169,6 +172,12 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--suffix",
+        type=str,
+        default=""
+    )
+
+    parser.add_argument(
         "--suggest_slw",
         action=argparse.BooleanOptionalAction,
         default=True
@@ -177,11 +186,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     print("--- Starting Optuna Optimization ---")
-    print(f"Study Name: {args.db_name}_{args.abundance}_{args.tau}_slw_{args.suggest_slw}")
+    print(f"Study Name: {args.db_name}{args.suffix}_{args.abundance}_{args.tau}_slw_{args.suggest_slw}")
     print(f"Trials to run: {args.n_trials}")
     print(f"Storage: sqlite:///{args.db_name}.db")
 
-    study_name = f"{args.db_name}_{args.abundance}_{args.tau}"
+    study_name = f"{args.db_name}{args.suffix}_{args.abundance}_{args.tau}"
     if not args.suggest_slw:
         study_name += f"_slw_{args.suggest_slw}"
     run_optimization(db_name=f"{args.db_name}",
