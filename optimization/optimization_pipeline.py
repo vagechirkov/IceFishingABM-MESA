@@ -11,7 +11,7 @@ from abm.model import IceFishingModel
 from mesa.batchrunner import batch_run
 
 
-def objective(trial, fish_abundance=3.0, tau=0.1):
+def objective(trial, fish_abundance=3.0, tau=0.1, suggest_slw=True):
     """
     Optuna objective function to optimize the IceFishingModel parameters.
     """
@@ -32,26 +32,33 @@ def objective(trial, fish_abundance=3.0, tau=0.1):
     w_locality = _w_locality / total_w
 
     # Spot Leaving Weights (Logistic regression on logit scale)
-    # Default: -3
-    baseline_weight = trial.suggest_float("spot_leaving_baseline_weight", -20.0, -1.0)
+    if suggest_slw:
+        # Default: -3
+        baseline_weight = trial.suggest_float("spot_leaving_baseline_weight", -20.0, -1.0)
 
-    # Default: -1.7 (Catching fish should make you less likely to leave)
-    fish_catch_weight = trial.suggest_float("spot_leaving_fish_catch_weight", -15.0, 0.0)
+        # Default: -1.7 (Catching fish should make you less likely to leave)
+        fish_catch_weight = trial.suggest_float("spot_leaving_fish_catch_weight", -15.0, 0.0)
 
-    # Default: 0.13 (More time should make you more likely to leave)
-    time_weight = trial.suggest_float("spot_leaving_time_weight", 0.0, 2.0)
+        # Default: 0.13 (More time should make you more likely to leave)
+        time_weight = trial.suggest_float("spot_leaving_time_weight", 0.0, 2.0)
 
-    # Default: -0.33 (Social feature, range can be wider)
-    social_weight = trial.suggest_float("spot_leaving_social_weight", -3, 3.0)
+        # Default: -0.33 (Social feature, range can be wider)
+        social_weight = trial.suggest_float("spot_leaving_social_weight", -3, 3.0)
+    else:
+        baseline_weight = -3.0
+        fish_catch_weight = -1.7
+        time_weight = 0.13
+        social_weight = -0.33
 
     # Store the normalized weights as user attributes
     trial.set_user_attr("n_iterations", n_iterations)
+    trial.set_user_attr("fish_abundance", fish_abundance)
+
     trial.set_user_attr("ssw_soc", w_social)
     trial.set_user_attr("ssw_suc", w_success)
     trial.set_user_attr("ssw_fail", w_failure)
     trial.set_user_attr("ssw_loc", w_locality)
     trial.set_user_attr("ss_tau", tau)
-    trial.set_user_attr("fish_abundance", fish_abundance)
 
     trial.set_user_attr("slw_base", baseline_weight)
     trial.set_user_attr("slw_fish", fish_catch_weight)
@@ -115,7 +122,7 @@ def objective(trial, fish_abundance=3.0, tau=0.1):
 
 
 
-def run_optimization(db_name, study_name, n_trials=100, fish_abundance=3.0, tau=0.1):
+def run_optimization(db_name, study_name, n_trials=100, fish_abundance=3.0, tau=0.1, suggest_slw=True):
     optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
     storage_name = "sqlite:///{}.db".format(db_name)
     study = optuna.create_study(
@@ -125,7 +132,7 @@ def run_optimization(db_name, study_name, n_trials=100, fish_abundance=3.0, tau=
         direction="maximize",
     )
 
-    objective_with_params = partial(objective, fish_abundance=fish_abundance, tau=tau)
+    objective_with_params = partial(objective, fish_abundance=fish_abundance, tau=tau, suggest_slw=suggest_slw)
     study.optimize(objective_with_params, n_trials=n_trials, n_jobs=1)
 
 
@@ -159,15 +166,24 @@ if __name__ == "__main__":
         default=0.1
     )
 
+    parser.add_argument(
+        "--suggest_slw",
+        type=bool,
+        default=True
+    )
+
     args = parser.parse_args()
 
     print("--- Starting Optuna Optimization ---")
-    print(f"Study Name: {args.db_name}_{args.abundance}_{args.tau}")
+    print(f"Study Name: {args.db_name}_{args.abundance}_{args.tau}_slw_{args.suggest_slw}")
     print(f"Trials to run: {args.n_trials}")
     print(f"Storage: sqlite:///{args.db_name}.db")
 
+    study_name = f"{args.db_name}_{args.abundance}_{args.tau}"
+    if not args.suggest_slw:
+        study_name += f"_slw_{args.suggest_slw}"
     run_optimization(db_name=f"{args.db_name}",
-                     study_name=f"{args.db_name}_{args.abundance}_{args.tau}",
+                     study_name=study_name,
                      n_trials=args.n_trials,
                      fish_abundance=args.abundance,
                      tau=args.tau)
