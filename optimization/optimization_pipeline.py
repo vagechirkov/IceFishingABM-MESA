@@ -1,5 +1,6 @@
 import logging
 import sys
+from multiprocessing import Pool
 
 import optuna
 
@@ -96,7 +97,7 @@ def objective(trial, fish_abundance=3.0, tau=0.1, suggest_slw=True):
             parameters=params,
             iterations=n_iterations,  # Number of iterations per trial
             max_steps=max_steps,
-            number_processes=1,
+            number_processes=None,
             data_collection_period=-1,
             display_progress=False,
         )
@@ -138,8 +139,7 @@ def run_optimization(db_name, study_name, n_trials=100, fish_abundance=3.0, tau=
     )
 
     objective_with_params = partial(objective, fish_abundance=fish_abundance, tau=tau, suggest_slw=suggest_slw)
-    study.optimize(objective_with_params, n_trials=n_trials, n_jobs=-1)
-
+    study.optimize(objective_with_params, n_trials=n_trials, n_jobs=1)
 
 
 if __name__ == "__main__":
@@ -193,9 +193,15 @@ if __name__ == "__main__":
     study_name = f"{args.db_name}{args.suffix}_{args.abundance}_{args.tau}"
     if not args.suggest_slw:
         study_name += f"_slw_{args.suggest_slw}"
-    run_optimization(db_name=f"{args.db_name}",
-                     study_name=study_name,
-                     n_trials=args.n_trials,
-                     fish_abundance=args.abundance,
-                     tau=args.tau,
-                     suggest_slw=args.suggest_slw)
+
+    def _run_optimization(_):
+        run_optimization(db_name=f"{args.db_name}",
+                         study_name=study_name,
+                         n_trials=args.n_trials,
+                         fish_abundance=args.abundance,
+                         tau=args.tau,
+                         suggest_slw=args.suggest_slw)
+
+
+    with Pool(processes=4) as pool:
+        pool.map(_run_optimization, range(5))
