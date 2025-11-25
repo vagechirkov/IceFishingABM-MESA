@@ -54,16 +54,6 @@ def objective(trial, fish_abundance=3.0, tau=0.1, suggest_slw=True):
         time_weight = 0.13
         social_weight = -0.33
 
-    # Store the normalized weights as user attributes
-    trial.set_user_attr("n_iterations", n_iterations)
-    trial.set_user_attr("fish_abundance", fish_abundance)
-
-    trial.set_user_attr("ssw_soc", w_social)
-    trial.set_user_attr("ssw_suc", w_success)
-    trial.set_user_attr("ssw_fail", w_failure)
-    trial.set_user_attr("ssw_loc", w_locality)
-    trial.set_user_attr("ss_tau", tau)
-
     params = {
         "grid_size": 90,
         "number_of_agents": 6,
@@ -110,6 +100,16 @@ def objective(trial, fish_abundance=3.0, tau=0.1, suggest_slw=True):
         # Objective Value
         # We want to maximize the median catch across iterations
         median_catch = results_df['median_catch'].median()
+
+        # Store the normalized weights as user attributes
+        trial.set_user_attr("n_iterations", n_iterations)
+        trial.set_user_attr("fish_abundance", fish_abundance)
+
+        trial.set_user_attr("ssw_soc", w_social)
+        trial.set_user_attr("ssw_suc", w_success)
+        trial.set_user_attr("ssw_fail", w_failure)
+        trial.set_user_attr("ssw_loc", w_locality)
+        trial.set_user_attr("ss_tau", tau)
 
         # Handle potential NaN or empty results
         if pd.isna(median_catch):
