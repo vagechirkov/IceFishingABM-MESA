@@ -193,9 +193,17 @@ if __name__ == "__main__":
     if not args.suggest_slw:
         study_name += f"_slw_{args.suggest_slw}"
 
-    run_optimization(db_name=f"{args.db_name}",
-                     study_name=study_name,
-                     n_trials=args.n_trials,
-                     fish_abundance=args.abundance,
-                     tau=args.tau,
-                     suggest_slw=args.suggest_slw)
+    is_done = False
+
+    while not is_done:
+        try:
+            run_optimization(db_name=f"{args.db_name}",
+                             study_name=study_name,
+                             n_trials=args.n_trials,
+                             fish_abundance=args.abundance,
+                             tau=args.tau,
+                             suggest_slw=args.suggest_slw)
+            is_done = True
+        except Exception as e:
+            is_done = False
+            print(e)
