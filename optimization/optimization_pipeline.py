@@ -128,6 +128,7 @@ def run_optimization(db_name, study_name, n_trials=100, fish_abundance=3.0, tau=
     optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
     storage_name = "sqlite:///{}.db".format(db_name)
     study = optuna.create_study(
+        study_name=study_name,
         storage=optuna.storages.RDBStorage(storage_name, engine_kwargs={"connect_args": {"timeout": 120.0}}),
         load_if_exists=True,
         direction="maximize",
