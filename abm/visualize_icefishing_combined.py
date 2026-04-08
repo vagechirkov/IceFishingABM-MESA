@@ -279,15 +279,15 @@ def build_dynamic_dashboard(model, steps, save_format="gif", agent_idx=0):
 
 
 if __name__ == "__main__":
-    for siq  in ["sampling", "consuming"]:
+    for siq  in ["sampling"]:  # , "consuming"
         model = IceFishingModel(
             grid_size=90,
             number_of_agents=6,
-            spot_selection_tau=0.1,  # 0.1
-            fish_abundance=2.5,
-            spot_leaving_baseline_weight = -3.0,
-            spot_leaving_fish_catch_weight = -1.7,
-            spot_leaving_time_weight = 0.13,
+            spot_selection_tau=1.0, # 0.1,  # 0.1
+            fish_abundance=3.0, # 2.5,
+            spot_leaving_baseline_weight = -7, # -3.0,
+            spot_leaving_fish_catch_weight = -5, # -1.7,
+            spot_leaving_time_weight = 0.2, # 0.13,
             spot_leaving_social_weight = -0.33,
             spot_selection_social_length_scale = 25.0,
             spot_selection_success_length_scale = 10.0,

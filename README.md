@@ -13,7 +13,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # freez only the explicitly installed dependencies
- pip list --not-required --format=freeze > requirements.txt
+pip list --not-required --format=freeze > requirements.txt
 ```
 
 ## Running the Model
@@ -39,4 +39,13 @@ python parameter_sweep_social_info.py 20 --outdir results_parameter_sweep --suff
 ```bash
 # cd to the shared directory (e.g., cd /Volumes/share/Chirkov_Jana/)
 optuna-dashboard sqlite:///foraging-db.db
+```
+
+
+```bash
+python optimization_pipeline.py --db_name ice_fishing_model_11_25 --n_trials 1000 --abundance 3.0 --tau 0.1 --no-suggest_slw --suffix _CmaEs
+
+optuna-dashboard sqlite:///ice_fishing_model_11_25.db
+
+sh -L 8080:localhost:8080 chirkov@compute9.itb.biologie.hu-berlin.de
 ```
