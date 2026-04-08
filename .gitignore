@@ -1016,3 +1016,5 @@ fabric.properties
 *.svg
 *.mp4
 /sbi_inference/sbi-logs/*
+nohup.out
+*.db-journal
