@@ -1018,3 +1018,4 @@ fabric.properties
 /sbi_inference/sbi-logs/*
 nohup.out
 *.db-journal
+abm/data
