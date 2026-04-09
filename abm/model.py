@@ -200,12 +200,13 @@ class IceFishingModel(mesa.Model):
         self.spot_selection_failure_length_scale = spot_selection_failure_length_scale
         self.spot_selection_social_info_quality = spot_selection_social_info_quality
 
-        self.spot_selection_w_locality = spot_selection_w_locality
         if spot_selection_weights is not None:
             self.spot_selection_w_social = spot_selection_weights[0]
             self.spot_selection_w_success = spot_selection_weights[1]
             self.spot_selection_w_failure = spot_selection_weights[2]
+            self.spot_selection_w_locality = spot_selection_weights[3]
         else:
+            self.spot_selection_w_locality = spot_selection_w_locality
             self.spot_selection_w_social = spot_selection_w_social
             self.spot_selection_w_success = spot_selection_w_success
             self.spot_selection_w_failure = spot_selection_w_failure

@@ -52,7 +52,7 @@ def main():
     )
     
     belief = exp_strat._compute_kde_beliefs()
-    taus = [0.1, 0.15, 0.2, 0.25, 0.3]
+    taus = [0.05, 0.2, 0.35]
     
     # Pre-calculate softmaxes to establish a global color scale
     softmaxes = [exp_strat._softmax(belief, tau=tau).reshape(grid_size, grid_size) for tau in taus]
