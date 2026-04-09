@@ -10,7 +10,7 @@ sns.set_context("talk")
 def main():
     # File configuration
     data_path = "abm/data/temperature_by_compID_wide.csv"
-    output_path = "abm/empirical_findings_summary.png"
+    output_path = "abm/empirical_findings_summary.pdf"
     
     if not os.path.exists(data_path):
         print(f"Error: Data file not found at {data_path}")
@@ -89,7 +89,7 @@ def main():
     ax.set_ylabel("Estimate (Mean ± 95% CI)")
     ax.set_xlabel("")
     ax.set_ylim(0, None)
-    plt.xticks(rotation=15)
+    plt.xticks(rotation=0)
     plt.subplots_adjust(top=0.9)
 
     # Save the plot

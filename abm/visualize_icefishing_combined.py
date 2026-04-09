@@ -132,7 +132,7 @@ def get_p_leave_and_sampling_for_agent(agent):
     s = bool(getattr(agent, "is_sampling")) or bool(getattr(agent, "is_consuming"))
     return p, s
 
-def build_dynamic_dashboard(model, steps, save_format="gif", agent_idx=0):
+def build_dynamic_dashboard(model, steps, save_format="gif", suffix="", agent_idx=0):
     # pick the focus agent
     if not get_agents(model):
         raise RuntimeError("No agents found in model.")
@@ -250,7 +250,7 @@ def build_dynamic_dashboard(model, steps, save_format="gif", agent_idx=0):
         m_arr = np.asarray(samp_hist, dtype=bool)
         p_plot = p_arr.copy()
         ts_line.set_data(t_arr, p_plot)
-        if focus_agent.is_consuming:
+        if focus_agent.is_consuming and (focus_agent._time_since_last_catch == 0):
             ax_ts.axvline((model.steps - 1) / model.steps_per_minute, linestyle="--", alpha=0.5, color="red")
         if move_fill[0] is not None:
             move_fill[0].remove()
@@ -268,34 +268,37 @@ def build_dynamic_dashboard(model, steps, save_format="gif", agent_idx=0):
 
     if save_format.lower() == "gif":
         writer = animation.PillowWriter(fps=FPS)
-        ani.save(f"combined_dynamic_{date_now}.gif", writer=writer)
+        ani.save(f"combined_dynamic{suffix}_{date_now}.gif", writer=writer)
 
     if save_format.lower() == "mp4":
         writer = animation.FFMpegWriter(fps=FPS, metadata=dict(artist='Me'), bitrate=1800)
-        ani.save(f"combined_dynamic_{date_now}.mp4", writer=writer)
+        ani.save(f"combined_dynamic{suffix}_{date_now}.mp4", writer=writer)
 
-    fig.savefig(f"combined_dashboard_last_frame_{date_now}.png", dpi=150, bbox_inches="tight")
+    fig.savefig(f"combined_dashboard_last_frame{suffix}_{date_now}.png", dpi=150, bbox_inches="tight")
+    fig.savefig(f"combined_dashboard_last_frame{suffix}_{date_now}.pdf", dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 
 if __name__ == "__main__":
-    for siq  in ["sampling"]:  # , "consuming"
-        model = IceFishingModel(
-            grid_size=90,
-            number_of_agents=6,
-            spot_selection_tau=1.0, # 0.1,  # 0.1
-            fish_abundance=3.0, # 2.5,
-            spot_leaving_baseline_weight = -7, # -3.0,
-            spot_leaving_fish_catch_weight = -5, # -1.7,
-            spot_leaving_time_weight = 0.2, # 0.13,
-            spot_leaving_social_weight = -0.33,
-            spot_selection_social_length_scale = 25.0,
-            spot_selection_success_length_scale = 10.0,
-            spot_selection_failure_length_scale = 10.0,
-            spot_selection_w_social = 0.25,
-            spot_selection_w_success = 0.25,
-            spot_selection_w_failure = 0.25,
-            spot_selection_w_locality = 0.25,
-            spot_selection_social_info_quality=siq
-        )
-        build_dynamic_dashboard(model, steps=120*6, save_format="mp4", agent_idx=0)
+    for tau in [0.1, 0.2, 0.3]:
+        for siq  in ["sampling"]:  # , "consuming"
+            model = IceFishingModel(
+                grid_size=90,
+                number_of_agents=6,
+                spot_selection_tau=tau, # 0.1,  # 0.1
+                fish_abundance=2.5, # 2.5,
+                spot_leaving_baseline_weight = -7, # -3.0,
+                spot_leaving_fish_catch_weight = -5, # -1.7,
+                spot_leaving_time_weight = 0.2, # 0.13,
+                spot_leaving_social_weight = -0.33,
+                spot_selection_social_length_scale = 25.0,
+                spot_selection_success_length_scale = 10.0,
+                spot_selection_failure_length_scale = 10.0,
+                spot_selection_w_social = 0.2,
+                spot_selection_w_success = 0.4,
+                spot_selection_w_failure = 0.4,
+                spot_selection_w_locality = 0.0,
+                spot_selection_social_info_quality=siq
+            )
+            suffix = f"_tau_{tau}_siq_{siq}"
+            build_dynamic_dashboard(model, steps=120*6, save_format="mp4", suffix=suffix, agent_idx=0)

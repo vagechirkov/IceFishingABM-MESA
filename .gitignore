@@ -1007,6 +1007,7 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 
 *.png
+*.pdf
 *_figures
 *.gif
 *.html
