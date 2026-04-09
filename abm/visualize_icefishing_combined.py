@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -138,6 +139,10 @@ def build_dynamic_dashboard(model, steps, save_format="gif", suffix="", agent_id
         raise RuntimeError("No agents found in model.")
     focus_agent = get_agents(model)[agent_idx]
 
+    date_now = datetime.now().strftime("%H-%M-%d-%m-%Y")
+    out_dir = "results"
+    os.makedirs(out_dir, exist_ok=True)
+
     fig, axes, explore_axes = new_figure_and_axes()
     ax_sim = axes["sim"]
     ax_ts  = axes["ts"]
@@ -260,33 +265,34 @@ def build_dynamic_dashboard(model, steps, save_format="gif", suffix="", agent_id
             color="tab:blue", alpha=0.25, linewidth=0, zorder=1
         )
 
+        if getattr(model, "steps", 0) > 0 and getattr(model, "steps", 0) % (30 * getattr(model, "steps_per_minute", 6)) == 0:
+            minutes = int(getattr(model, "steps_min", 0))
+            fig.savefig(f"{out_dir}/combined_dashboard_min{minutes}{suffix}_{date_now}.pdf", dpi=600, bbox_inches="tight")
+
         return (agent_scat, fish_im, *exp_images, ts_line, *move_fill)
 
     ani = animation.FuncAnimation(fig, update, frames=steps, interval=INTERVAL, blit=False)
 
-    date_now = datetime.now().strftime("%H-%M-%d-%m-%Y")
-
     if save_format.lower() == "gif":
         writer = animation.PillowWriter(fps=FPS)
-        ani.save(f"combined_dynamic{suffix}_{date_now}.gif", writer=writer)
+        ani.save(f"{out_dir}/combined_dynamic{suffix}_{date_now}.gif", writer=writer)
 
     if save_format.lower() == "mp4":
         writer = animation.FFMpegWriter(fps=FPS, metadata=dict(artist='Me'), bitrate=1800)
-        ani.save(f"combined_dynamic{suffix}_{date_now}.mp4", writer=writer)
+        ani.save(f"{out_dir}/combined_dynamic{suffix}_{date_now}.mp4", writer=writer)
 
-    fig.savefig(f"combined_dashboard_last_frame{suffix}_{date_now}.png", dpi=150, bbox_inches="tight")
-    fig.savefig(f"combined_dashboard_last_frame{suffix}_{date_now}.pdf", dpi=600, bbox_inches="tight")
+    fig.savefig(f"{out_dir}/combined_dashboard_last_frame{suffix}_{date_now}.pdf", dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 
 if __name__ == "__main__":
-    for tau in [0.1, 0.2, 0.3]:
+    for tau in [0.3]:
         for siq  in ["sampling"]:  # , "consuming"
             model = IceFishingModel(
                 grid_size=90,
                 number_of_agents=6,
                 spot_selection_tau=tau, # 0.1,  # 0.1
-                fish_abundance=2.5, # 2.5,
+                fish_abundance=3.0, # 2.5,
                 spot_leaving_baseline_weight = -7, # -3.0,
                 spot_leaving_fish_catch_weight = -5, # -1.7,
                 spot_leaving_time_weight = 0.2, # 0.13,
