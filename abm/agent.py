@@ -34,9 +34,11 @@ class Agent(mesa.Agent):
         # State variables
         self._is_moving: bool = False
         self._is_sampling: bool = False
+        self._is_drilling: bool = False
+        self._drilling_time_remaining: int = 0
         self._is_consuming: bool = False
         self._destination: Union[None, tuple[int, int]] = None
-        self._time_on_patch: int = 0
+        self._time_on_patch: int = 0 
         self._time_since_last_catch: int = 0
         self._collected_resource_last_spot: int = 0
 
@@ -72,6 +74,10 @@ class Agent(mesa.Agent):
     @property
     def is_consuming(self):
         return self._is_consuming
+
+    @property
+    def is_drilling(self):
+        return self._is_drilling
 
     @property
     def destination(self):
@@ -190,7 +196,12 @@ class Agent(mesa.Agent):
         # Only mark arrived if we exactly hit the destination
         if new_pos == (dx, dy):
             self._is_moving = False
-            self._is_sampling = True
+            drilling_steps = int(getattr(self.model, 'drilling_time_cost_minutes', 1.0) * self.model.steps_per_minute)
+            if drilling_steps > 0:
+                self._is_drilling = True
+                self._drilling_time_remaining = drilling_steps
+            else:
+                self._is_sampling = True
 
     def sample_fish_density(self):
         self._total_sampling_time += 1
@@ -241,8 +252,13 @@ class Agent(mesa.Agent):
                 other_agent_locs=self.other_agent_locs
             )
 
-        if self._is_moving and not self._is_sampling:
+        if self._is_moving and not self._is_sampling and not getattr(self, '_is_drilling', False):
             self.move()
+        elif getattr(self, '_is_drilling', False):
+            self._drilling_time_remaining -= 1
+            if self._drilling_time_remaining <= 0:
+                self._is_drilling = False
+                self._is_sampling = True
         elif self._is_sampling and not self._is_moving:
             self.sample_fish_density()
         else:

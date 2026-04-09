@@ -1,18 +1,32 @@
 import argparse
 from datetime import datetime
 from pathlib import Path
+import sys
+
+import numpy as np
 import pandas as pd
 from abm.model import IceFishingModel
 from mesa.batchrunner import batch_run
 
 def run_simulations_social_info_abundance(n_repetitions: int = 1):
+    rng = np.random.default_rng(42)
+    rng_values = rng.integers(0, sys.maxsize, size=(n_repetitions,))
+
     params = {
         "grid_size": 90,
         "number_of_agents": 6,
         "simulation_length_minutes": 180,
-        "fish_abundance": [2.0, 2.5, 3.0],
-        "spot_selection_tau": [1.0, 0.5, 0.1, 0.05, 0.01],
-        "spot_selection_w_social": [0, 0.25, 0.75, 2.25],  # 1:4, 2:4, 3:4 ratio of soc to private weights
+        "fish_abundance": [(2.0, 3.0)],
+        "drilling_time_cost_minutes": [1.0],
+        "spot_selection_tau": [0.1, 0.15, 0.2, 0.25, 0.3],
+        "spot_selection_w_locality": [0.0],
+        "spot_selection_weights": [
+            (0.0, 0.5, 0.5),
+            (0.2, 0.4, 0.4),
+            (0.4, 0.3, 0.3),
+            (0.6, 0.2, 0.2),
+            (0.8, 0.1, 0.1)
+        ],
         "spot_selection_social_info_quality": ["sampling", "consuming"]
     }
 
@@ -21,7 +35,7 @@ def run_simulations_social_info_abundance(n_repetitions: int = 1):
     results = batch_run(
         IceFishingModel,
         parameters=params,
-        iterations=n_repetitions,
+        rng=rng_values.tolist(),
         max_steps=max_steps,
         number_processes=None,
         data_collection_period=-1,

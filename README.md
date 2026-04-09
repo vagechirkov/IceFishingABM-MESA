@@ -16,6 +16,19 @@ pip install -r requirements.txt
 pip list --not-required --format=freeze > requirements.txt
 ```
 
+### Instalation with `uv`
+
+```bash
+# create a virtual environment
+uv venv venv
+
+# activate the virtual environment
+source venv/bin/activate
+
+# install dependencies
+uv pip install -r requirements.txt
+```
+
 ## Running the Model
 
 ```bash

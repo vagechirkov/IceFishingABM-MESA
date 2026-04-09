@@ -146,6 +146,7 @@ class Model(mesa.Model):
 class IceFishingModel(mesa.Model):
     def __init__(
         self,
+        rng = None,
         grid_size: int = 100,
         number_of_agents: int = 5,
         simulation_length_minutes: int = 120,  # minutes
@@ -169,9 +170,11 @@ class IceFishingModel(mesa.Model):
         spot_selection_social_info_quality: str = "sampling",  # "sampling" or "consuming"
         agent_speed_m_per_min: float = 15.0,
         agent_margin_from_others: float = 5.0,
+        drilling_time_cost_minutes: float = 1.0,
+        spot_selection_weights: tuple = None,
         sample_from_prior = None,
     ):
-        super().__init__()
+        super().__init__(rng=rng)
         self.grid_size = grid_size
         self.simulation_length_minutes = simulation_length_minutes
         self.num_agents = number_of_agents
@@ -180,7 +183,10 @@ class IceFishingModel(mesa.Model):
 
         self.fish_length_scale_minutes = fish_length_scale_minutes
         self.fish_length_scale_meters = fish_length_scale_meters
-        self.fish_abundance = fish_abundance
+        if isinstance(fish_abundance, tuple):
+            self.fish_abundance = np.random.uniform(fish_abundance[0], fish_abundance[1])
+        else:
+            self.fish_abundance = fish_abundance
         self.fish_density_sharpness = fish_density_sharpness
 
         self.spot_leaving_baseline_weight = spot_leaving_baseline_weight
@@ -194,14 +200,20 @@ class IceFishingModel(mesa.Model):
         self.spot_selection_failure_length_scale = spot_selection_failure_length_scale
         self.spot_selection_social_info_quality = spot_selection_social_info_quality
 
-        self.spot_selection_w_social = spot_selection_w_social
-        self.spot_selection_w_success = spot_selection_w_success
-        self.spot_selection_w_failure = spot_selection_w_failure
         self.spot_selection_w_locality = spot_selection_w_locality
+        if spot_selection_weights is not None:
+            self.spot_selection_w_social = spot_selection_weights[0]
+            self.spot_selection_w_success = spot_selection_weights[1]
+            self.spot_selection_w_failure = spot_selection_weights[2]
+        else:
+            self.spot_selection_w_social = spot_selection_w_social
+            self.spot_selection_w_success = spot_selection_w_success
+            self.spot_selection_w_failure = spot_selection_w_failure
         self._normalize_spot_selection_weights()
 
         self.agent_speed_m_per_min = agent_speed_m_per_min
         self.agent_margin_from_others = agent_margin_from_others
+        self.drilling_time_cost_minutes = drilling_time_cost_minutes
 
         if sample_from_prior is not None:
             prior_vals = sample_from_prior() if callable(sample_from_prior) else dict(sample_from_prior)
