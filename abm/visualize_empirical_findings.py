@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 import os
 
 # Set visual style
-sns.set_theme(style="whitegrid")
-sns.set_context("talk")
+# sns.set_theme(style="whitegrid")
+# sns.set_context("talk")
+sns.set_theme(style="ticks", context="paper", font_scale=1.2)
 
 def main():
     # File configuration
@@ -54,7 +55,7 @@ def main():
     df_long["Parameter"] = df_long["Parameter"].map(label_map)
 
     # 3. Create the plot on a single axis
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(6, 4))
     ax = plt.gca()
 
     # Raw results (individual participants)
@@ -62,10 +63,11 @@ def main():
         data=df_long,
         x="Parameter",
         y="Estimate",
-        hue="Parameter",
-        alpha=0.3, # Semi-transparent for raw data
+        # hue="Parameter",
+        alpha=0.4, # Semi-transparent for raw data
         jitter=True,
-        palette="Set1",
+        # palette="Set1",
+        color="black",
         legend=False,
         ax=ax
     )
@@ -75,12 +77,13 @@ def main():
         data=df_long,
         x="Parameter",
         y="Estimate",
-        hue="Parameter",
+        # hue="Parameter",
         errorbar="ci",
         linestyles="none",
         markers="o",
-        markersize=12, # Size of markers for mean
-        palette="Set1",
+        markersize=8, # Size of markers for mean
+        # palette="Set1",
+        color="black",
         legend=False,
         ax=ax
     )

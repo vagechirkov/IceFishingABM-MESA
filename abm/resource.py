@@ -217,6 +217,39 @@ def make_fish_density_gif(
     print(f"GIF saved to {filename}")
 
 
+def make_fish_density_3panel(
+    F, xs, ys, ts, sample_idx=0, filename="fish_density_3panel.pdf"
+):
+    field = F[sample_idx]  # shape (n_x, n_y, n_time)
+    vmin, vmax = field.min(), field.max()
+
+    ti_list = [0, 10, 20, 30, 40]
+
+    fig, axes = plt.subplots(1, 5, figsize=(15, 3))
+
+    for i, ti in enumerate(ti_list):
+        t = ts[ti]
+        ax = axes[i]
+        im = ax.imshow(
+            field[:, :, ti].T,
+            origin="lower",
+            extent=[xs.min(), xs.max(), ys.min(), ys.max()],
+            vmin=vmin,
+            vmax=vmax,
+            cmap="viridis",
+        )
+        ax.set_title(f"t = {int(t)} [min]")
+        ax.set_xlabel("x")
+        if i == 0:
+            ax.set_ylabel("y")
+        # fig.colorbar(im, ax=ax, shrink=0.8, label="Resource abundance")
+
+    plt.tight_layout()
+    fig.savefig(filename, format="pdf", bbox_inches="tight")
+    print(f"3-panel plot saved to {filename}")
+    plt.close(fig)
+
+
 def bias_for_target_mean(p, sigma=1.0, sigma_n=0.0, temperature=1.0):
     """Approximate bias to achieve mean abundance p"""
     if not (0 < p < 1):
@@ -230,7 +263,7 @@ if __name__ == "__main__":
     rng = np.random.default_rng(42)
 
     for t in [0.5]:  # , 2
-        for b in [1, 2, 3, 3.5, 4]:
+        for b in [2.5]:  # 1, 2, 3, 3.5, 4
             fish_density, _xs, _ys, _ts = spatiotemporal_fish_density(
                 length_scale_time=15,
                 length_scale_space=6,
@@ -251,4 +284,12 @@ if __name__ == "__main__":
                 sample_idx=0,
                 filename=f"fish_t_{t:.1f}_b_{b:.1f}.gif",
                 fps=20,
+            )
+            make_fish_density_3panel(
+                fish_density,
+                _xs,
+                _ys,
+                _ts,
+                sample_idx=0,
+                filename=f"fish_t_{t:.1f}_b_{b:.1f}_3panel.pdf",
             )

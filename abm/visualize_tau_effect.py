@@ -21,8 +21,8 @@ def main():
         grid_size=grid_size,
         tau=0.1, # Will be varied manually later
         social_length_scale=25.0,
-        success_length_scale=10.0,
-        failure_length_scale=10.0,
+        success_length_scale=25.0,
+        failure_length_scale=25.0,
         w_social=0.2,
         w_success=0.4,
         w_failure=0.4,
